@@ -1,0 +1,89 @@
+Velocidades de transferencia
+-------------------------------
+
+Método para controlar las velocidades de transferencia entre peers. Se quiere poder medir y controlar esas velocidades,
+bien para mantenerlas en unos rangos, bien para priorizar algunas transferencias, bien para ser equitativos
+con los peers.
+
+Para subir datos, siempre se intenta ser equitativos con todos los peers a los que subimos. Ej, si podemos
+mandar a 100ks/s y tenemso 3 peers que nos están pidiendo cosas, intentaremos mandar 33 a cada uno.
+
+Para descargar, se permite especificar la preferencia de cada descarga, y se intenta acomodar las velocidades
+a tales prioridades en la medida de lo posible.
+
+Calcular cuál debe ser la asignación de velocidad a cada transferencia de forma analítica requeriria mucha
+información intercambiada entre peers y muchos cálculos internos. Mejor hacerlo de forma aproximada, evaluando
+cada pocos segundos si se ha de corregir hacia algún sentido.
+
+
+
+Vel de subida
+-------------
+
+Tenemos n transferencias de subida activas repartidas en m peers. Además, puede que tengamos una
+limitación en la velocidad total de subida. Queremos que la velocidad de subida a cada peer
+sea lo más igualitaria posible.
+
+Primero calculamos la velocidad de cada peer, sumando sus transferencias. Evaluamos las desigualdades.
+
+Si hay una desigualdad y esta es debida a una carencia en la asignación de una velocidad (el receptor admitia
+esa velocidad, o un aprox 97% de ella), se trata de corregir modificando levemente las asignaciones.
+
+Antes de eso, se ve si algún receptor no alcanza su cuota asignada (no es capaz de recibir, o no quiere recibir, los
+datos a la velocidad que le hemos asignado). Esto se hace por cada transferencia (un receptor puede querer reciir a
+poca velocidad para un fichero, pero a mucha para otro,y no queremos que haya que comunicar esto específicamente).
+
+
+¿Cómo se realizan las asignaciones? Esa es una cuestión técnica, sin embargo seguramente haya que centralizar
+todas las subidas para que se pueda hacer un reparto efectivo.
+
+No es obligatorio que el usuario especifique una velocidad límite. En ese caso se debe usar la máxima velocidad
+posible. El sistema detectará esa velocidad máxima de forma dinámica (tb si la velocidad especificada es mayor
+de la posible) y hará las asignaciones en base a ello, dejando un margen para evitar saturar.
+
+¿Qué sucede si el receptor no puede recibir a tanta velocidad? Detectamos nosotros eso, o se queda almacenado en
+algún sitio??? Un write en TCP espera a la confirmación de recepción, por lo tantoen principio eso queda en el
+buffer de red del receptor -> bien. Comrpobarlo de todas maneras.
+
+Así, los datos de entrada son:
+- Velocidad total deseada (número, <=0 para infinito)
+- Velocidad total permitida (número)
+- Velocidad máxima deseada por cada receptor (número, <=0 para inf). Al conectar el receptor indica cuál es su
+velocidad máxima deseada. Este valor puede ir variando por peticiones del receptor
+- Velocidadea asignadas a cada receptor (lista de números)
+- Velocidades logradas para cada receptor (matrix de números)
+- Peticiones de reparto de los receptores (en proporciones) <- estudiar esto
+
+Este cálculo debería hacerse cada pocos segundos (2 o 3). Problema: las medidas adoptadas tardarán varios segundos
+en tener efecto, aplicarlas con moderación para evitar un efecto ondulatorio
+
+Algoritmo:
+
+- Comprobación de velocidad total:
+  Se comprueba en qué grado se ha alcanzado la velocidad total permitida, y se modifica esta si es necesario
+  - si no se ha alcanzado en un 97% o menos, se reduce un 15% de la diferencia
+  - a partir de 97, se eleva hasta dejar la diferencia en un 97% o hasta la deseada
+  - la asignada nunca podrá ser mayor que la permitida
+  Este cálculo es necesario para saber cuánto le toca a cada receptor como máximo
+
+- Comprobación de velocidades de receptores
+  - Para cada receptor, se realiza el mismo proceso. Se compara el total de la velocidad lograda con este
+  receptor, y el total de la velocidad asignada a este receptor. Volvemos a usar un umbral del 97%, y hacemos
+  cálculos similares al caso anterior.
+  La velocidad deseada en este caso será el mínimo entre la maxima velocidad deseada por el receptor
+  y lo que le corresponda de la velocidad total calculada en el paso anterior (vel / numpeers)
+  Si a un receptor se le asigna menos de lo que le tocaría (porque pide menos o porque no acepta tanto)
+  entonces el sobrante debería ir al resto de peers. Esto es fácil de hacer si el recorrido lo
+  hacemos empezando por los peers que recibieron más despacio (porque ellos son los más susceptibles
+  de recibir una asignación menor). Aunque el último quiera muy poco y nos sobre velocidad, ya se
+  arreglará en la siguiente tanda de cálculos
+
+- Comprobación de velocidades de transferencias
+  - Dentro de cada receptor, y con la velocidad de asignación para ese receptor calculada, evaluaremos
+  qué velocidad darle a cada una de las transferencias activas. En el modelo simple en que no se pueden
+  especificar prioridades, se dividirá linealmente. En el modelo complejo, el receptor podrá solicitar
+  la proporción en que se reparten las velocidades. El cálculo será simplemente aplicar tal proporción a las
+  velocidades individuales
+
+Se devuelven las asignaciones. Este algoritmo estará en una clase estática que solo sabe hacer este calculo.
+Permitirá ejecutar el algoritmo en un hilo suelto, aunque realmente no es demasiado costoso.

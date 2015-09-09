@@ -1,0 +1,12 @@
+Los subtítulos son elementos que van aparte de los vídeos. Un vídeo puede tener "registrados" varios subtítulos compatibles.
+Para cada uno, indica el hash del elemento del subtítulo, el idioma, y el desfase a aplicar. Si disponemos de un
+subtítulo con ese hash, se podrá ver ese video con ese subtítulo.
+
+Esto posibilita inferir relaciones nuevas de subtítulos de vídeo. Si el video A tiene vínculos a los subtítulos C y D,
+y el video B lo tiene solo a C, se puede inferir el desfase necesario de B con D para que B pueda funcionar con D.
+
+
+--------------------------
+
+
+Ver si se puede incluir para el prototipo la generación automática de PeerIDs.

@@ -1,0 +1,1016 @@
+package jacz.peerengine.util.datatransfer;
+
+import jacz.peerengine.PeerID;
+import jacz.peerengine.client.PeerClientPrivateInterface;
+import jacz.peerengine.client.connection.ConnectedPeersMessenger;
+import jacz.peerengine.util.ChannelConstants;
+import jacz.peerengine.util.ForeignStoreShare;
+import jacz.peerengine.util.datatransfer.master.DownloadManager;
+import jacz.peerengine.util.datatransfer.master.MasterResourceStreamer;
+import jacz.peerengine.util.datatransfer.resource_accession.PeerResourceProvider;
+import jacz.peerengine.util.datatransfer.resource_accession.ResourceWriter;
+import jacz.peerengine.util.datatransfer.slave.SlaveResourceStreamer;
+import jacz.peerengine.util.datatransfer.slave.UploadManager;
+import jacz.commengine.channel.ChannelConnectionPoint;
+import jacz.util.concurrency.task_executor.ParallelTask;
+import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
+import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
+import jacz.util.concurrency.timer.SimpleTimerAction;
+import jacz.util.concurrency.timer.Timer;
+import jacz.util.date_time.DateTime;
+import jacz.util.identifier.UniqueIdentifier;
+import jacz.util.io.object_serialization.MutableOffset;
+import jacz.util.io.object_serialization.ObjectListWrapper;
+import jacz.util.io.object_serialization.Serializer;
+import jacz.util.lists.DoubleElementArrayList;
+import jacz.util.numeric.ContinuousDegree;
+import jacz.util.queues.event_processing.MessageProcessor;
+import jacz.util.sets.availableelements.AvailableElementsShort;
+
+import java.io.Serializable;
+import java.util.*;
+
+/**
+ * This class maintains connections with all connected peers in order to send and receive files at request. Every time
+ * a new peer connects, our ResourceStreamingManager connects with the corresponding ResourceStreamingManager. They will be
+ * able to ask each other for files, and inform about the transfer capabilities.
+ * <p/>
+ * The peer client can ask the ResourceStreamingManager to download files. The ResourceStreamingManager will look for peers
+ * that share that file and organize the download. A file is actually downloaded by a MasterResourceStreamer, which is
+ * created by this ResourceStreamingManager class
+ * <p/>
+ * todo
+ * each time a peer is added to the peerShare, this class can get its ccp from it and send messages to it. However, it
+ * also has to set up the PeerRequestDispatcherFSM for that new peer, so it can process new requests from it. This must
+ * happen at both ends before they receive any message. How to synchronize this???
+ * JacuzziClient will set it up, so it is ready when the client gets it
+ * <p/>
+ * // todo take to peerclient?
+ * Part selection algorithm:
+ * Each download is treated in order to improve efficiency and reduce total download time. For this, there is a
+ * specific algorithm that works with several parameters. In general, this algorithm tells a download process which
+ * part it should ask to the peers that are sharing the resource. The general norm is to select from each peer parts
+ * which other peers are not sharing (to avoid not being able to "use" a peer because another peer gave us the parts
+ * that it was sharing). Parts offered by a peer but being shared by other peers are penalized (the more peers that
+ * share a part, the more it is penalized). Peers which have very little to offer (below a 15% of the total remaining
+ * for download) impose even more penalization.
+ * <p/>
+ * On top of all this is the streaming need of a resource: if the user
+ * downloads a movie and wants to watch it on streaming, the algorithm will reward the parts that are first. For a
+ * maximum value of streaming need (1.0), the part sharing penalization is almost completely forgotten. For the
+ * minimum value (0.0) no care of streaming is taken.
+ * <p/>
+ * There is an additional consideration in the part selection: noise. To avoid situations in which one peer is
+ * offering a resource and n peers are taking it from him, and all peers are selecting the same part, a random noise
+ * is introduced. This noise will randomize to some extent the part selection process (unless streaming need is
+ * very high, or the part share penalization is to high).
+ * <p/>
+ * Finally, the part calculation can be performed more or less accurately. The peer engine is configured on start
+ * with an accuracy value for part selection which indicates the amount of parts that are evaluated. For a minimum
+ * accuracy (0.0), one hundred parts are considered. For the maximum accuracy (1.0), 20000 parts are evaluated. The
+ * user must take into account the memory and processor availability for these calculations, and set the accuracy
+ * value accordingly (NOTE: as of now, accuracy is fixed to 0.5, and future plans include the implementation of an
+ * automatic benchmark procedure for evaluating the best accuracy value)
+ */
+public class ResourceStreamingManager {
+
+    /**
+     * Object version of an object message plus a subchannel, so it can be used in the FSM api of the util library
+     */
+    private static class SubchannelObjectMessage implements Serializable {
+
+        final short subchannel;
+
+        final Object message;
+
+        public SubchannelObjectMessage(short subchannel, Object message) {
+            this.subchannel = subchannel;
+            this.message = message;
+        }
+    }
+
+    /**
+     * Static methods for encoding and decoding data[] messages with subchannel
+     */
+    private static class SubchannelDataMessage {
+
+        public static byte[] encode(short subchannel, byte[] data) {
+            return Serializer.addArrays(Serializer.serialize(subchannel), data);
+        }
+
+        public static SubchannelDataMessage decode(byte[] bytes) {
+//            byte[] subchannelBytes = new byte[2];
+//            System.arraycopy(bytes, 0, subchannelBytes, 0, 2);
+//            short subchannel = Serializer.deserializeShort(subchannelBytes, new MutableOffset());
+//            byte[] data = new byte[bytes.length - 2];
+//            System.arraycopy(bytes, 2, data, 0, data.length);
+//            return new SubchannelDataMessage(subchannel, data);
+            MutableOffset mutableOffset = new MutableOffset();
+            short subchannel = Serializer.deserializeShort(bytes, mutableOffset);
+            byte[] data = Serializer.deserializeRest(bytes, mutableOffset);
+            return new SubchannelDataMessage(subchannel, data);
+        }
+
+        final short subchannel;
+
+        final byte[] data;
+
+        SubchannelDataMessage(short subchannel, byte[] data) {
+            this.subchannel = subchannel;
+            this.data = data;
+        }
+    }
+
+    /**
+     * This class stores and manages the currently active downloads, indexed by store and resource id. We use this
+     * set to find the downloads when there is a report about change of conditions in a store and a resourceID (either
+     * peers were added or removed).
+     * <p/>
+     * This set stores only general downloads, with no specific peer. The class is also responsible for periodically
+     * notifying the resource streaming manager for the need of updating provides, regardless of any changes in stores
+     */
+    private class ActiveDownloadSet implements SimpleTimerAction {
+
+        /**
+         * Set of active downloads, indexed by store name first, and resource id second
+         * <p/>
+         * For each resource, a set of master resource streamers is maintained, since the same resource can be downloaded by several masters
+         */
+        private final Map<String, Map<String, Map<UniqueIdentifier, MasterResourceStreamer>>> activeDownloads;
+
+        /**
+         * The resource streaming manager that owns the active download set
+         */
+        private final ResourceStreamingManager resourceStreamingManager;
+
+        /**
+         * Timer for periodically updating the providers of all active downloads
+         */
+        private final Timer generalProviderUpdateTimer;
+
+        private ActiveDownloadSet(ResourceStreamingManager resourceStreamingManager) {
+            activeDownloads = new HashMap<>();
+            this.resourceStreamingManager = resourceStreamingManager;
+            generalProviderUpdateTimer = new Timer(ResourceStreamingManager.MILLIS_FOR_GENERAL_PROVIDER_UPDATE, this, "ActiveDownloadSet");
+        }
+
+        /**
+         * Adds a new download to the set of active downloads
+         *
+         * @param masterResourceStreamer the master resource streamer of the new download
+         */
+        private synchronized void addDownload(MasterResourceStreamer masterResourceStreamer) {
+            String storeName = masterResourceStreamer.getStoreName();
+            String resourceID = masterResourceStreamer.getResourceID();
+            if (!activeDownloads.containsKey(storeName)) {
+                activeDownloads.put(storeName, new HashMap<String, Map<UniqueIdentifier, MasterResourceStreamer>>());
+            }
+            Map<String, Map<UniqueIdentifier, MasterResourceStreamer>> resourceIDMap = activeDownloads.get(storeName);
+            if (!resourceIDMap.containsKey(resourceID)) {
+                resourceIDMap.put(resourceID, new HashMap<UniqueIdentifier, MasterResourceStreamer>());
+            }
+            resourceIDMap.get(resourceID).put(masterResourceStreamer.getId(), masterResourceStreamer);
+        }
+
+        /**
+         * Returns the list of master resource streamers associated to one store and one resource id
+         *
+         * @param storeName  store
+         * @param resourceID resource
+         * @return collections of master resource streamers that are downloading the specified resource (an empty collection if the resource is
+         *         not being downloaded)
+         */
+        private synchronized Collection<MasterResourceStreamer> getDownload(String storeName, String resourceID) {
+            try {
+                return activeDownloads.get(storeName).get(resourceID).values();
+            } catch (NullPointerException e) {
+                return new ArrayList<>();
+            }
+        }
+
+        /**
+         * Removes one master resource streamer from the active downloads
+         *
+         * @param masterResourceStreamer the master to remove
+         */
+        private synchronized void removeDownload(MasterResourceStreamer masterResourceStreamer) {
+            String storeName = masterResourceStreamer.getStoreName();
+            String resourceID = masterResourceStreamer.getResourceID();
+            try {
+                activeDownloads.get(storeName).get(resourceID).remove(masterResourceStreamer.getId());
+                if (activeDownloads.get(storeName).get(resourceID).isEmpty()) {
+                    activeDownloads.get(storeName).remove(resourceID);
+                }
+                if (activeDownloads.get(storeName).isEmpty()) {
+                    activeDownloads.remove(storeName);
+                }
+            } catch (NullPointerException e) {
+                // ignore
+            }
+        }
+
+        @Override
+        /**
+         * This method performs an update on the available providers for all active downloads
+         */
+        public synchronized Long wakeUp(Timer timer) {
+            // copy the active downloads map so it can be modified while performing the provider updates
+            final Map<String, Map<String, Map<UniqueIdentifier, MasterResourceStreamer>>> activeDownloadsCopy = new HashMap<>();
+            for (String storeName : activeDownloads.keySet()) {
+                activeDownloadsCopy.put(storeName, new HashMap<>(activeDownloads.get(storeName)));
+            }
+            ParallelTaskExecutor.executeTask(new ParallelTask() {
+                @Override
+                public void performTask() {
+                    for (String storeName : activeDownloadsCopy.keySet()) {
+                        Map<String, Map<UniqueIdentifier, MasterResourceStreamer>> activeDownloadsForOneStore = activeDownloadsCopy.get(storeName);
+                        for (String resourceID : activeDownloadsForOneStore.keySet()) {
+                            resourceStreamingManager.reportProvidersForOneActiveDownload(storeName, resourceID);
+                        }
+                    }
+                }
+            });
+            // the timer never dies
+            return null;
+        }
+
+        public synchronized void stop() {
+            generalProviderUpdateTimer.kill();
+        }
+    }
+
+
+    /**
+     * The incoming subchannel assignments for all our data streaming stuff. 16-bit subchannels are defined for routing the data transmission
+     * messages. The class employs the MessageProcessor schema in jacz.util to handle the incoming messages.
+     * <p/>
+     * Each resource master streamer will generally use several channels, one for each slave. This allows him to differentiate incoming packages.
+     * This allows a total of 2^16 active transfers, but this should always be enough
+     * <p/>
+     * This class handles the subchannel assignment, providing new subchannels upon master requests, and freeing no
+     * longer used subchannels. At initialization time, we can assign a list of already occupied subchannels so they
+     * are not assigned to anyone else
+     * <p/>
+     * This class also handles concurrent message processing for the assigned channels, delivering each incoming message to the appropriate
+     * owner
+     */
+    private class SubchannelManager {
+
+        /**
+         * Inner implementation of the MessageHandler interface, to deal with incoming messages. One of this is created for each subchannel
+         */
+        private class MessageHandlerImpl implements jacz.util.queues.event_processing.MessageHandler {
+
+            private final short subChannel;
+
+            private final SubchannelOwner subchannelOwner;
+
+            private MessageHandlerImpl(short subChannel, SubchannelOwner subchannelOwner) {
+                this.subChannel = subChannel;
+                this.subchannelOwner = subchannelOwner;
+            }
+
+            @Override
+            public void handleMessage(Object message) {
+                if (message instanceof ByteArrayObject) {
+                    subchannelOwner.processMessage(subChannel, ((ByteArrayObject) message).data);
+                } else {
+                    subchannelOwner.processMessage(subChannel, message);
+                }
+            }
+
+            @Override
+            public void finalizeHandler() {
+                // ignore
+            }
+        }
+
+        /**
+         * An object representation of a byte array, so it can be used in the message processor api
+         */
+        private final class ByteArrayObject {
+
+            private final byte[] data;
+
+            private ByteArrayObject(byte[] data) {
+                this.data = data;
+            }
+        }
+
+        /**
+         * Data stored for each occupied subchannel
+         */
+        private class SubchannelData {
+
+            private final SubchannelOwner subchannelOwner;
+
+            private final MessageProcessor messageProcessor;
+
+            private SubchannelData(SubchannelOwner subchannelOwner, MessageProcessor messageProcessor) {
+                this.subchannelOwner = subchannelOwner;
+                this.messageProcessor = messageProcessor;
+            }
+        }
+
+        /**
+         * Table with assigned subchannels and their corresponding owners and message processors
+         * <p/>
+         * Each subchannel will define a message processor schema with only the message handler thread. We will take care of feeding
+         * the processor with messages. The default queue capacity is used
+         */
+        private final Map<Short, SubchannelData> assignedSubchannels;
+
+        /**
+         * List of subchannels owned by each subchannel owner
+         */
+        private final Map<SubchannelOwner, Set<Short>> subchannelsForEachOwner;
+
+        /**
+         * Free subchannels, for assigning new subchannels upon request
+         */
+        private final AvailableElementsShort availableSubchannels;
+
+        /**
+         * Indicates if we are still alive. We can only assign subchannels if we are alive. Otherwise all requests are rejected
+         */
+        private boolean alive;
+
+        /**
+         * Constructor
+         *
+         * @param occupiedSubchannels subchannels that must never be assigned. They are tagged as occupied at construction time
+         */
+        private SubchannelManager(DoubleElementArrayList<Short, SubchannelOwner> occupiedSubchannels) {
+            assignedSubchannels = new HashMap<>();
+            subchannelsForEachOwner = new HashMap<>();
+            availableSubchannels = new AvailableElementsShort(occupiedSubchannels.cloneFirstList().toArray(new Short[occupiedSubchannels.size()]));
+            for (int i = 0; i < occupiedSubchannels.size(); i++) {
+                putOwnerInSubchannel(occupiedSubchannels.getFirst(i), occupiedSubchannels.getSecond(i));
+            }
+            alive = true;
+        }
+
+        /**
+         * Request for a free subchannel
+         *
+         * @param owner the requesting owner
+         * @return the subchannel value if there is a free subchannel, or null if the request could not be fulfilled (no free subchannels)
+         */
+        public synchronized Short requestSubchannel(SubchannelOwner owner) {
+            if (alive) {
+                Short subchannel = availableSubchannels.requestElement();
+                if (subchannel != null) {
+                    // successful request -> assign this subchannel to the given master
+                    putOwnerInSubchannel(subchannel, owner);
+                }
+                return subchannel;
+            } else {
+                return null;
+            }
+        }
+
+        /**
+         * Assigns an owner to a subchannel
+         *
+         * @param subchannel subchannel to be assigned
+         * @param owner      owner of the subchannel
+         */
+        private synchronized void putOwnerInSubchannel(Short subchannel, SubchannelOwner owner) {
+            assignedSubchannels.put(subchannel, new SubchannelData(owner, new MessageProcessor("MessageProcessor - " + subchannel, new MessageHandlerImpl(subchannel, owner))));
+            assignedSubchannels.get(subchannel).messageProcessor.start();
+            if (!subchannelsForEachOwner.containsKey(owner)) {
+                subchannelsForEachOwner.put(owner, new HashSet<Short>(1));
+            }
+            subchannelsForEachOwner.get(owner).add(subchannel);
+        }
+
+        public synchronized void processMessage(short subchannel, Object message) {
+            if (assignedSubchannels.containsKey(subchannel)) {
+                try {
+                    assignedSubchannels.get(subchannel).messageProcessor.addMessage(message);
+                } catch (InterruptedException e) {
+                    // ignore, cannot happen
+                }
+            }
+        }
+
+        public synchronized void processMessage(short subchannel, byte[] data) {
+            if (assignedSubchannels.containsKey(subchannel)) {
+                try {
+                    assignedSubchannels.get(subchannel).messageProcessor.addMessage(new ByteArrayObject(data));
+                } catch (InterruptedException e) {
+                    // ignore, cannot happen
+                }
+            }
+        }
+
+        /**
+         * An occupied subchannel is freed
+         *
+         * @param subchannel the subchannel to free
+         */
+        public synchronized void freeSubchannel(short subchannel) {
+            if (assignedSubchannels.containsKey(subchannel)) {
+                SubchannelData subchannelData = assignedSubchannels.get(subchannel);
+                subchannelData.messageProcessor.stop();
+                subchannelsForEachOwner.get(subchannelData.subchannelOwner).remove(subchannel);
+                if (subchannelsForEachOwner.get(subchannelData.subchannelOwner).isEmpty()) {
+                    subchannelsForEachOwner.remove(subchannelData.subchannelOwner);
+                }
+                assignedSubchannels.remove(subchannel);
+                availableSubchannels.freeElement(subchannel);
+            }
+        }
+
+        public synchronized void freeAllSubchannelsFromOwner(SubchannelOwner subchannelOwner) {
+            if (subchannelsForEachOwner.containsKey(subchannelOwner)) {
+                Collection<Short> subchannelsToFree = new HashSet<>(subchannelsForEachOwner.get(subchannelOwner));
+                for (Short subchannel : subchannelsToFree) {
+                    freeSubchannel(subchannel);
+                }
+            }
+        }
+
+        public synchronized void stop() {
+            // free all occupied subchannels, and not allow any further requests
+            Set<SubchannelOwner> owners = new HashSet<>(subchannelsForEachOwner.keySet());
+            for (SubchannelOwner owner : owners) {
+                freeAllSubchannels(owner);
+            }
+            alive = false;
+        }
+    }
+
+    /**
+     * This interface represents an entity which can own a subchannel. Currently, three entities can hold a subchannel:
+     * a master resource streamer, a slave resource streamer and a slave request manager. This interface includes the
+     * message processing methods that those entities must implement
+     */
+    public interface SubchannelOwner {
+
+        void processMessage(short subchannel, Object message);
+
+        void processMessage(short subchannel, byte[] data);
+    }
+
+    /**
+     * This class implements a subchannel owner that will own the subchannel for slave requests. It will handle all
+     * slave requests. There will be only one instance of this class, for handling requests directed to a specific
+     * subchannel for slave requests
+     */
+    private class SlaveRequestsManager implements SubchannelOwner {
+
+        private ResourceStreamingManager resourceStreamingManager;
+
+        private SlaveRequestsManager(ResourceStreamingManager resourceStreamingManager) {
+            this.resourceStreamingManager = resourceStreamingManager;
+        }
+
+        @Override
+        public void processMessage(short subchannel, Object message) {
+            // new request for a slave
+            if (message instanceof jacz.peerengine.util.datatransfer.ResourceRequest) {
+                jacz.peerengine.util.datatransfer.ResourceRequest resourceRequest = (jacz.peerengine.util.datatransfer.ResourceRequest) message;
+                System.out.println("New resource request received -> " + resourceRequest);
+                resourceStreamingManager.requestNewResource(resourceRequest);
+            }
+        }
+
+        @Override
+        public void processMessage(short subchannel, byte[] data) {
+            // ignore these messages, as all requests are object messages
+        }
+    }
+
+    /**
+     * Subchannel for both requesting slaves to other peers and for receiving requests for slaves from other peers
+     */
+    public static final short SLAVE_GRANT_SUBCHANNEL = 0;
+
+    public static final double DEFAULT_PART_SELECTION_ACCURACY = 0.5d;
+
+    private static final long MILLIS_FOR_GENERAL_PROVIDER_UPDATE = 15000;
+
+    private final PeerID ownPeerID;
+
+    private final ConnectedPeersMessenger connectedPeersMessenger;
+
+    /**
+     * The incoming subchannel assignments, for each active master resource streamer.
+     * <p/>
+     * Non-persistent
+     */
+    private final SubchannelManager subchannelManager;
+
+    /**
+     * The manager of all registered resource stores
+     * <p/>
+     * Non-persistent
+     */
+    private final LocalShareManager localShareManager;
+
+    /**
+     * The manager for resources shared to us by other peers
+     * <p/>
+     * Non-persistent
+     */
+    private final ForeignShareManager foreignShareManager;
+
+    /**
+     * Active downloads from foreign stores (with no specific peer)
+     */
+    private final ActiveDownloadSet activeDownloadSet;
+
+    /**
+     * Manager for the currently existing downloads (downloads can be made visible, so we get periodic notifications on their progress).
+     */
+    private final jacz.peerengine.util.datatransfer.DownloadsManager downloadsManager;
+
+    /**
+     * Manager of the currently existing uploads
+     */
+    private final jacz.peerengine.util.datatransfer.UploadsManager uploadsManager;
+
+    /**
+     * Manager for controlling upload speeds of resource transfers
+     */
+    private final jacz.peerengine.util.datatransfer.GenericPriorityManager uploadPriorityManager;
+
+    /**
+     * Manager for controlling download speeds of resource transfers
+     */
+    private final jacz.peerengine.util.datatransfer.GenericPriorityManager downloadPriorityManager;
+
+    private final jacz.peerengine.util.datatransfer.GlobalUploadStatistics globalUploadStatistics;
+
+    private final jacz.peerengine.util.datatransfer.PeerStatistics peerStatistics;
+
+    /**
+     * The accuracy employed in downloads for selecting the parts to assign to each resource provider
+     * <p/>
+     * The algorithm for assigning a segment to a slave is always approximate (to avoid excessive cpu utilization). It
+     * can be however chosen how accurate this algorithm is, at the expense of higher cpu dependency. This attribute
+     * indicates such accuracy. 1.0 means maximum accuracy, while 0.0 indicates minimum accuracy.
+     * <p/>
+     * Access to this field is synchronized to avoid inconsistencies
+     */
+    private final ContinuousDegree accuracy;
+
+    /**
+     * Whether this resource streaming manager is active or not. If not active, it will nto accept any requests (writes, stores, downloads).
+     * <p/>
+     * Once it becomes inactive, it cannot be activated anymore
+     * todo use in all required methods
+     */
+    private boolean active;
+
+    public ResourceStreamingManager(PeerID ownPeerID, ConnectedPeersMessenger connectedPeersMessenger, PeerClientPrivateInterface peerClientPrivateInterface, jacz.peerengine.util.datatransfer.GlobalUploadStatistics globalUploadStatistics, jacz.peerengine.util.datatransfer.PeerStatistics peerStatistics, double accuracy) {
+        this.ownPeerID = ownPeerID;
+        this.connectedPeersMessenger = connectedPeersMessenger;
+        DoubleElementArrayList<Short, SubchannelOwner> occupiedSubchannels = new DoubleElementArrayList<>(1);
+        occupiedSubchannels.add(SLAVE_GRANT_SUBCHANNEL, new SlaveRequestsManager(this));
+        subchannelManager = new SubchannelManager(occupiedSubchannels);
+        localShareManager = new LocalShareManager();
+        foreignShareManager = new ForeignShareManager(this);
+        activeDownloadSet = new ActiveDownloadSet(this);
+        downloadsManager = new jacz.peerengine.util.datatransfer.DownloadsManager(peerClientPrivateInterface);
+        uploadsManager = new jacz.peerengine.util.datatransfer.UploadsManager(peerClientPrivateInterface);
+        //badRequestsManager = new BadRequestsManager(FAILED_REQUEST_RESUBMIT_DELAY, FAILED_REQUEST_RESUBMIT_FACTOR, this);
+        uploadPriorityManager = new jacz.peerengine.util.datatransfer.GenericPriorityManager();
+        downloadPriorityManager = new jacz.peerengine.util.datatransfer.GenericPriorityManager();
+        this.globalUploadStatistics = globalUploadStatistics;
+        this.peerStatistics = peerStatistics;
+        this.accuracy = new ContinuousDegree(accuracy);
+        active = true;
+    }
+
+
+    /**
+     * Requests an incoming subchannel for a specific master resource streamer
+     *
+     * @param owner the owner requesting the subchannel
+     * @return the assigned subchannel, or null of no subchannel was assigned
+     */
+    public synchronized Short requestIncomingSubchannel(SubchannelOwner owner) {
+        if (active) {
+            return subchannelManager.requestSubchannel(owner);
+        } else {
+            return null;
+        }
+    }
+
+    public synchronized void freeSubchannel(short subchannel) {
+        sout("freeSubchannel", 1);
+        subchannelManager.freeSubchannel(subchannel);
+        sout("freeSubchannel", -1);
+    }
+
+    public synchronized void freeAllSubchannels(SubchannelOwner owner) {
+        subchannelManager.freeAllSubchannelsFromOwner(owner);
+    }
+
+    public void newPeerConnected(ChannelConnectionPoint ccp) {
+        PeerDataReceiver peerDataReceiver = new PeerDataReceiver(this);
+        ccp.registerGenericFSM(peerDataReceiver, "PeerDataReceiver", ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL);
+    }
+
+    public void write(PeerID destinationPeer, short subchannel, Object message) {
+        connectedPeersMessenger.sendObjectMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, new SubchannelObjectMessage(subchannel, message), true);
+    }
+
+    public void write(PeerID destinationPeer, short subchannel, byte[] message) {
+        write(destinationPeer, subchannel, message, true);
+    }
+
+    public void write(PeerID destinationPeer, short subchannel, byte[] message, boolean flush) {
+        connectedPeersMessenger.sendDataMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, SubchannelDataMessage.encode(subchannel, message), flush);
+    }
+
+    public void flush(PeerID destinationPeer) {
+        connectedPeersMessenger.flush(destinationPeer);
+    }
+
+    synchronized void processMessage(Object o) {
+        SubchannelObjectMessage message = (SubchannelObjectMessage) o;
+        subchannelManager.processMessage(message.subchannel, message.message);
+    }
+
+    synchronized void processMessage(byte[] bytes) {
+        sout("processMessage", 1);
+        SubchannelDataMessage subchannelDataMessage = SubchannelDataMessage.decode(bytes);
+        subchannelManager.processMessage(subchannelDataMessage.subchannel, subchannelDataMessage.data);
+        sout("processMessage", -1);
+    }
+
+    /**
+     * Retrieves the manager of visible downloads
+     *
+     * @return the manager of visible downloads
+     */
+    public jacz.peerengine.util.datatransfer.DownloadsManager getDownloadsManager() {
+        return downloadsManager;
+    }
+
+    /**
+     * Retrieves the manager of visible uploads
+     *
+     * @return the manager of visible uploads
+     */
+    public jacz.peerengine.util.datatransfer.UploadsManager getUploadsManager() {
+        return uploadsManager;
+    }
+
+    /**
+     * Adds a store containing resources that we share to the rest of peers. It is used for handling download requests
+     * incoming from other peers
+     *
+     * @param name  name of the resource store
+     * @param store implementation of the resource store, for requesting resources to our client
+     */
+    public synchronized void addLocalResourceStore(String name, jacz.peerengine.util.datatransfer.ResourceStore store) {
+        localShareManager.addStore(name, store);
+    }
+
+    /**
+     * Sets the local general resource store
+     *
+     * @param generalResourceStore general resource store
+     */
+    public synchronized void setLocalGeneralResourceStore(jacz.peerengine.util.datatransfer.GeneralResourceStore generalResourceStore) {
+        localShareManager.setGeneralStore(generalResourceStore);
+    }
+
+    /**
+     * Adds a store of resources shared to us by other peers. It it used to handle downloads from other peers
+     *
+     * @param name              name of the resource store
+     * @param foreignStoreShare peers share for letting us know the share of resources of each peer
+     */
+    public synchronized void addForeignResourceStore(String name, ForeignStoreShare foreignStoreShare) {
+        foreignShareManager.addStore(name, foreignStoreShare);
+    }
+
+    /**
+     * Removes an already defined local store
+     *
+     * @param name name of the store to remove
+     */
+    public synchronized void removeLocalResourceStore(String name) {
+        localShareManager.removeStore(name);
+    }
+
+    /**
+     * Removes the local general resource store, so only the registered stores will be used
+     */
+    public synchronized void removeLocalGeneralResourceStore() {
+        localShareManager.setGeneralStore(null);
+    }
+
+    /**
+     * Removes an already defined foreign store
+     *
+     * @param name name of the store to remove
+     */
+    public synchronized void removeForeignResourceStore(String name) {
+        foreignShareManager.removeStore(name);
+    }
+
+    /**
+     * Initiates the process for downloading a resource from a defined global store. The data streaming manager will
+     * try to get the resource from very peer sharing it (he will look in the related peers share to find appropriate
+     * peers)
+     *
+     * @param resourceStoreName        name of the store allocating the resource
+     * @param resourceID               ID of the resource
+     * @param resourceWriter           object in charge of writing the resource
+     * @param downloadProgressNotificationHandler
+     *                                 handler for receiving notifications concerning this download
+     * @param globalDownloadStatistics global downloads statistics object from the client
+     * @param streamingNeed            the need for streaming this file (0: no need, 1: max need). The higher the need,
+     *                                 the greater efforts that the scheduler will do for downloading the first parts
+     *                                 of the resource before the last parts. Can hamper total download efficience
+     * @param totalHash                hexadecimal value for the total resource hash (null if not used)
+     * @param totalHashAlgorithm       algorithm for calculating the total hash (null if not used)
+     * @param preferredSizeForIntermediateHashes
+     *                                 preferred size for intermediate hashes (null if not used)
+     * @return a DownloadManager object for controlling this download, or null if the download could not be created
+     *         (due to the resource store name given not corresponding to any existing resource store)
+     */
+    public synchronized DownloadManager downloadResource(
+            String resourceStoreName,
+            String resourceID,
+            ResourceWriter resourceWriter,
+            jacz.peerengine.util.datatransfer.DownloadProgressNotificationHandler downloadProgressNotificationHandler,
+            jacz.peerengine.util.datatransfer.GlobalDownloadStatistics globalDownloadStatistics,
+            double streamingNeed,
+            String totalHash,
+            String totalHashAlgorithm,
+            Long preferredSizeForIntermediateHashes) {
+        // the download is created even if there is no matching global resource store
+        MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, null, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
+        activeDownloadSet.addDownload(masterResourceStreamer);
+        reportProvidersForOneActiveDownload(resourceStoreName, resourceID);
+        downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
+        return masterResourceStreamer.getDownloadManager();
+    }
+
+    /**
+     * Initiates the process for downloading a resource from a specific peer. In this case it is also necessary to
+     * specify the target store. However, it is not required that we have this store updated (not even registered) with
+     * the resources shared on it
+     *
+     * @param serverPeerID             ID of the Peer from which the resource is to be downloaded
+     * @param resourceStoreName        name of the individual store to access
+     * @param resourceID               ID of the resource
+     * @param resourceWriter           object in charge of writing the resource
+     * @param downloadProgressNotificationHandler
+     *                                 handler for receiving notifications concerning this download
+     * @param globalDownloadStatistics global downloads statistics object from the client
+     * @param streamingNeed            the need for streaming this file (0: no need, 1: max need). The higher the need,
+     *                                 the greater efforts that the scheduler will do for downloading the first parts
+     *                                 of the resource before the last parts. Can hamper total download efficiency
+     * @param totalHash                hexadecimal value for the total resource hash (null if not used)
+     * @param totalHashAlgorithm       algorithm for calculating the total hash (null if not used)
+     * @param preferredSizeForIntermediateHashes
+     *                                 preferred size for intermediate hashes (null if not used)
+     * @return a DownloadManager object for controlling this download, or null if the download could not be created
+     *         (due to the resource store name given not corresponding to any existing resource store)
+     */
+    public synchronized DownloadManager downloadResource(
+            PeerID serverPeerID,
+            String resourceStoreName,
+            String resourceID,
+            ResourceWriter resourceWriter,
+            jacz.peerengine.util.datatransfer.DownloadProgressNotificationHandler downloadProgressNotificationHandler,
+            jacz.peerengine.util.datatransfer.GlobalDownloadStatistics globalDownloadStatistics,
+            double streamingNeed,
+            String totalHash,
+            String totalHashAlgorithm,
+            Long preferredSizeForIntermediateHashes) {
+        MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
+        activeDownloadSet.addDownload(masterResourceStreamer);
+        reportResourceProviderForPeerSpecificDownload(serverPeerID, masterResourceStreamer);
+        downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
+        return masterResourceStreamer.getDownloadManager();
+    }
+
+    public synchronized Float getMaxDesiredDownloadSpeed() {
+        return downloadPriorityManager.getTotalMaxDesiredSpeed();
+    }
+
+    public synchronized void setMaxDesiredDownloadSpeed(Float totalMaxDesiredSpeed) {
+        downloadPriorityManager.setTotalMaxDesiredSpeed(totalMaxDesiredSpeed);
+    }
+
+    public synchronized Float getMaxDesiredUploadSpeed() {
+        return uploadPriorityManager.getTotalMaxDesiredSpeed();
+    }
+
+    public synchronized void setMaxDesiredUploadSpeed(Float totalMaxDesiredSpeed) {
+        uploadPriorityManager.setTotalMaxDesiredSpeed(totalMaxDesiredSpeed);
+    }
+
+    public double getAccuracy() {
+        synchronized (accuracy) {
+            return accuracy.getValue();
+        }
+    }
+
+    public void setAccuracy(double accuracy) {
+        synchronized (this.accuracy) {
+            this.accuracy.setDegree(accuracy);
+        }
+    }
+
+
+    /**
+     * This method tells the resource streaming manager to invoke the stop() method on all active downloads. It does
+     * not close any other resources, and subsequent downloads can be invoked
+     * <p/>
+     * The method blocks until all resources are properly stopped. Downloads and uploads are stopped.
+     */
+    public synchronized void stop() {
+        // subchannel assignments
+        downloadsManager.stop();
+        Collection<TaskFinalizationIndicator> tfiCollection = new HashSet<>();
+        for (final DownloadManager downloadManager : downloadsManager.getAllDownloads()) {
+            // this call is parallelized to avoid triple interlock between the ResourceStreamingManager, the MasterResourceStreamer and the
+            // DownloadManager
+            TaskFinalizationIndicator tfi = ParallelTaskExecutor.executeTask(new ParallelTask() {
+                @Override
+                public void performTask() {
+                    downloadManager.stop();
+                }
+            });
+            tfiCollection.add(tfi);
+        }
+        TaskFinalizationIndicator.waitForFinalization(tfiCollection);
+        tfiCollection.clear();
+        uploadPriorityManager.stop();
+        downloadPriorityManager.stop();
+        foreignShareManager.stop();
+        activeDownloadSet.stop();
+        subchannelManager.stop();
+        uploadsManager.stop();
+        for (final UploadManager uploadManager : uploadsManager.getAllUploads()) {
+            TaskFinalizationIndicator tfi = ParallelTaskExecutor.executeTask(new ParallelTask() {
+                @Override
+                public void performTask() {
+                    uploadManager.stop();
+                }
+            });
+            tfiCollection.add(tfi);
+        }
+        TaskFinalizationIndicator.waitForFinalization(tfiCollection);
+        active = false;
+    }
+
+    public synchronized void removeDownload(MasterResourceStreamer masterResourceStreamer) {
+        activeDownloadSet.removeDownload(masterResourceStreamer);
+        downloadsManager.removeDownload(masterResourceStreamer.getStoreName(), masterResourceStreamer.getId());
+    }
+
+
+    synchronized void reportProvidersShareChanges(String resourceStoreName, List<String> affectedResources) {
+        for (String resource : affectedResources) {
+            reportProvidersForOneActiveDownload(resourceStoreName, resource);
+        }
+    }
+
+    private void reportProvidersForOneActiveDownload(String resourceStoreName, String resourceID) {
+        sout("reportProvidersForOneActiveDownload" + resourceStoreName + "/" + resourceID, 1);
+        ForeignStoreShare foreignStoreShare = foreignShareManager.getResourceProviderShare(resourceStoreName);
+        /*if (foreignStoreShare == null) {
+            // if this store is not registered in the foreign share manager, try with the general store
+            foreignStoreShare = foreignShareManager.getGeneralStoreShares();
+        }*/
+        Set<PeerResourceProvider> resourceProviders = null;
+        if (foreignStoreShare != null) {
+            Set<PeerID> peersSharing = foreignStoreShare.getForeignPeerShares(resourceID);
+            resourceProviders = new HashSet<>(peersSharing.size());
+            for (PeerID peerID : peersSharing) {
+                PeerResourceProvider peerResourceProvider = generatePeerResourceProvider(peerID);
+                if (peerResourceProvider != null) {
+                    resourceProviders.add(peerResourceProvider);
+                }
+            }
+        }
+        sout("reportProvidersForOneActiveDownload" + resourceStoreName + "/" + resourceID, 2);
+        if (resourceProviders != null) {
+            for (MasterResourceStreamer masterResourceStreamer : activeDownloadSet.getDownload(resourceStoreName, resourceID)) {
+                if (masterResourceStreamer.getSpecificPeerDownload() == null) {
+                    // group download -> give the assessed provider set
+                    masterResourceStreamer.reportAvailableResourceProviders(resourceProviders);
+                }
+            }
+        }
+        // specific peer download do not need a foreign share registered, so check them apart of all previous calculations
+        for (MasterResourceStreamer masterResourceStreamer : activeDownloadSet.getDownload(resourceStoreName, resourceID)) {
+            if (masterResourceStreamer.getSpecificPeerDownload() != null) {
+                // specific download -> generate
+                reportResourceProviderForPeerSpecificDownload(masterResourceStreamer.getSpecificPeerDownload(), masterResourceStreamer);
+            }
+        }
+        sout("reportProvidersForOneActiveDownload" + resourceStoreName + "/" + resourceID, -1);
+    }
+
+    private void reportResourceProviderForPeerSpecificDownload(PeerID serverPeerID, MasterResourceStreamer masterResourceStreamer) {
+        PeerResourceProvider peerResourceProvider = generatePeerResourceProvider(serverPeerID);
+        if (peerResourceProvider != null) {
+            List<PeerResourceProvider> providerList = new ArrayList<>(1);
+            providerList.add(peerResourceProvider);
+            masterResourceStreamer.reportAvailableResourceProviders(providerList);
+        }
+    }
+
+    private PeerResourceProvider generatePeerResourceProvider(PeerID peerID) {
+        return new PeerResourceProvider(ownPeerID, peerID, this);
+    }
+
+    private void requestNewResource(jacz.peerengine.util.datatransfer.ResourceRequest request) {
+        jacz.peerengine.util.datatransfer.ResourceStoreResponse response = getResourceRequestResponse(request);
+        processResourceRequestResponse(request, response);
+    }
+
+    private jacz.peerengine.util.datatransfer.ResourceStoreResponse getResourceRequestResponse(jacz.peerengine.util.datatransfer.ResourceRequest request) {
+        jacz.peerengine.util.datatransfer.ResourceStore resourceStore = localShareManager.getStore(request.getStoreName());
+        if (resourceStore != null) {
+            return resourceStore.requestResource(request.getRequestingPeer(), request.getResourceID());
+        } else {
+            jacz.peerengine.util.datatransfer.GeneralResourceStore generalResourceStore = localShareManager.getGeneralResourceStore();
+            if (generalResourceStore != null) {
+                // try with the general resource store
+                return generalResourceStore.requestResource(request.getStoreName(), request.getRequestingPeer(), request.getResourceID());
+            }
+        }
+        return null;
+    }
+
+    private void processResourceRequestResponse(final jacz.peerengine.util.datatransfer.ResourceRequest request, jacz.peerengine.util.datatransfer.ResourceStoreResponse response) {
+        if (response != null && response.getResponse() == jacz.peerengine.util.datatransfer.ResourceStoreResponse.Response.REQUEST_APPROVED) {
+            SlaveResourceStreamer slave = new SlaveResourceStreamer(this, request);
+            UploadManager uploadManager = new UploadManager(slave, globalUploadStatistics, peerStatistics);
+            Short incomingSubchannel = subchannelManager.requestSubchannel(slave);
+            if (incomingSubchannel != null) {
+                slave.initialize(response.getResourceReader(), request.getRequestingPeer(), incomingSubchannel, request.getSubchannel(), uploadManager);
+                uploadPriorityManager.addRegulatedResource(new jacz.peerengine.util.datatransfer.GenericPriorityManager.Stakeholder() {
+                    @Override
+                    public String getStakeholderId() {
+                        return request.getRequestingPeer().toString();
+                    }
+
+                    @Override
+                    public float getStakeholderPriority() {
+                        // priority is a fixed value because we want equality here
+                        return 1f;
+                    }
+                }, slave, SlaveResourceStreamer.INITIAL_SPEED);
+                uploadsManager.addUpload(request.getStoreName(), uploadManager);
+            } else {
+                // no subchannels available for this slave (the slave will eventually timeout and die,no need to notify him)
+                denyRequest(request);
+            }
+        } else {
+            // request was not approved by the user, or incorrect store
+            denyRequest(request);
+        }
+
+    }
+
+    private void denyRequest(jacz.peerengine.util.datatransfer.ResourceRequest resourceRequest) {
+        ObjectListWrapper denial = new ObjectListWrapper(false);
+        connectedPeersMessenger.sendObjectMessage(resourceRequest.getRequestingPeer(), ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, new SubchannelObjectMessage(resourceRequest.getSubchannel(), denial), true);
+    }
+
+    /**
+     * This method allows SlaveResourceStreamers owned by this ResourceStreaming manager that they just died
+     *
+     * @param slave the slave that just died
+     */
+    public void reportDeadSlaveResourceStreamer(SlaveResourceStreamer slave) {
+        uploadPriorityManager.removeRegulatedResource(slave.getResourceRequest().getRequestingPeer().toString(), slave);
+        UploadManager uploadManager = uploadsManager.removeUpload(slave.getResourceRequest().getStoreName(), slave.getId());
+        uploadManager.getUploadSessionStatistics().stop();
+        freeSubchannel(slave.getIncomingChannel());
+    }
+
+    public jacz.peerengine.util.datatransfer.GenericPriorityManager getDownloadPriorityManager() {
+        return downloadPriorityManager;
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            stop();
+        } finally {
+            super.finalize();
+        }
+    }
+
+    private void sout(String method, int count) {
+        String time = DateTime.getFormattedCurrentDateTime(DateTime.DateTimeElement.hh, ":", DateTime.DateTimeElement.mm, ":", DateTime.DateTimeElement.ss);
+        String state = (count >= 0) ? Integer.toString(count) : "END";
+        //System.out.println(time + " - " + method + ", " + state);
+    }
+
+}

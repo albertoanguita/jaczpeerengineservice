@@ -1,0 +1,268 @@
+Tareas para el prototipo de Julio 2010
+
+1- Completar transferencia de ficheros (8 días)
+  1.1- Limites de velocidad
+  1.2- Reanudar descargas a medias
+  1.3- Opciones de pause, resume, etc (ver si son necesarias, tal vez valga con dejar el fichero temporal ahí)
+2- Desconexión en el PeerEngine (poder desconectar) (2 días)
+3- Revisar protocolo de servidor (debería valer así). Soporte ante fallos (ej: no puede conectar con el serv -> lo sigue intentando periódicamente, si solo hay 1 serv) (2 días)
+4- Mejorar sincronización en el proceso de conexión de dos usuarios (para que uno no reciba del otro sin haber validado) (2 días)
+5- Integración con la BD (2 días)
+
+- Transferir todos los datos del usuario al conectarse (ahora se transfiere "newUser")
+- Comparación difusa de canciones/albums/artistas
+
+
+Inicio: 6 julio
+Dias necesarios: 16
+Días restantes: 16
+Fecha prevista fin: 26 julio
+
+1- 0%
+2- 0%
+3- 0%
+4- 0%
+5- 0%
+
+
+
+Plan actual: barrer todas las tareas a nivel de PeerClient, dejando de lado las de transferencia de ficheros.
+Tareas del PeerClient solo (sin transferencia de ficheros)
+
+- sistema sólido de conexiones a peer. Protocolo correcto y bien sincronizado. Reconexiones automáticas, desconexiones,
+  protocolo sólido para servidores
++ Sistema totalmente genérico de datos personales de peers (incluso el nick)
+- Sistema sencillo, genérico y efectivo de multichat
+- Relativa tolerancia a fallos, sistema de log
+- busqueda de peers en servidores por nombre?
+- Intentos automáticos de conexión a peers que no nos tienen aceptados
+- multiples servidores
+- public/private key, pid 128 bits (resourceID del public). Codificado en código de 5 bits por carácter (dígitos más 22 letras)
+  Verificación de identidad en servidores
+- Puerto abierto solo necesario en uno de los peers (el servidor decide a quién mandar la info).
+
+
+
+Siguientes tareas
+
++ Optimizar CommEngine
+- Mejorar el servidor / servidores múltiples
+- Poder añadir/borrar amigos dinámicamente
+- Modos de descarga funcionales (streaming/normal)
+- Caché de ficheros temporales para optimizar el acceso a disco
+- Limites de conexiones/descargas/caches de ficheros temporales (más un benchmark automático del peer engine)
+- Descargas inteligentes cuando muchos usuarios compiten por lo mismo
+- Generación de IDs
+- Cifrado de datos
+- Estimaciones de descarga de ficheros (para decir al usuario cuándo lo tendráa disponible)
+- Documentar bien todos los paquetes
+
+
+
+
+Transferencia de ficheros
+- Transferencias funcionando (completas, comprobación de hash)
++ Transferencia de listas
+- Control de velocidad (subida y bajada)
++ Clases para monitorizar y controlar (descargas y subidas)
+
+
+tareas para primer prototipo
++ Listas documentadas y checkeadas (1 día)
+- Transferencias
+  - control de velocidad (5 días)
+  + infraestructura de descargas (2 días)
+  - salvado de descargas (2 días)
+- Ejemplo de lista con biblioteca de libros (2 días)
+  - Libros
+    - Titulo
+    - Autores
+    - Titulo original
+    - Traductores
+    - Año
+    - Sagas en que es contenido
+    - Generos
+    - Ficheros
+  - Sagas/Series
+    - Titulo
+    - Titulo original
+    - Libros
+
+
+
+
+
+
+
+- Pago con tarjeta de crédito:
+http://www.eway.com.au/Developer/eway-api/hosted-payment-solution.aspx
+http://stackoverflow.com/questions/3564482/how-to-implement-credit-card-payment-in-android-application
+
+
+-TCP-Hole-Punching
+http://www.brynosaurus.com/pub/net/p2pnat/
+http://www.ietf.org/mail-archive/web/p2prg/current/msg00789.html
+http://www.h-online.com/security/features/How-Skype-Co-get-round-firewalls-747197.html
+http://www.google.es/url?sa=t&source=web&cd=6&ved=0CEwQFjAF&url=http%3A%2F%2Fciteseerx.ist.psu.edu%2Fviewdoc%2Fdownload%3Fdoi%3D10.1.1.86.2927%26rep%3Drep1%26type%3Dpdf&rct=j&q=tcp%20hole%20punching&ei=DfDLTYu1GYWwhAfFmOmoAg&usg=AFQjCNE04Qgy_58EcobA7ObmEJIdooFNtQ&cad=rja
+http://reports-archive.adm.cs.cmu.edu/anon/isri2005/CMU-ISRI-05-104.pdf
+
+http://doc.cacaoweb.org/misc/cacaoweb-and-nats/nat-behavioral-specifications-for-p2p-applications/#tcpholepun
+
+
+
+Almacenes de recursos
+Establecer dos tipos de almacenes complica demasiado el diseño, y se puede hacer lo mismo solo con un tipo. Los
+individual stores están enfocados a compartir recursos con un grupo específico de peers, en vez de con todos. Las
+descargas de recursos en ind stores se realizan sobre un único peer. Asi, sirven para a posteriori implementar las
+transferencias directas de ficheros en vez de las descargas distribuidas. Sin embargo all ello se puede hacer con
+los global stores. La cuestion es compartir el store solo con quien se quiera. Incluso se podrian dar permisos de
+peers a los stores, aunque no seria estrictamente necesario. Hacer esta simplificacion, es all beneficio!!!.
+
+La gestión de permisos a usuarios se realizaría de forma externa, controlando a qué usuarios se les informa de qué
+ficheros están disponibles.
+
+Habrá un almacén donde se registran los recursos compartidos en general. Tras eso, se podrán crear almacenes para
+compartir a uno o varios usuarios. En all caso la gestión de permisos se hace por parte del cliente.
+
+Solo hay un método de download, sin especificar usuario. Si es descarga individual se hará sobre un almacén solo
+compartido con nosotros.
+
+En realidad no hay almacenes de varios peers. Podremos hacer un almacén al que acceden varios, pero solo lo crearemos
+nosotros, por tanto las descargas ahi seran individualizadas.
+
+El resource store manager ya no almacena peer shares. Eso ira con otro gestor diferente que almacena lo que nos comparten a nosotros.
+
+
+
+
+------------------------------------------------------------------------------------------------
+
+Sábado 4 de febrero de 2012: 0%
+
+
+Tareas para el prototipo alfa 1.0
+
++ Conexión con servidor
+  + Desconexión
+  + Reconexión
+  + Gestión inteligente
+  + Búsqueda periódica de amigos
+
+- Persistencia de descargas
+  + Almacenado de descargas en curso
+  - Recuperación de descargas en curso
+  - Documentación
+  ? Compatibilidad con vlc
+
+- Descargas
+  + Terminar parámetros del scheduler
+  + Terminar master
+  + Descargas con temp files, compartir ficheros a medias
+  - Estadísticas de subidas
+  - Testear todos los tipos de descargas
+    - Controles
+    - Estadísticas
+    + Limites
+    - Descargas a medias
+
+- Ejemplo integración con librería
+  - Terminar el ejemplo
+  - Testear
+  - Documentación
+
++ Data sync
+  + Terminar el código (todos y documentación)
+
++ Manejo de amigos
+  + Conexión
+  + Limitaciones a amigos no aceptados
+  + Persistencia de los datos sobre amigos
+  + Manejo dinámico (agregar, rechazar, bloquear...)
+  + Generación de valores de PeerID
+
+? Transferir toda la funcionalidad pública a PeerClient
+
++ Método estándar de almacenamiento de configuración
+
+- Limpieza de código
+
+
+
+TAREAS PRIORITARIOAS: descargas a medias, errores excepciones, funcionalidad a peerclient, stop funcionando
+ver funcionalidad de SubchannelDataMessage y SubchannelObjectMessage, borrar olds
+
+
+
+librería para la gestion de bibliotecas (integración, actualización, etc)
+- interfaces para definir cómo se integran diversas bibliotecas
+- sistema de eventos para recibir las actualizaciones en la biblioteca integrada
+
+
+ Tareas prioritarias:
+
+ - Reanudar descargas a medias
+
+ - Detener PeerEngine
+
+ - Interfaz básica
+
+ + Biblioteca básica
+
+ - Control y estadísticas subida
+
+
+
+
+ Tareas siguientes:
+
+ - Limites descargas
+
+ - Múltiples servidores
+
+ - Descargas con hashes intermedios y hash final
+
+ - Caché disco
+
+ - Estimaciones tiempo descarga
+
+ - TCP hole punching
+
+ - Benchmark capacidad sistema
+
+ - Prioridades descargas
+
+
+
+Validación de ficheros: Ficheros en jacuzzi firmados para validar autor. Cifrados con clave privada?
+
+
+
+Base de datos local: varias opciones que no requieren un servidor separado: sqlite (requiere un driver jdbc), HyperSQL, SQLJet
+http://stackoverflow.com/questions/41233/java-and-sqlite
+http://sourceforge.net/projects/hsqldb/?source=dlp <- la descarga incluye jar!!
+http://sqljet.com/
+http://www.tutorialspoint.com/sqlite/sqlite_java.htm
+USAR SQLITE!!!!!
+
+
+Interfaces gráficos en Java -> JavaFX. Se puede crear gráficamente con el Scene builder, se puede modificar con css, incluye video playback
+javafx incluido con java se update 6, reemplazará a swing
+http://stackoverflow.com/questions/10587713/javafx-2-vs-swing-for-a-pure-windows-desktop-app
+http://stackoverflow.com/questions/14536680/how-does-javafx-compare-to-swing-in-terms-of-features-for-griffon-1-2
+http://docs.oracle.com/javafx/scenebuilder/1/overview/jsbpub-overview.htm
+http://www.oracle.com/technetwork/java/javafx/tools/index.html
+http://docs.oracle.com/javafx/scenebuilder/1/use_java_ides/sb-with-intellij.htm
+
+
+
+Encryption:
+http://stackoverflow.com/questions/3076222/top-hashing-and-encryption-algorithms
+http://stackoverflow.com/questions/2841094/what-is-the-difference-between-dsa-and-rsa
+http://security.stackexchange.com/questions/34970/asymmetric-encryption-algorithms
+http://www.danielmiessler.com/study/encoding_encryption_hashing/
+http://security.stackexchange.com/questions/10949/encryption-should-i-be-using-rsa-or-aes
+https://gnupg.org/
+https://www.boxcryptor.com/es/cifrado
+http://stackoverflow.com/questions/1709441/generate-rsa-key-pair-and-encode-private-as-string
+http://www.javamex.com/tutorials/cryptography/rsa_encryption.shtml
+http://www.javamex.com/tutorials/cryptography/rsa_key_length.shtml
