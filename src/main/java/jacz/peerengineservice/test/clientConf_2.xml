@@ -1,0 +1,25 @@
+<peer-client-config>
+    <nick>jor</nick>
+    <state>ONLINE</state>
+    <message>estoy programando...</message>
+    <avatar></avatar>
+    <port>10002</port>
+    <peer-id>pid{0000000000000000000000000000000000000000002}</peer-id>
+    <peer-server-data>
+        <!--<ip>138.100.11.51</ip>-->
+        <ip>127.0.0.1</ip>
+        <port>50000</port>
+    </peer-server-data>
+    <friend-peers>
+        <peer>
+            <peer-id>pid{0000000000000000000000000000000000000000001}</peer-id>
+            <nick>alb</nick>
+        </peer>
+        <peer>
+            <peer-id>pid{0000000000000000000000000000000000000000003}</peer-id>
+            <nick>miki</nick>
+        </peer>
+    </friend-peers>
+    <blocked-peers>
+    </blocked-peers>
+</peer-client-config>
