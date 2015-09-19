@@ -17,6 +17,7 @@ import jacz.util.network.IP4Port;
 import jacz.util.sets.availableelements.AvailableElementsByte;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -301,7 +302,15 @@ public class PeerServerManager implements DaemonAction, SimpleTimerAction {
         connectionInformation.setListeningPort(wishedConnectionInformation.getListeningPort());
         String serverIP = connectionInformation.getPeerServerData().getIp4Port().getIp();
         int serverPort = connectionInformation.getPeerServerData().getIp4Port().getPort();
-        ClientModule peerClientModule = new ClientModule(new IP4Port(serverIP, serverPort), new PeerClientConnectionToServerChannelActionImpl(this), null);
+        Set<Byte> allChannels = new HashSet<>();
+        for (Byte channel = Byte.MIN_VALUE; channel < Byte.MAX_VALUE; channel++) {
+            allChannels.add(channel);
+        }
+        allChannels.add(Byte.MAX_VALUE);
+        Set<Set<Byte>> concurrentChannels = new HashSet<>();
+        concurrentChannels.add(allChannels);
+
+        ClientModule peerClientModule = new ClientModule(new IP4Port(serverIP, serverPort), new PeerClientConnectionToServerChannelActionImpl(this), concurrentChannels);
         // with the ClientModule we obtain the peerServerCCP and register the FSM for setting up the connection
         try {
             connectionToServerStatus = State.ConnectionToServerState.ONGOING_CONNECTION;
@@ -393,8 +402,8 @@ public class PeerServerManager implements DaemonAction, SimpleTimerAction {
         serverConnectionMaintainer.pingFromServerReceived();
     }
 
-    synchronized void channelsFreed(Set<Byte> channels) {
-        availableChannels.freeElements(channels);
+    synchronized void channelFreed(byte channel) {
+        availableChannels.freeElement(channel);
     }
 
     synchronized void pingServer() {

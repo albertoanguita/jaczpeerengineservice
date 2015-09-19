@@ -4,8 +4,6 @@ import jacz.commengine.channel.ChannelAction;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
 
-import java.util.Set;
-
 /**
  * ChannelAction employed by the PeerClientConnectionManager when connecting to a PeerServer. No messages should be
  * received at this class, as all communication is handled with FSMs. It is useful to notify the
@@ -33,8 +31,8 @@ public class PeerClientConnectionToServerChannelActionImpl implements ChannelAct
     }
 
     @Override
-    public void channelsFreed(ChannelConnectionPoint ccp, Set<Byte> channels) {
-        peerServerManager.channelsFreed(channels);
+    public void channelFreed(ChannelConnectionPoint ccp, byte channel) {
+        peerServerManager.channelFreed(channel);
     }
 
     @Override

@@ -39,8 +39,8 @@ public class PeerClientConnectionToClientChannelActionImpl implements ChannelAct
     }
 
     @Override
-    public void channelsFreed(ChannelConnectionPoint ccp, Set<Byte> channels) {
-        friendConnectionManager.channelsFreed(ccp, channels);
+    public void channelFreed(ChannelConnectionPoint ccp, byte channel) {
+        friendConnectionManager.channelFreed(ccp, channel);
     }
 
     @Override

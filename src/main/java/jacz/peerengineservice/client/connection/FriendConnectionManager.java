@@ -312,7 +312,7 @@ public class FriendConnectionManager {
         } else if (!peerRelations.isFriendPeer(peerID)) {
             // check he is not friend anymore
             ccp.disconnect();
-        } else  {
+        } else {
             ConnectionStatus status = validated ? ConnectionStatus.CORRECT : ConnectionStatus.WAITING_FOR_REMOTE_VALIDATION;
             newConnection(peerID, ccp, status);
         }
@@ -322,7 +322,7 @@ public class FriendConnectionManager {
      * This method allows the connection FSMs to inform that a connection process has concluded (either successfully
      * or not...)
      *
-     * @param peerID  the ID of the friend whose ongoing connection process has finished
+     * @param peerID the ID of the friend whose ongoing connection process has finished
      */
     synchronized void connectionAsClientFailed(PeerID peerID) {
         // if the connection was not successful, disconnect from the other peer (only for client role)
@@ -390,12 +390,12 @@ public class FriendConnectionManager {
      * ChannelConnectionPoints obtained from peers connected to us, or from the
      * PeerClientConnectionToClientChannelActionImpl, because it will handle the ccps of peers to which we are connected
      *
-     * @param ccp      the ChannelConnectionPoint that has freed some channels
-     * @param channels the freed channels
+     * @param ccp     the ChannelConnectionPoint that has freed some channels
+     * @param channel the freed channel
      */
-    synchronized void channelsFreed(ChannelConnectionPoint ccp, Set<Byte> channels) {
+    synchronized void channelFreed(ChannelConnectionPoint ccp, byte channel) {
         // the PeerClient must be informed of the freed channels, through the PeerClientPrivateInterface
-        connectedPeers.channelsFreed(ccp, channels);
+        connectedPeers.channelFreed(ccp, channel);
     }
 
     synchronized void peerDisconnected(ChannelConnectionPoint ccp) {

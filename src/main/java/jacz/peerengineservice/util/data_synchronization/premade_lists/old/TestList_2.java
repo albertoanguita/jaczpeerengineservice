@@ -88,6 +88,7 @@ public class TestList_2 implements NonIndexedListAccessor {
 
     @Override
     public ServerSynchRequestAnswer initiateListSynchronizationAsServer(PeerID clientPeerID, boolean singleElement) {
-        return new ServerSynchRequestAnswer(ServerSynchRequestAnswer.Type.OK, new ListSynchProgress(clientPeerID, "TestList_2", false));
+//        return new ServerSynchRequestAnswer(ServerSynchRequestAnswer.Type.OK, new ListSynchProgress(clientPeerID, "TestList_2", false));
+        return null;
     }
 }

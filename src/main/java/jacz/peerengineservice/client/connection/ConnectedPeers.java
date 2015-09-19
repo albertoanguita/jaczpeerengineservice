@@ -162,15 +162,13 @@ public class ConnectedPeers {
      * peer have been freed. The list of available channels is here updated, so these channels can be further employed
      * (channels are freed when FSMs working on them finalize).
      *
-     * @param ccp      the ChannelConnectionPoint whose channels are freed
-     * @param channels the set of freed channels
+     * @param ccp     the ChannelConnectionPoint whose channels are freed
+     * @param channel the freed channel
      */
-    public synchronized void channelsFreed(ChannelConnectionPoint ccp, Set<Byte> channels) {
+    public synchronized void channelFreed(ChannelConnectionPoint ccp, byte channel) {
         if (ccpToPeerID.containsKey(ccp)) {
             PeerID peerID = ccpToPeerID.get(ccp);
-            for (Byte channel : channels) {
-                connectedPeers.get(peerID).availableChannels.freeElement(channel);
-            }
+            connectedPeers.get(peerID).availableChannels.freeElement(channel);
         }
     }
 
@@ -191,7 +189,7 @@ public class ConnectedPeers {
     /**
      * This methods erases a connected peer (due to this peer disconnecting from us, or we from him, or due to an error)
      *
-     * @param ccp   ChannelConnectionPoint associated to the peer who got disconnected
+     * @param ccp ChannelConnectionPoint associated to the peer who got disconnected
      */
     public synchronized PeerID peerDisconnected(ChannelConnectionPoint ccp) {
         if (ccpToPeerID.containsKey(ccp)) {

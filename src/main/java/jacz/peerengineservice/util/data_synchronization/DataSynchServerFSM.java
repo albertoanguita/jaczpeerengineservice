@@ -51,7 +51,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
         OK
     }
 
-    static class ElementPacket {
+    static class ElementPacket implements Serializable {
 
         final boolean SERVER_ERROR;
 
@@ -87,7 +87,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
 
     private DataAccessor dataAccessor;
 
-    private List<Serializable> elementsToSend;
+    private List<? extends Serializable> elementsToSend;
 
     private int elementToSendIndex;
 

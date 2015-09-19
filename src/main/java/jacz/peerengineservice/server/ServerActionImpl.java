@@ -48,7 +48,7 @@ class ServerActionImpl implements ServerAction {
     }
 
     @Override
-    public void channelsFreed(UniqueIdentifier clientID, ChannelConnectionPoint ccp, Set<Byte> channels) {
+    public void channelFreed(UniqueIdentifier clientID, ChannelConnectionPoint ccp, byte channel) {
         // ignore
     }
 

@@ -171,9 +171,13 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
                     if (progress != null) {
                         progress.addNotification(NumericUtil.displaceInRange(elementPacket.elementsSent, 0, elementPacket.totalElementsToSend, 0, DataSynchronizer.PROGRESS_MAX));
                     }
-                    // ask for more elements
-                    ccp.write(outgoingChannel, true);
-                    return State.SYNCHING;
+                    if (elementPacket.elementsSent < elementPacket.totalElementsToSend) {
+                        // ask for more elements
+                        ccp.write(outgoingChannel, true);
+                        return State.SYNCHING;
+                    } else {
+                        return State.SUCCESS;
+                    }
                 } catch (ClassNotFoundException e) {
                     // invalid class found, error
                     synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Received request object not recognized in state: " + currentState);
@@ -252,12 +256,12 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
     }
 
     @Override
-    public void errorRequestingFSM(PeerFSMServerResponse serverResponse) {
+    public void errorRequestingFSM(final PeerFSMServerResponse serverResponse) {
         ParallelTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
                 if (progress != null) {
-                    progress.error(new SynchError(SynchError.Type.SERVER_BUSY, null));
+                    progress.error(new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, serverResponse.toString()));
                 }
             }
         });

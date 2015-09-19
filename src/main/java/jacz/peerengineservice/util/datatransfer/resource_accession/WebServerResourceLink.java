@@ -6,7 +6,7 @@ import jacz.util.numeric.LongRange;
 import java.net.URL;
 
 /**
- * todo use?
+ * A resource link served via web
  */
 public class WebServerResourceLink implements ResourceLink {
 

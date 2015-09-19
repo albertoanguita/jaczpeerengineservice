@@ -11,8 +11,6 @@ import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.network.IP4Port;
 
-import java.util.Set;
-
 /**
  * This class manages the server for listening to other peers connecting to us
  */
@@ -59,8 +57,8 @@ public class LocalServerManager implements DaemonAction {
         }
 
         @Override
-        public void channelsFreed(UniqueIdentifier clientID, ChannelConnectionPoint ccp, Set<Byte> channels) {
-            friendConnectionManager.channelsFreed(ccp, channels);
+        public void channelFreed(UniqueIdentifier clientID, ChannelConnectionPoint ccp, byte channel) {
+            friendConnectionManager.channelFreed(ccp, channel);
         }
 
         @Override

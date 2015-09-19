@@ -53,7 +53,7 @@ public interface DataAccessor {
      *                              If null, all elements are requested
      * @return an object representing the required element. This element must implement the Serializable interface
      */
-    List<Serializable> getElements(Integer latestClientTimestamp) throws DataAccessException;
+    List<? extends Serializable> getElements(Integer latestClientTimestamp) throws DataAccessException;
 
 
     /**

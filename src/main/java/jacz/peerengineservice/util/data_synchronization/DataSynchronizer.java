@@ -40,17 +40,18 @@ public class DataSynchronizer {
         this.ownPeerID = ownPeerID;
     }
 
-    public void synchronizeList(PeerID serverPeerID, String dataAccessorName, long timeout) {
-        synchronizeList(serverPeerID, dataAccessorName, timeout, null);
+    public void synchronizeData(PeerID serverPeerID, String dataAccessorName, long timeout) {
+        synchronizeData(serverPeerID, dataAccessorName, timeout, null);
     }
 
-    public void synchronizeList(PeerID serverPeerID, final String dataAccessorName, long timeout, final ProgressNotificationWithError<Integer, SynchError> progress) {
+    public void synchronizeData(PeerID serverPeerID, final String dataAccessorName, long timeout, final ProgressNotificationWithError<Integer, SynchError> progress) {
         try {
             DataAccessor dataAccessor = dataAccessorContainer.getAccessorForReceiving(serverPeerID, dataAccessorName);
             boolean correctSetup = peerClient.registerTimedCustomFSM(
                     serverPeerID,
                     new DataSynchClientFSM(dataAccessor, dataAccessorName, ownPeerID, progress),
-                    ListSynchronizerServerFSM.CUSTOM_FSM_NAME, timeout
+                    DataSynchServerFSM.CUSTOM_FSM_NAME,
+                    timeout
             );
 
             if (!correctSetup) {

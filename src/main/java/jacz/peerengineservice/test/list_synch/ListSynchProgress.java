@@ -1,13 +1,13 @@
 package jacz.peerengineservice.test.list_synch;
 
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.util.data_synchronization.old.SynchronizeError;
+import jacz.peerengineservice.util.data_synchronization.SynchError;
 import jacz.util.notification.ProgressNotificationWithError;
 
 /**
  *
  */
-public class ListSynchProgress implements ProgressNotificationWithError<Integer, SynchronizeError> {
+public class ListSynchProgress implements ProgressNotificationWithError<Integer, SynchError> {
 
     private PeerID otherPeerID;
 
@@ -40,7 +40,7 @@ public class ListSynchProgress implements ProgressNotificationWithError<Integer,
     }
 
     @Override
-    public void error(SynchronizeError error) {
+    public void error(SynchError error) {
         System.out.println("Error in the synchronization of " + listName + ". Error: " + error.toString());
     }
 
@@ -51,7 +51,7 @@ public class ListSynchProgress implements ProgressNotificationWithError<Integer,
 
     @Override
     public void addNotification(Integer message) {
-        System.out.println("Progress of " + listName + ": " + message / 100 + "---------------------------------------------------------------------");
+        System.out.println("Progress of " + listName + ": " + message + "---------------------------------------------------------------------");
     }
 
     @Override
