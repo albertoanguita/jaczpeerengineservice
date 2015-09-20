@@ -4,11 +4,9 @@ import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.test.Client;
-import jacz.peerengineservice.test.PeerClientConfigIO;
 import jacz.peerengineservice.test.PeerClientConfigSerializer;
 import jacz.peerengineservice.test.PersonalData;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
-import jacz.util.io.xml.XMLDom;
 import jacz.util.lists.Triple;
 
 import java.util.*;

@@ -4,16 +4,11 @@ import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.test.Client;
-import jacz.peerengineservice.test.PeerClientConfigIO;
 import jacz.peerengineservice.test.PeerClientConfigSerializer;
 import jacz.peerengineservice.test.PersonalData;
-import jacz.util.io.xml.XMLDom;
 import jacz.util.lists.Triple;
 
-import javax.xml.stream.XMLStreamException;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * Class description

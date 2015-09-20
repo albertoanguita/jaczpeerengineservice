@@ -55,8 +55,10 @@ public class ProvideFilesFSM implements PeerTimedFSMAction<ProvideFilesFSM.State
     public boolean isFinalState(State state, ChannelConnectionPoint ccp) {
         switch (state) {
             case SUCCESS:
+                System.out.println("ProvideFiles: success");
                 return true;
             case ERROR:
+                System.out.println("ProvideFiles: error");
                 return true;
         }
         return false;

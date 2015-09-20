@@ -62,8 +62,10 @@ public class AskFilesFSM implements PeerTimedFSMAction<AskFilesFSM.State> {
         switch (state) {
 
             case SUCCESS:
+                System.out.println("AskFiles: success");
                 return true;
             case ERROR:
+                System.out.println("AskFiles: error");
                 return true;
         }
         return false;
