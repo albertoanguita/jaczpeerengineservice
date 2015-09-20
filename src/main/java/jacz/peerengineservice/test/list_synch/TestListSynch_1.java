@@ -5,6 +5,7 @@ import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.test.Client;
 import jacz.peerengineservice.test.PeerClientConfigIO;
+import jacz.peerengineservice.test.PeerClientConfigSerializer;
 import jacz.peerengineservice.test.PersonalData;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.util.io.xml.XMLDom;
@@ -23,11 +24,11 @@ public class TestListSynch_1 {
 
 
     public static void main(String args[]) throws Exception {
-        String config = "./src/main/java/jacz/peerengineservice/test/clientConf_1.xml";
-        List<Object> data = PeerClientConfigIO.readPeerClientData(XMLDom.parse(config));
-        PersonalData personalData = (PersonalData) data.get(0);
-        PeerClientData peerClientData = (PeerClientData) data.get(1);
-        PeerRelations peerRelations = (PeerRelations) data.get(2);
+        String config = "./src/main/java/jacz/peerengineservice/test/clientConf_1_new.xml";
+        Triple<PersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
+        PersonalData personalData = data.element1;
+        PeerClientData peerClientData = data.element2;
+        PeerRelations peerRelations = data.element3;
 
         Triple<Map<String, DataAccessor>, Map<String, DataAccessor>, DataAccessor> lists = readingWritingListsTest0();
 

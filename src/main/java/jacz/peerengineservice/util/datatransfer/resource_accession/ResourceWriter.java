@@ -39,13 +39,13 @@ public interface ResourceWriter {
      */
     public RangeSet<LongRange, Long> getAvailableSegments() throws IOException;
 
-    public void setUserGenericData(String group, Map<String, Serializable> userGenericData) throws IOException;
+    public Map<String, Serializable> getCustomGroup(String group) throws IOException;
 
-    public Map<String, Serializable> getUserGenericData(String group) throws IOException;
+    public Serializable getCustomGroupField(String group, String key) throws IOException;
 
-    public void setUserGenericDataField(String group, String key, Serializable value) throws IOException;
+    public void setCustomGroup(String group, Map<String, Serializable> userGenericData) throws IOException;
 
-    public Serializable getUserGenericDataField(String group, String key) throws IOException;
+    public void setCustomGroupField(String group, String key, Serializable value) throws IOException;
 
     /**
      * Initializes the resource writer by providing the size of the resource to write. This method is only invoked at the beginning of a writing

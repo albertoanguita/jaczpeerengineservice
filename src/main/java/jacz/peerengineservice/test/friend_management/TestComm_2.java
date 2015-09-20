@@ -3,11 +3,9 @@ package jacz.peerengineservice.test.friend_management;
 import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
-import jacz.peerengineservice.test.Client;
-import jacz.peerengineservice.test.PeerClientConfigIO;
-import jacz.peerengineservice.test.PeerIDGenerator;
-import jacz.peerengineservice.test.PersonalData;
+import jacz.peerengineservice.test.*;
 import jacz.util.io.xml.XMLDom;
+import jacz.util.lists.Triple;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,12 +20,11 @@ import java.util.List;
 public class TestComm_2 {
 
     public static void main(String args[]) throws Exception {
-        String config = "./src/main/java/jacz/peerengineservice/test/clientConf_2.xml";
-
-        List<Object> data = PeerClientConfigIO.readPeerClientData(XMLDom.parse(config));
-        PersonalData personalData = (PersonalData) data.get(0);
-        PeerClientData peerClientData = (PeerClientData) data.get(1);
-        PeerRelations peerRelations = (PeerRelations) data.get(2);
+        String config = "./src/main/java/jacz/peerengineservice/test/clientConf_2_new.xml";
+        Triple<PersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
+        PersonalData personalData = data.element1;
+        PeerClientData peerClientData = data.element2;
+        PeerRelations peerRelations = data.element3;
 
         Client client = new Client(personalData, peerClientData, peerRelations, new SimplePeerClientActionImplComm(), new HashMap<String, PeerFSMFactory>());
         client.startClient();

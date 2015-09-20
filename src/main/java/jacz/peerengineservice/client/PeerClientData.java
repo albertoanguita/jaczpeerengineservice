@@ -29,7 +29,6 @@ public class PeerClientData {
      */
     private final int port;
 
-    // todo in the future, create class that stores a full set of servers, with more rich information (last known state... etc). FOR HOLE PUNCHING
     private final PeerServerData peerServerData;
 
     public PeerClientData(

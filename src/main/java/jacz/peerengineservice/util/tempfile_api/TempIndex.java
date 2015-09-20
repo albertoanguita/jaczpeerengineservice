@@ -24,56 +24,47 @@ class TempIndex implements Serializable {
 
     private Long totalResourceSize;
 
-    private final Map<String, Map<String, Serializable>> userGenericData;
+    private final Map<String, Map<String, Serializable>> customData;
 
     /**
      * Segments of data which the data file already owns. The data outside these segments is undetermined.
      */
     private final RangeSet<LongRange, Long> data;
 
-    TempIndex(TempFileManager tempFileManager, String tempDataFile) throws IOException {
-        tempDataFilePath = tempFileManager.getBaseDir() + tempDataFile;
+    TempIndex(String tempDataFilePath) throws IOException {
+        this.tempDataFilePath = tempDataFilePath;
         setupDataFile(0);
         totalResourceSize = null;
-        userGenericData = new HashMap<String, Map<String, Serializable>>();
-        //checkGenericUserDataNonNull();
-        data = new RangeSet<LongRange, Long>();
+        customData = new HashMap<>();
+        data = new RangeSet<>();
     }
 
-    /*private void checkGenericUserDataNonNull() {
-        if (userGenericData == null) {
-            userGenericData = new HashMap<String, Serializable>();
-        }
-    }*/
-
-    Map<String, Serializable> getUserGenericData(String group) {
-        return userGenericData.get(group);
+    Map<String, Serializable> getCustomGroup(String groupName) {
+        return customData.get(groupName);
     }
 
-    Serializable getUserGenericDataField(String group, String key) {
-        if (userGenericData.containsKey(group) && userGenericData.get(group).containsKey(key)) {
-            return userGenericData.get(group).get(key);
+    Serializable getCustomGroupField(String groupName, String key) {
+        if (customData.containsKey(groupName)) {
+            return customData.get(groupName).get(key);
         } else {
             return null;
         }
     }
 
-    void removeUserGenericDataGroup(String group) {
-        userGenericData.remove(group);
+    // todo remove?
+    void removeCustomGroup(String groupName) {
+        customData.remove(groupName);
     }
 
-    void setUserGenericData(String group, Map<String, Serializable> userGenericData) {
-        this.userGenericData.put(group, userGenericData);
+    void setCustomGroup(String groupName, Map<String, Serializable> group) {
+        this.customData.put(groupName, group);
     }
 
-    void setUserGenericDataField(String group, String key, Serializable value) {
-        if (!userGenericData.containsKey(group)) {
-            userGenericData.put(group, new HashMap<String, Serializable>());
+    void setCustomGroupField(String groupName, String key, Serializable value) {
+        if (!customData.containsKey(groupName)) {
+            customData.put(groupName, new HashMap<String, Serializable>());
         }
-        if (userGenericData.get(group) == null) {
-            userGenericData.put(group, new HashMap<String, Serializable>());
-        }
-        userGenericData.get(group).put(key, value);
+        customData.get(groupName).put(key, value);
     }
 
     String getTempDataFilePath() {
@@ -90,16 +81,13 @@ class TempIndex implements Serializable {
     }
 
     RangeSet<LongRange, Long> getOwnedDataParts() {
-        return new RangeSet<LongRange, Long>(data);
+        return new RangeSet<>(data);
     }
 
     private void setupDataFile(long fileSize) throws IOException {
         RandomAccessFile f = new RandomAccessFile(tempDataFilePath, "rws");
         f.setLength(fileSize);
         f.close();
-//        RandomAccessFile rFile = new RandomAccessFile(tempFileManager.getBaseDir() + tempDataFile, "rws");
-//        System.out.println("TEMP FILES SIZE SET UP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!: " + rFile.length());
-//        rFile.close();
     }
 
     byte[] read(long offset, int length) throws IOException, IndexOutOfBoundsException {
@@ -116,7 +104,7 @@ class TempIndex implements Serializable {
     void write(long offset, byte[] bytesToWrite) throws IOException {
         LongRange range = generateRangeFromOffsetAndLength(offset, bytesToWrite.length);
         checkCorrectRange(range);
-        RangeSet<LongRange, Long> inputRangeSet = new RangeSet<LongRange, Long>(range);
+        RangeSet<LongRange, Long> inputRangeSet = new RangeSet<>(range);
         inputRangeSet.remove(data);
         RandomAccess.write(tempDataFilePath, offset, bytesToWrite);
         data.add(range);

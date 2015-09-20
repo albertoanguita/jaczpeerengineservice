@@ -7,6 +7,7 @@ import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.master.ProviderStatistics;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.peerengineservice.util.datatransfer.master.Statistics;
+import jacz.peerengineservice.util.datatransfer.resource_accession.ByteArrayWriter;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.util.io.object_serialization.FragmentedByteArray;

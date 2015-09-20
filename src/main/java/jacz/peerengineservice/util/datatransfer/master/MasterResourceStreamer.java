@@ -157,7 +157,7 @@ public class MasterResourceStreamer implements ResourceStreamingManager.Subchann
         try {
             resourceSize = resourceWriter.getSize();
             availableSegments = resourceWriter.getAvailableSegments();
-            Map<String, Serializable> downloadParameters = resourceWriter.getUserGenericData(RESOURCE_WRITER_MASTER_GROUP);
+            Map<String, Serializable> downloadParameters = resourceWriter.getCustomGroup(RESOURCE_WRITER_MASTER_GROUP);
             if (downloadParameters != null && downloadParameters.containsKey(RESOURCE_WRITER_STREAMING_NEED_FIELD) && downloadParameters.containsKey(RESOURCE_WRITER_PRIORITY_FIELD)) {
                 // the resource writer had download parameters stored (from previous uses) -> ignore the given ones and use this
                 streamingNeed = (Double) downloadParameters.get(RESOURCE_WRITER_STREAMING_NEED_FIELD);
@@ -165,8 +165,8 @@ public class MasterResourceStreamer implements ResourceStreamingManager.Subchann
             } else {
                 // the resource writer had no download parameters stored, so this is the first time this resource writer is used
                 // use the given streaming need and, additionally, store it in the resource writer
-                resourceWriter.setUserGenericDataField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
-                resourceWriter.setUserGenericDataField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_PRIORITY_FIELD, priority);
+                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
+                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_PRIORITY_FIELD, priority);
             }
         } catch (IOException e) {
             error = true;
@@ -582,7 +582,7 @@ public class MasterResourceStreamer implements ResourceStreamingManager.Subchann
         if (alive) {
             this.priority = priority;
             try {
-                resourceWriter.setUserGenericDataField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_PRIORITY_FIELD, priority);
+                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_PRIORITY_FIELD, priority);
             } catch (IOException e) {
                 // error writing the streaming need in the resource writer -> cancel download and report error
                 reportErrorWriting();
@@ -608,7 +608,7 @@ public class MasterResourceStreamer implements ResourceStreamingManager.Subchann
         if (alive) {
             resourcePartScheduler.setStreamingNeed(streamingNeed);
             try {
-                resourceWriter.setUserGenericDataField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
+                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
             } catch (IOException e) {
                 // error writing the streaming need in the resource writer -> cancel download and report error
                 reportErrorWriting();

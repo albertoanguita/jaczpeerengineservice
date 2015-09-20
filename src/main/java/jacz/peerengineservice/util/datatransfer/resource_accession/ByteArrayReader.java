@@ -1,5 +1,8 @@
-package jacz.peerengineservice.util.data_synchronization.old;
+package jacz.peerengineservice.util.datatransfer.resource_accession;
 
+import jacz.peerengineservice.util.data_synchronization.old.ListAccessor;
+import jacz.peerengineservice.util.data_synchronization.old.ListSynchronizerManager;
+import jacz.peerengineservice.util.data_synchronization.old.SynchronizeError;
 import jacz.util.io.buffer.BufferStream;
 import jacz.util.io.buffer.ReadBuffer;
 import jacz.util.io.object_serialization.Serializer;
@@ -22,7 +25,7 @@ import java.util.List;
  * <p/>
  * A full initial read is though necessary in order to implement the length() method.
  */
-class ByteArrayReader implements ResourceReader {
+public class ByteArrayReader implements ResourceReader {
 
     private class ByteArrayBufferStream implements BufferStream {
 

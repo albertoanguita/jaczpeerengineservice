@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  *
  */
-class GetUserGenericDataTask implements ParallelTask {
+class GetCustomGroup implements ParallelTask {
 
     /**
      * Temp file to read from
@@ -21,14 +21,27 @@ class GetUserGenericDataTask implements ParallelTask {
      */
     private String group;
 
-    private Map<String, Serializable> userGenericData;
+    private Map<String, Serializable> customGroup;
+
+    /**
+     * Key of the field to retrieve
+     */
+    private String key;
+
+    private Serializable value;
 
     private IOException ioException;
 
-    public GetUserGenericDataTask(String indexFilePath, String group) {
+    public GetCustomGroup(String indexFilePath, String group) {
+        this(indexFilePath, group, null);
+    }
+
+    public GetCustomGroup(String indexFilePath, String group, String key) {
         this.indexFilePath = indexFilePath;
         this.group = group;
-        userGenericData = null;
+        this.key = key;
+        customGroup = null;
+        value = null;
         ioException = null;
     }
 
@@ -38,7 +51,11 @@ class GetUserGenericDataTask implements ParallelTask {
         TempIndex index;
         try {
             index = TempFileManager.readIndexFile(indexFilePath);
-            userGenericData = index.getUserGenericData(group);
+            if (key == null) {
+                customGroup = index.getCustomGroup(group);
+            } else {
+                value = index.getCustomGroupField(group, key);
+            }
         } catch (ClassNotFoundException e) {
             ioException = new IOException("Problems reading the temp index file");
         } catch (IOException e) {
@@ -46,9 +63,17 @@ class GetUserGenericDataTask implements ParallelTask {
         }
     }
 
-    public Map<String, Serializable> getUserGenericData() throws IOException {
+    public Map<String, Serializable> getCustomGroup() throws IOException {
         if (ioException == null) {
-            return userGenericData;
+            return customGroup;
+        } else {
+            throw ioException;
+        }
+    }
+
+    public Serializable getValue() throws IOException {
+        if (ioException == null) {
+            return value;
         } else {
             throw ioException;
         }

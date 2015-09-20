@@ -1,0 +1,23 @@
+<peer-client-config>
+  <field name="nick">jor</field>
+  <field name="avatar"></field>
+  <field name="port">10002</field>
+  <field name="peer-id">pid{0000000000000000000000000000000000000000002}</field>
+  <str name="peer-server-data">
+    <!--<ip>138.100.11.51</ip>-->
+    <field name="ip">127.0.0.1</field>
+    <field name="port">50000</field>
+  </str>
+  <str name="friend-peers">
+    <str>
+      <field name="peer-id">pid{0000000000000000000000000000000000000000001}</field>
+      <field name="nick">alb</field>
+    </str>
+    <str>
+      <field name="peer-id">pid{0000000000000000000000000000000000000000003}</field>
+      <field name="nick">miki</field>
+    </str>
+  </str>
+  <str name="blocked-peers">
+  </str>
+</peer-client-config>

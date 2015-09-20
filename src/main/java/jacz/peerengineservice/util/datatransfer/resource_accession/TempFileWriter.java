@@ -17,16 +17,27 @@ public class TempFileWriter implements ResourceWriter {
 
     private final String tempFile;
 
+    private final Map<String, Serializable> customDictionary;
+
     private String finalPath;
 
-    public TempFileWriter(TempFileManager tempFileManager) throws IOException {
-        this(tempFileManager, tempFileManager.createNewTempFile());
+    public TempFileWriter(TempFileManager tempFileManager, String customGroup, Map<String, Serializable> customDictionary) throws IOException {
+        this.tempFileManager = tempFileManager;
+        this.tempFile = tempFileManager.createNewTempFile();
+        this.customDictionary = customDictionary;
+        if (customGroup != null && customDictionary != null) {
+            tempFileManager.setCustomGroup(tempFile, customGroup, customDictionary);
+        }
     }
 
-    public TempFileWriter(TempFileManager tempFileManager, String tempFile) {
+    public TempFileWriter(TempFileManager tempFileManager, String tempFile, String customGroup) throws IOException {
         this.tempFileManager = tempFileManager;
         this.tempFile = tempFile;
-        finalPath = null;
+        if (customGroup != null) {
+            customDictionary = tempFileManager.getCustomGroup(tempFile, customGroup);
+        } else {
+            customDictionary = null;
+        }
     }
 
     public String getTempFile() {
@@ -44,23 +55,23 @@ public class TempFileWriter implements ResourceWriter {
     }
 
     @Override
-    public void setUserGenericData(String group, Map<String, Serializable> userGenericData) throws IOException {
-        tempFileManager.setUserGenericData(tempFile, group, userGenericData);
+    public Map<String, Serializable> getCustomGroup(String group) throws IOException {
+        return tempFileManager.getCustomGroup(tempFile, group);
     }
 
     @Override
-    public Map<String, Serializable> getUserGenericData(String group) throws IOException {
-        return tempFileManager.getUserGenericData(tempFile, group);
+    public Serializable getCustomGroupField(String group, String key) throws IOException {
+        return tempFileManager.getCustomGroupField(tempFile, group, key);
     }
 
     @Override
-    public void setUserGenericDataField(String group, String key, Serializable value) throws IOException {
-        tempFileManager.setUserGenericDataField(tempFile, group, key, value);
+    public void setCustomGroup(String group, Map<String, Serializable> userGenericData) throws IOException {
+        tempFileManager.setCustomGroup(tempFile, group, userGenericData);
     }
 
     @Override
-    public Serializable getUserGenericDataField(String group, String key) throws IOException {
-        return tempFileManager.getUserGenericDataField(tempFile, group, key);
+    public void setCustomGroupField(String group, String key, Serializable value) throws IOException {
+        tempFileManager.setCustomGroupField(tempFile, group, key, value);
     }
 
     @Override
@@ -97,11 +108,7 @@ public class TempFileWriter implements ResourceWriter {
         return finalPath;
     }
 
-    public String getTempDataFilePath() {
-        return tempFileManager.tempFileToDataPath(tempFile);
-    }
-
-    public static String getTempIndex(String tempDataFilePath) {
-        return TempFileManager.dataPathToTempFile(tempDataFilePath);
+    public Map<String, Serializable> getCustomDictionary() {
+        return customDictionary;
     }
 }

@@ -59,27 +59,19 @@ public class BasicFileWriter implements ResourceWriter {
     }
 
     @Override
-    public void setUserGenericData(String group, Map<String, Serializable> userGenericData) {
+    public void setCustomGroup(String group, Map<String, Serializable> userGenericData) {
         this.userGenericData.put(group, userGenericData);
     }
 
     @Override
-    public Map<String, Serializable> getUserGenericData(String group) {
+    public Map<String, Serializable> getCustomGroup(String group) {
         return userGenericData.get(group);
     }
 
     @Override
-    public void setUserGenericDataField(String group, String key, Serializable value) {
+    public Serializable getCustomGroupField(String group, String key) {
         if (!userGenericData.containsKey(group)) {
-            setUserGenericData(group, new HashMap<String, Serializable>());
-        }
-        userGenericData.get(group).put(key, value);
-    }
-
-    @Override
-    public Serializable getUserGenericDataField(String group, String key) {
-        if (!userGenericData.containsKey(group)) {
-            setUserGenericData(group, new HashMap<String, Serializable>());
+            setCustomGroup(group, new HashMap<String, Serializable>());
         }
         return userGenericData.get(group).get(key);
     }
@@ -90,6 +82,14 @@ public class BasicFileWriter implements ResourceWriter {
         RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rws");
         randomAccessFile.setLength(size);
         randomAccessFile.close();
+    }
+
+    @Override
+    public void setCustomGroupField(String group, String key, Serializable value) {
+        if (!userGenericData.containsKey(group)) {
+            setCustomGroup(group, new HashMap<String, Serializable>());
+        }
+        userGenericData.get(group).put(key, value);
     }
 
     @Override

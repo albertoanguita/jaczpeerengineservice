@@ -1,5 +1,7 @@
-package jacz.peerengineservice.util.data_synchronization.old;
+package jacz.peerengineservice.util.datatransfer.resource_accession;
 
+import jacz.peerengineservice.util.data_synchronization.old.DataAccessException;
+import jacz.peerengineservice.util.data_synchronization.old.ListAccessor;
 import jacz.util.io.object_serialization.MutableOffset;
 import jacz.util.io.object_serialization.Serializer;
 import jacz.util.numeric.LongRange;
@@ -14,7 +16,7 @@ import java.util.Map;
 /**
  * Resource writer implementation for byte-array transmissions in list synchronization
  */
-class ByteArrayWriter implements ResourceWriter {
+public class ByteArrayWriter implements ResourceWriter {
 
     private enum State {
         INIT,
@@ -57,25 +59,25 @@ class ByteArrayWriter implements ResourceWriter {
     }
 
     @Override
-    public void setUserGenericData(String group, Map<String, Serializable> userGenericData) throws IOException {
-        // ignore
-    }
-
-    @Override
-    public Map<String, Serializable> getUserGenericData(String group) throws IOException {
+    public Map<String, Serializable> getCustomGroup(String group) throws IOException {
         // ignore
         return null;
     }
 
     @Override
-    public void setUserGenericDataField(String group, String key, Serializable value) throws IOException {
+    public Serializable getCustomGroupField(String group, String key) throws IOException {
+        // ignore
+        return null;
+    }
+
+    @Override
+    public void setCustomGroup(String group, Map<String, Serializable> userGenericData) throws IOException {
         // ignore
     }
 
     @Override
-    public Serializable getUserGenericDataField(String group, String key) throws IOException {
+    public void setCustomGroupField(String group, String key, Serializable value) throws IOException {
         // ignore
-        return null;
     }
 
     @Override

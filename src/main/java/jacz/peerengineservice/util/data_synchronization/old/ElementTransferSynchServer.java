@@ -4,6 +4,7 @@ import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.util.datatransfer.ResourceStore;
 import jacz.peerengineservice.util.datatransfer.ResourceStoreResponse;
+import jacz.peerengineservice.util.datatransfer.resource_accession.ByteArrayReader;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.util.identifier.UniqueIdentifierFactory;

@@ -14,8 +14,10 @@ import jacz.util.io.xml.XMLDom;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Simple connection, no actions
@@ -41,7 +43,7 @@ public class TestTransfer_1_Temp {
             ThreadUtil.safeSleep(1000);
 
             TempFileManager tempFileManager = new TempFileManager(".");
-            TempFileWriter tempFileWriter = new TempFileWriter(tempFileManager);
+            TempFileWriter tempFileWriter = new TempFileWriter(tempFileManager, "custom", new HashMap<String, Serializable>());
             String tempFile = tempFileWriter.getTempFile();
             System.out.println(tempFile);
 
@@ -61,7 +63,7 @@ public class TestTransfer_1_Temp {
             downloadManager.stop();
             ThreadUtil.safeSleep(8000);
             System.out.println("RESTART!!!");
-            DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);
+            DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);
 
             System.out.println("GO!");
         } catch (IOException e) {

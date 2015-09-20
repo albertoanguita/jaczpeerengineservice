@@ -38,7 +38,7 @@ class SetUserGenericDataTask implements ParallelTask {
         TempIndex index;
         try {
             index = TempFileManager.readIndexFile(indexFilePath);
-            index.setUserGenericData(group, userGenericData);
+            index.setCustomGroup(group, userGenericData);
             TempFileManager.writeIndexFile(indexFilePath, index);
         } catch (ClassNotFoundException e) {
             ioException = new IOException("Problems reading the temp index file");

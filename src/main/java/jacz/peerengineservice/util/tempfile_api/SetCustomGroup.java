@@ -4,11 +4,12 @@ import jacz.util.concurrency.task_executor.ParallelTask;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  *
  */
-class SetUserGenericDataFieldTask implements ParallelTask {
+class SetCustomGroup implements ParallelTask {
 
     /**
      * Temp file to read from
@@ -20,15 +21,26 @@ class SetUserGenericDataFieldTask implements ParallelTask {
      */
     private String group;
 
+    private Map<String, Serializable> customGroup;
+
     private String key;
 
     private Serializable value;
 
     private IOException ioException;
 
-    public SetUserGenericDataFieldTask(String indexFilePath, String group, String key, Serializable value) {
+    public SetCustomGroup(String indexFilePath, String group, Map<String, Serializable> customGroup) {
+        this(indexFilePath, group, customGroup, null, null);
+    }
+
+    public SetCustomGroup(String indexFilePath, String group, String key, Serializable value) {
+        this(indexFilePath, group, null, key, value);
+    }
+
+    private SetCustomGroup(String indexFilePath, String group, Map<String, Serializable> customGroup, String key, Serializable value) {
         this.indexFilePath = indexFilePath;
         this.group = group;
+        this.customGroup = customGroup;
         this.key = key;
         this.value = value;
         ioException = null;
@@ -40,7 +52,11 @@ class SetUserGenericDataFieldTask implements ParallelTask {
         TempIndex index;
         try {
             index = TempFileManager.readIndexFile(indexFilePath);
-            index.setUserGenericDataField(group, key, value);
+            if (customGroup != null) {
+                index.setCustomGroup(group, customGroup);
+            } else {
+                index.setCustomGroupField(group, key, value);
+            }
             TempFileManager.writeIndexFile(indexFilePath, index);
         } catch (ClassNotFoundException e) {
             ioException = new IOException("Problems reading the temp index file");

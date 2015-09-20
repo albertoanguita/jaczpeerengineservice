@@ -97,7 +97,7 @@ public class Statistics {
 
     Statistics(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerStatistics peerStatistics) throws IOException {
         this.resourceWriter = resourceWriter;
-        Map<String, Serializable> storedStatistics = resourceWriter.getUserGenericData(RESOURCE_WRITER_STATISTICS_GROUP);
+        Map<String, Serializable> storedStatistics = resourceWriter.getCustomGroup(RESOURCE_WRITER_STATISTICS_GROUP);
         if (storedStatistics != null && storedStatistics.containsKey(RESOURCE_WRITER_CREATION_DATE_FIELD)) {
             creationDate = (Date) storedStatistics.get(RESOURCE_WRITER_CREATION_DATE_FIELD);
         } else {
@@ -150,12 +150,12 @@ public class Statistics {
             providerStatistics.stopSession();
         }
         accumulatedMillisActive += System.currentTimeMillis() - dateStartedThisSession.getTime();
-        resourceWriter.setUserGenericDataField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_CREATION_DATE_FIELD, creationDate);
-        resourceWriter.setUserGenericDataField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_DOWNLOADED_PART_FIELD, downloadedPart);
-        resourceWriter.setUserGenericDataField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_ACCUMULATED_MILLIS_ACTIVE_FIELD, accumulatedMillisActive);
-        resourceWriter.setUserGenericDataField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_DOWNLOADED_SIZE_THIS_RESOURCE_FIELD, downloadedSizeThisResource);
-        resourceWriter.setUserGenericDataField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_INCORRECT_SIZE_THIS_RESOURCE_FIELD, incorrectSizeThisResource);
-        resourceWriter.setUserGenericDataField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_PROVIDERS_STATISTICS_FIELD, providers);
+        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_CREATION_DATE_FIELD, creationDate);
+        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_DOWNLOADED_PART_FIELD, downloadedPart);
+        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_ACCUMULATED_MILLIS_ACTIVE_FIELD, accumulatedMillisActive);
+        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_DOWNLOADED_SIZE_THIS_RESOURCE_FIELD, downloadedSizeThisResource);
+        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_INCORRECT_SIZE_THIS_RESOURCE_FIELD, incorrectSizeThisResource);
+        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_PROVIDERS_STATISTICS_FIELD, providers);
     }
 
     synchronized void stop() {
