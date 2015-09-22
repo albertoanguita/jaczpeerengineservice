@@ -53,7 +53,7 @@ public class DownloadManager {
     }
 
     public float getPriority() {
-        return masterResourceStreamer.getPriority();
+        return masterResourceStreamer.getMasterPriority();
     }
 
     public void setPriority(int priority) {

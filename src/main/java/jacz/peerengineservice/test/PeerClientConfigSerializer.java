@@ -4,6 +4,7 @@ import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeerServerData;
+import jacz.util.io.object_serialization.StrCast;
 import jacz.util.io.object_serialization.XMLReader;
 import jacz.util.io.xml.Element;
 import jacz.util.lists.Triple;
@@ -18,16 +19,16 @@ import java.io.FileNotFoundException;
 public class PeerClientConfigSerializer {
 
     public static Triple<PersonalData, PeerClientData, PeerRelations> readPeerClientData(String path) throws FileNotFoundException, XMLStreamException, IllegalArgumentException, NumberFormatException {
-        XMLReader xmlReader = XMLReader.parse(path);
+        XMLReader xmlReader = new XMLReader(path);
 
         PersonalData personalData = new PersonalData(xmlReader.getFieldValue("nick"), xmlReader.getFieldValue("avatar"));
 
         xmlReader.getStruct("peer-server-data");
         String ip = xmlReader.getFieldValue("ip");
-        int port = Integer.parseInt(xmlReader.getFieldValue("port"));
+        int port = StrCast.asInteger(xmlReader.getFieldValue("port"));
         PeerServerData peerServerData = new PeerServerData(new IP4Port(ip, port));
         xmlReader.gotoParent();
-        PeerClientData peerClientData = new PeerClientData(new PeerID(xmlReader.getFieldValue("peer-id")), Integer.parseInt(xmlReader.getFieldValue("port")), peerServerData);
+        PeerClientData peerClientData = new PeerClientData(new PeerID(xmlReader.getFieldValue("peer-id")), StrCast.asInteger(xmlReader.getFieldValue("port")), peerServerData);
 
         PeerRelations peerRelations = new PeerRelations();
         xmlReader.getStruct("friend-peers");

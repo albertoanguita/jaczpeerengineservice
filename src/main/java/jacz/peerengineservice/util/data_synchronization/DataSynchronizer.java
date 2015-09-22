@@ -3,7 +3,6 @@ package jacz.peerengineservice.util.data_synchronization;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.PeerClient;
-import jacz.peerengineservice.util.data_synchronization.old.ListSynchronizerServerFSM;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.notification.ProgressNotificationWithError;
@@ -19,7 +18,7 @@ public class DataSynchronizer {
     public static final int PROGRESS_MAX = 100;
 
     /**
-     * The PeerClient for which this ListSynchronizer works
+     * The PeerClient for which this DataSynchronizer works
      */
     private final PeerClient peerClient;
 

@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.peerengineservice.util.datatransfer.GenericPriorityManager;
+import jacz.peerengineservice.util.datatransfer.GenericPriorityManagerRegulatedResource;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceLink;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.slave.SlaveMessage;
@@ -26,7 +26,7 @@ import jacz.util.numeric.LongRange;
  * There are several timers for controlling the behavior of the slave controller, but all their calls die at the slave controller itself, except
  * for one: timeoutTimer for dying. This call goes to the MasterResourcesStreamer, but it is properly parallelized, so it is OK.
  */
-public class SlaveController implements SimpleTimerAction, RemainingTimeAction, GenericPriorityManager.RegulatedResource {
+public class SlaveController extends GenericPriorityManagerRegulatedResource implements SimpleTimerAction, RemainingTimeAction {
 
     /**
      * States of each SlaveController
@@ -60,7 +60,7 @@ public class SlaveController implements SimpleTimerAction, RemainingTimeAction, 
     /**
      * Time between periodical segment availability requests
      */
-    private static final long MILLIS_FOR_AUTOMATIC_SEGMENT_AVAILABILITY_REQUEST = 30000;
+    private static final long MILLIS_FOR_AUTOMATIC_SEGMENT_AVAILABILITY_REQUEST = SLAVE_TIMEOUT_MILLIS * 5;
 
     /**
      * Unique identifier required for some tasks (segment assignment)
@@ -268,6 +268,7 @@ public class SlaveController implements SimpleTimerAction, RemainingTimeAction, 
         // it we are still waiting for an initialization message, initialize, as it is presumably such message.
         // if not, die as every message must be received as byte[]
         if (alive) {
+            System.out.println("RESET TIMER OBJECT");
             resetTimeoutTimer();
             if (isWaitingForRequestResponse()) {
                 initialize(message);
@@ -291,6 +292,7 @@ public class SlaveController implements SimpleTimerAction, RemainingTimeAction, 
                     switch (slaveMessage.messageType) {
 
                         case RESOURCE_CHUNK:
+//                            System.out.println("Slave - resource chunk");
                             boolean correct = resourceSegmentQueueWithMonitoring.removeNonBlocking(slaveMessage.resourceChunk.getSegment());
                             if (correct) {
                                 try {
@@ -413,6 +415,7 @@ public class SlaveController implements SimpleTimerAction, RemainingTimeAction, 
             if (timer == timeoutTimer) {
                 // this slave died, either from too much time to answer the initial requests, or from too much time without
                 // any activity (the reason does not matter at this point). The timer is killed afterwards
+                System.out.println("SLAVE TIMEOUT!!!");
                 die(true);
                 return 0l;
             } else if (timer == requestAssignationTimer) {
@@ -481,6 +484,7 @@ public class SlaveController implements SimpleTimerAction, RemainingTimeAction, 
                     case LOW_SPEED:
                         // remove all assignation to this slave (try later). Also reset timeout to avoid dying
                         eraseCurrentAssignment();
+                        System.out.println("RESET TIMER LOW SPEED");
                         resetTimeoutTimer();
                         setUpRequestAssignationTimer();
                         break;
@@ -499,6 +503,7 @@ public class SlaveController implements SimpleTimerAction, RemainingTimeAction, 
                     case NO_USEFUL_PARTS:
                         // this slave has no useful parts -> try later (maybe some part will become useful)
                         // we also reset the timeout to avoid dying for non useful parts
+                        System.out.println("RESET TIMER NO USEFUL PARTS");
                         resetTimeoutTimer();
                         setUpRequestAssignationTimer();
                         break;
@@ -522,11 +527,6 @@ public class SlaveController implements SimpleTimerAction, RemainingTimeAction, 
     }
 
     @Override
-    public String getStringId() {
-        return id.toString();
-    }
-
-    @Override
     public float getPriority() {
         // we return a fixed value, since we want equality at this level
         return 1f;
@@ -537,10 +537,16 @@ public class SlaveController implements SimpleTimerAction, RemainingTimeAction, 
         return masterResourceStreamer.getSlaveControllerAchievedSpeed(this);
     }
 
+//    @Override
+//    public synchronized void setSpeed(float speed) {
+//        System.out.println("Slave controller for " + masterResourceStreamer.getResourceID() + " set speed: " + speed / 1024f);
+//        resourceLink.setSpeed(speed);
+//    }
+
     @Override
-    public synchronized void setSpeed(float speed) {
-        System.out.println("Slave controller for " + masterResourceStreamer.getResourceID() + " set speed: " + speed / 1024f);
-        resourceLink.setSpeed(speed);
+    public void throttle(float variation) {
+        System.out.println("SLAVE - THROTTLE: " + variation);
+        resourceLink.throttle(variation);
     }
 
     @Override

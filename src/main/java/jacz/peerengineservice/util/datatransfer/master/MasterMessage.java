@@ -5,8 +5,8 @@ import jacz.util.io.object_serialization.Serializer;
 import jacz.util.numeric.LongRange;
 
 /**
-* Messages created by a Master for a Slave
-*/
+ * Messages created by a Master for a Slave
+ */
 public class MasterMessage {
 
     /**
@@ -23,8 +23,8 @@ public class MasterMessage {
         ERASE_SEGMENTS,
         // this slave must add a new segment to the list of "segments to send"
         ADD_NEW_SEGMENT,
-        // set the maximum (and recommended) speed of transmission
-        SET_SPEED,
+        // throttle speed to slow down
+        THROTTLE,
         // ping message to keep slave alive
         PING,
         // the master reports that he died, so we should die as well to free resources
@@ -37,6 +37,8 @@ public class MasterMessage {
 
     public final Float speed;
 
+    public final float throttle;
+
     public MasterMessage(byte[] data) {
         MutableOffset offset = new MutableOffset();
         order = Serializer.deserializeEnum(Order.class, data, offset);
@@ -45,12 +47,15 @@ public class MasterMessage {
             long max = Serializer.deserializeLong(data, offset);
             segment = new LongRange(min, max);
             speed = null;
-        } else if (order != null && order == Order.SET_SPEED) {
+            throttle = 0;
+        } else if (order != null && order == Order.THROTTLE) {
             segment = null;
-            speed = Serializer.deserializeFloat(data, offset);
+            speed = null;
+            throttle = Serializer.deserializeFloat(data, offset);
         } else {
             segment = null;
             speed = null;
+            throttle = 0;
         }
     }
 
@@ -75,9 +80,9 @@ public class MasterMessage {
         return Serializer.addArrays(order, Serializer.serialize(segment.getMin()), Serializer.serialize(segment.getMax()));
     }
 
-    public static byte[] generateSetSpeedMessage(Float speed) {
-        byte[] order = Serializer.serialize(Order.SET_SPEED);
-        return Serializer.addArrays(order, Serializer.serialize(speed));
+    public static byte[] generateThrottleMessage(float variation) {
+        byte[] order = Serializer.serialize(Order.THROTTLE);
+        return Serializer.addArrays(order, Serializer.serialize(variation));
     }
 
     public static byte[] generatePingMessage() {

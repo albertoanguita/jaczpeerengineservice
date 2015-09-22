@@ -42,28 +42,36 @@ public class TestTransfer_1_Temp {
 
         ThreadUtil.safeSleep(1000);
 
-        TempFileManager tempFileManager = new TempFileManager(".");
-        TempFileWriter tempFileWriter = new TempFileWriter(tempFileManager, "custom", new HashMap<String, Serializable>());
+        TempFileManager tempFileManager = new TempFileManager("./etc/temp");
+        Map<String, Serializable> customDictionary = new HashMap<>();
+        customDictionary.put("hash", "aaa");
+        TempFileWriter tempFileWriter = new TempFileWriter(tempFileManager, "custom", customDictionary);
         String tempFile = tempFileWriter.getTempFile();
         System.out.println(tempFile);
 
-
+        System.out.println("to download first file...");
         client.getPeerClient().setVisibleDownloadsTimer(5000);
 
-        client.getPeerClient().downloadResource("files", "bbb", new BasicFileWriter(".\\bbb_transfer.txt"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);
-        ThreadUtil.safeSleep(60000);
+        client.getPeerClient().downloadResource("files", "aaa", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);
+        ThreadUtil.safeSleep(20000);
 
         System.out.println("to download second file...");
 
-//            client.getPeerClient().downloadResource(new PeerID("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f);
-        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "aaa", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);
+        Map<String, Serializable> customDictionary2 = new HashMap<>();
+        customDictionary2.put("hash", "aaa");
+        TempFileWriter tempFileWriter2 = new TempFileWriter(tempFileManager, "custom", customDictionary2);
+        String tempFile2 = tempFileWriter2.getTempFile();
 
-        ThreadUtil.safeSleep(45000);
-        System.out.println("STOP!!!");
-        downloadManager.stop();
-        ThreadUtil.safeSleep(8000);
-        System.out.println("RESTART!!!");
-        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);
+
+//            client.getPeerClient().downloadResource(new PeerID("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f);
+        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "bbb", tempFileWriter2, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);
+
+//        ThreadUtil.safeSleep(45000);
+//        System.out.println("STOP!!!");
+//        downloadManager.stop();
+//        ThreadUtil.safeSleep(8000);
+//        System.out.println("RESTART!!!");
+//        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);
 
         System.out.println("GO!");
     }

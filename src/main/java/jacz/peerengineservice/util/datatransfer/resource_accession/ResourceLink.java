@@ -17,28 +17,28 @@ import jacz.util.numeric.LongRange;
  */
 public interface ResourceLink {
 
-    public long recommendedMillisForRequest();
+    long recommendedMillisForRequest();
 
-    public Long surviveTimeMillis();
+    Long surviveTimeMillis();
 
-    public void initialize(Object initializationMessage) throws IllegalArgumentException;
+    void initialize(Object initializationMessage) throws IllegalArgumentException;
 
-    public void requestResourceLength();
+    void requestResourceLength();
 
-    public void requestAvailableSegments();
+    void requestAvailableSegments();
 
-    public void requestAssignedSegments();
+    void requestAssignedSegments();
 
-    public void eraseSegments();
+    void eraseSegments();
 
-    public void addNewSegment(LongRange segment);
+    void addNewSegment(LongRange segment);
 
-    public void setSpeed(Float speed);
+    void throttle(float variation);
 
     /**
      * Keep the resource link alive
      */
-    public void ping();
+     void ping();
 
-    public void die();
+     void die();
 }

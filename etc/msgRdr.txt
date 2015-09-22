@@ -2,6 +2,7 @@ package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
 import jacz.util.concurrency.ThreadUtil;
+import jacz.util.date_time.SpeedLimiter;
 import jacz.util.date_time.SpeedMonitor;
 import jacz.util.hash.HashFunction;
 import jacz.util.numeric.LongRange;
@@ -62,7 +63,11 @@ class SlaveMessageReader implements MessageReader {
      */
     private static final int MILLIS_SPEED_MEASURE = 3000;
 
-    private static final float INITIAL_BLOCK_SIZE = 1000f;
+    private static final int INITIAL_BLOCK_SIZE = 1000;
+
+    private static final int PREFERRED_BLOCK_SIZE_FACTOR = 5;
+
+    private static final int PREFERRED_BLOCK_SIZE_CHANE_FREQUENCY = 10;
 
     private final SlaveResourceStreamer slaveResourceStreamer;
 
@@ -74,36 +79,72 @@ class SlaveMessageReader implements MessageReader {
 
     private ArrayBlockingQueue<Long> throttleQueue;
 
+    private int messagesSent;
+
     /**
      * The preferred size for resource chunks (number of bytes). This size is set accordingly with the desired speed.
      * This size is set so it takes approximately 0.1 seconds to send the chunk, according to the desired speed
      */
-    private double preferredBlockSize;
+    private long preferredBlockSize;
 
     /**
      * For measuring and controlling the writing speed
      */
-    private SpeedMonitor speedLimiter;
+    private SpeedMonitor speedMonitor;
 
-    public SlaveMessageReader(SlaveResourceStreamer slaveResourceStreamer, SlaveResourceStreamer.ResourceSegmentQueue resourceSegmentQueue, ResourceReader resourceReader) {
+    public SlaveMessageReader(SlaveResourceStreamer slaveResourceStreamer, SlaveResourceStreamer.ResourceSegmentQueue resourceSegmentQueue, ResourceReader resourceReader, float desiredSpeed) {
         this.slaveResourceStreamer = slaveResourceStreamer;
         this.resourceSegmentQueue = resourceSegmentQueue;
         this.resourceReader = resourceReader;
         mustFlush = false;
-        speedLimiter = new SpeedMonitor(MILLIS_SPEED_MEASURE);
-        preferredBlockSize = INITIAL_BLOCK_SIZE;
+        speedMonitor = new SpeedMonitor(MILLIS_SPEED_MEASURE);
+//        setSpeed(desiredSpeed);
         throttleQueue = new ArrayBlockingQueue<>(1000, true);
+        messagesSent = 0;
     }
+
+//    public synchronized void setSpeed(float speed) {
+//        speedMonitor.setSpeedLimit((double) speed);
+//        setPreferredBlockSize(speed);
+//    }
 
     public synchronized void throttle(float variation) {
         // insert a set of wait blocks among the following sending messages
-        preferredBlockSize *= variation;
-        preferredBlockSize = Math.max(preferredBlockSize, INITIAL_BLOCK_SIZE);
+        float initialThrottle = (1f - variation) * 300f;
+        if (!throttleQueue.isEmpty()) {
+            // there are throttles stored in the queue
+            if (throttleQueue.peek() > initialThrottle) {
+                // the active throttle is greated than ours -> leave it
+                return;
+            } else {
+                // the active throttle is smaller -> replace it
+                throttleQueue.clear();
+            }
+        }
+        for (int i = 0; i < 150; i++) {
+            float throttle = initialThrottle - initialThrottle * (float) (i / 150);
+            throttleQueue.offer((long) throttle);
+        }
         System.out.println("Throttle introduced");
     }
 
+    // todo set some block size regularly (every 10 sent blocks)
+    private synchronized void setPreferredBlockSize() {
+        // set to 1 tenth of the speed. Minimum is 1
+        Float speed = getAchievedSpeed();
+        System.out.println("Current speed: " + speed);
+        if (speed != null) {
+            preferredBlockSize = speed.intValue() / PREFERRED_BLOCK_SIZE_FACTOR;
+        } else {
+            preferredBlockSize = INITIAL_BLOCK_SIZE;
+        }
+        preferredBlockSize = Math.max(preferredBlockSize, INITIAL_BLOCK_SIZE);
+        System.out.println("pref block size sent to " + preferredBlockSize);
+        preferredBlockSize = 2500;
+    }
+
     public Float getAchievedSpeed() {
-        Double speed = speedLimiter.getAverageSpeed();
+        Double speed = speedMonitor.getAverageSpeed();
         return speed == null ? null : speed.floatValue();
     }
 
@@ -120,10 +161,14 @@ class SlaveMessageReader implements MessageReader {
         } else {
             SlaveResourceStreamer.RemovedRange removedRange;
             synchronized (this) {
-                System.out.println("PREF SIZE: " + (long) preferredBlockSize);
-                removedRange = resourceSegmentQueue.remove((long) preferredBlockSize);
+                removedRange = resourceSegmentQueue.remove(preferredBlockSize);
             }
-            preferredBlockSize *= 1.003d;
+            if (messagesSent >= PREFERRED_BLOCK_SIZE_CHANE_FREQUENCY) {
+                setPreferredBlockSize();
+                messagesSent = 0;
+            } else {
+                messagesSent++;
+            }
             if (removedRange.range == SlaveResourceStreamer.stopMessage) {
                 // the slave resource streamer has requested us to die
                 resourceReader.stop();
@@ -151,7 +196,7 @@ class SlaveMessageReader implements MessageReader {
                 }
             } else {
                 LongRange rangeToSend = removedRange.range;
-                speedLimiter.addProgress(rangeToSend.size());
+                speedMonitor.addProgress(rangeToSend.size());
                 if (!throttleQueue.isEmpty()) {
                     ThreadUtil.safeSleep(throttleQueue.poll());
                 }

@@ -1,16 +1,12 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.peerengineservice.util.data_synchronization.old.ListAccessor;
-import jacz.peerengineservice.util.data_synchronization.old.ListSynchronizerManager;
-import jacz.peerengineservice.util.data_synchronization.old.SynchronizeError;
+import jacz.peerengineservice.util.data_synchronization.DataAccessor;
+import jacz.peerengineservice.util.data_synchronization.SynchError;
 import jacz.util.io.buffer.BufferStream;
 import jacz.util.io.buffer.ReadBuffer;
-import jacz.util.io.object_serialization.Serializer;
 import jacz.util.notification.ProgressNotificationWithError;
 import jacz.util.numeric.LongRange;
-import jacz.util.numeric.NumericUtil;
 import jacz.util.numeric.RangeSet;
-import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
 
 import java.io.IOException;
 import java.util.List;
@@ -29,7 +25,7 @@ public class ByteArrayReader implements ResourceReader {
 
     private class ByteArrayBufferStream implements BufferStream {
 
-        private final ListAccessor listAccessor;
+        private final DataAccessor listAccessor;
 
         private final int level;
 
@@ -40,7 +36,7 @@ public class ByteArrayReader implements ResourceReader {
          */
         private int index;
 
-        private ByteArrayBufferStream(ListAccessor listAccessor, int level, List<String> indexList) {
+        private ByteArrayBufferStream(DataAccessor listAccessor, int level, List<String> indexList) {
             this.listAccessor = listAccessor;
             this.level = level;
             this.indexList = indexList;
@@ -55,21 +51,22 @@ public class ByteArrayReader implements ResourceReader {
         @Override
         public byte[] readNextBytes() throws IOException {
             // the byte[] of one element is composed by {index, length, element}
-            try {
+            /*try {
                 byte[] indexBytes = Serializer.serialize(indexList.get(index));
                 byte[] element = listAccessor.getElementByteArray(indexList.get(index), level);
                 index++;
                 return Serializer.addArrays(indexBytes, Serializer.serialize(element.length), element);
             } catch (Exception e) {
                 throw new IOException("could not read element from list accessor");
-            }
+            }*/
+            return null;
         }
     }
 
     // size of the  buffer (64KB) -> good enough for most transfers
     private static final int INIT_BUFFER_LENGTH = 64 * 1024;
 
-    private final ListAccessor listAccessor;
+    private final DataAccessor listAccessor;
 
     private ReadBuffer readBuffer;
 
@@ -77,9 +74,9 @@ public class ByteArrayReader implements ResourceReader {
 
     private final Long length;
 
-    private ProgressNotificationWithError<Integer, SynchronizeError> progress;
+    private ProgressNotificationWithError<Integer, SynchError> progress;
 
-    public ByteArrayReader(ListAccessor listAccessor, int level, List<String> indexList, ProgressNotificationWithError<Integer, SynchronizeError> progress) {
+    public ByteArrayReader(DataAccessor listAccessor, int level, List<String> indexList, ProgressNotificationWithError<Integer, SynchError> progress) {
         this.listAccessor = listAccessor;
         try {
             readBuffer = new ReadBuffer(INIT_BUFFER_LENGTH, new ByteArrayBufferStream(listAccessor, level, indexList));
@@ -92,10 +89,10 @@ public class ByteArrayReader implements ResourceReader {
         this.progress = progress;
     }
 
-    private static Long calculateLength(ListAccessor listAccessor, int level, List<String> indexList) {
+    private static Long calculateLength(DataAccessor listAccessor, int level, List<String> indexList) {
         // for each element, the size of the element will be stored as a 4-byte integer
         // we also store the index of each element
-        long length = 4 * indexList.size();
+        /*long length = 4 * indexList.size();
         for (String index : indexList) {
             try {
                 length += Serializer.serialize(index).length;
@@ -104,7 +101,8 @@ public class ByteArrayReader implements ResourceReader {
                 return null;
             }
         }
-        return length;
+        return length;*/
+        return 0L;
     }
 
     @Override
@@ -135,7 +133,7 @@ public class ByteArrayReader implements ResourceReader {
         }
         this.offset += length;
         if (progress != null) {
-            progress.addNotification((int) NumericUtil.displaceInRange(this.offset, 0, this.length, 0, ListSynchronizerManager.PROGRESS_MAX));
+//            progress.addNotification((int) NumericUtil.displaceInRange(this.offset, 0, this.length, 0, ListSynchronizerManager.PROGRESS_MAX));
         }
         return readBuffer.read(length);
     }
@@ -144,15 +142,15 @@ public class ByteArrayReader implements ResourceReader {
     public void stop() {
         if (length != null && offset == length) {
             // full resource correctly read
-            listAccessor.endSynchProcess(ListAccessor.Mode.SERVER, true);
+            listAccessor.endSynchProcess(DataAccessor.Mode.SERVER, true);
             if (progress != null) {
                 progress.completeTask();
             }
         } else {
             // there was some error
-            listAccessor.endSynchProcess(ListAccessor.Mode.SERVER, false);
+            listAccessor.endSynchProcess(DataAccessor.Mode.SERVER, false);
             if (progress != null) {
-                progress.error(new SynchronizeError(SynchronizeError.Type.DATA_TRANSFER_FAILED, null));
+//                progress.error(new SynchError(SynchError.Type.DATA_TRANSFER_FAILED, null));
             }
         }
     }

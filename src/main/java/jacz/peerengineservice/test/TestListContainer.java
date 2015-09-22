@@ -5,7 +5,6 @@ import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.util.data_synchronization.AccessorNotFoundException;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.data_synchronization.DataAccessorContainer;
-import jacz.peerengineservice.util.data_synchronization.old.ListAccessor;
 
 import java.util.Map;
 

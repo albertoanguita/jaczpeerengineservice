@@ -1,5 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
+import jacz.util.concurrency.ThreadUtil;
 import jacz.util.files.FileUtil;
 import jacz.util.files.RandomAccess;
 import jacz.util.numeric.LongRange;
@@ -44,6 +45,7 @@ public class BasicFileReader implements ResourceReader {
 
     @Override
     public byte[] read(long offset, int length) throws IndexOutOfBoundsException, IOException {
+        ThreadUtil.safeSleep(100);
         return RandomAccess.read(file, offset, length);
     }
 

@@ -6,6 +6,7 @@ import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
 import jacz.util.files.FileReaderWriter;
 import jacz.util.files.FileUtil;
+import jacz.util.lists.Duple;
 import jacz.util.numeric.LongRange;
 import jacz.util.numeric.RangeSet;
 
@@ -179,7 +180,7 @@ public class TempFileManager {
     public synchronized String createNewTempFile() throws IOException {
         // generate the file names and the actual files
 //        ArrayList<String> fileNames = generateNewTempFileName();
-        List<String> fileNames = FileUtil.createNonExistingFileNameWithIndex(
+        List<Duple<String, String>> fileNames = FileUtil.createFiles(
                 baseDir,
                 buildBaseFileNameList(),
                 buildExtensionList(),
@@ -187,8 +188,8 @@ public class TempFileManager {
                 "",
                 false
         );
-        generateInitialIndexFile(fileNames.get(0), fileNames.get(1));
-        return fileNames.get(0);
+        generateInitialIndexFile(fileNames.get(0).element2, fileNames.get(1).element2);
+        return fileNames.get(0).element2;
     }
 
     /**

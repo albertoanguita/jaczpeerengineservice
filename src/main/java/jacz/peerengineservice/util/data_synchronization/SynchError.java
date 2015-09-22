@@ -2,7 +2,6 @@ package jacz.peerengineservice.util.data_synchronization;
 
 /**
  * Different types of errors that can happen during synchronization
- * todo check error types
  */
 public class SynchError {
 
@@ -13,7 +12,6 @@ public class SynchError {
         ERROR_IN_PROTOCOL,
         UNKNOWN_ACCESSOR,
         REQUEST_DENIED,
-        DIFFERENT_LISTS_CONFIG,
         SERVER_ERROR,
         DATA_ACCESS_ERROR,
         UNDEFINED

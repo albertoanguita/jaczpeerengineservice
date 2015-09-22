@@ -63,8 +63,8 @@ public class PeerResourceLink implements ResourceLink {
     }
 
     @Override
-    public void setSpeed(Float speed) {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateSetSpeedMessage(speed));
+    public void throttle(float variation) {
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateThrottleMessage(variation));
     }
 
     @Override

@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * This class handles one resource download process. It communicates with all slaves offering the resource to
  */
-public class MasterResourceStreamer implements ResourceStreamingManager.SubchannelOwner, GenericPriorityManager.Stakeholder {
+public class MasterResourceStreamer extends GenericPriorityManagerStakeholder implements ResourceStreamingManager.SubchannelOwner {
 
 //    /**
 //     * The possible states of a download
@@ -290,10 +290,9 @@ public class MasterResourceStreamer implements ResourceStreamingManager.Subchann
         ParallelTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                resourceStreamingManager.getDownloadPriorityManager().addRegulatedResource(MasterResourceStreamer.this, slaveController, 0f);
+                resourceStreamingManager.getDownloadPriorityManager().addRegulatedResource(MasterResourceStreamer.this, slaveController);
             }
         });
-//        resourceStreamingManager.getDownloadPriorityManager().addRegulatedResource(this, slaveController, 0f);
     }
 
     /**
@@ -314,10 +313,9 @@ public class MasterResourceStreamer implements ResourceStreamingManager.Subchann
             ParallelTaskExecutor.executeTask(new ParallelTask() {
                 @Override
                 public void performTask() {
-                    resourceStreamingManager.getDownloadPriorityManager().removeRegulatedResource(id.toString(), slaveController);
+                    resourceStreamingManager.getDownloadPriorityManager().removeRegulatedResource(MasterResourceStreamer.this, slaveController);
                 }
             });
-//            resourceStreamingManager.getDownloadPriorityManager().removeRegulatedResource(id.toString(), slaveController);
         }
     }
 
@@ -559,7 +557,7 @@ public class MasterResourceStreamer implements ResourceStreamingManager.Subchann
      *
      * @return the streaming need for this resource
      */
-    public synchronized float getPriority() {
+    public synchronized float getMasterPriority() {
         return priority;
     }
 
@@ -658,12 +656,7 @@ public class MasterResourceStreamer implements ResourceStreamingManager.Subchann
     }
 
     @Override
-    public String getStakeholderId() {
-        return id.toString();
-    }
-
-    @Override
-    public float getStakeholderPriority() {
-        return getPriority();
+    public float getPriority() {
+        return getMasterPriority();
     }
 }

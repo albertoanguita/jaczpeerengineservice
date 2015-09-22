@@ -60,8 +60,8 @@ public class WebServerResourceLink implements ResourceLink {
     }
 
     @Override
-    public void setSpeed(Float speed) {
-        //To change body of implemented methods use File | Settings | File Templates.
+    public void throttle(float variation) {
+
     }
 
     @Override

@@ -30,7 +30,6 @@ class ServerActionImpl implements ServerAction {
         if (peerServer.isRunning()) {
             ccp.registerTimedFSM(new ServerConnectionFSM(peerServer, ip4Port.getIp(), clientID), PeerServer.CONNECTION_TIMEOUT_MILLIS, "ServerConnectionFSM", PeerServer.CONNECTION_CHANNEL);
             ccp.registerTimedFSM(new RequestDispatcherFSM(peerServer, clientID), PeerServer.TIMEOUT_MILLIS, PeerServer.REQUESTS_CHANNEL);
-            // todo parametrize timeout time and tell the client its value during the communication process. FOR TCP HOLE!
             // also transmit server metadata (name, capacity, current users, ...)
         }
     }

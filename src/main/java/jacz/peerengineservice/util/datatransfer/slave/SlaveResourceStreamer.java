@@ -1,7 +1,10 @@
 package jacz.peerengineservice.util.datatransfer.slave;
 
+import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.util.datatransfer.GenericPriorityManagerRegulatedResource;
 import jacz.peerengineservice.util.datatransfer.master.MasterMessage;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
+import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
 import jacz.util.concurrency.timer.SimpleTimerAction;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.identifier.UniqueIdentifier;
@@ -11,18 +14,16 @@ import jacz.util.numeric.LongRange;
 import jacz.util.numeric.RangeQueue;
 import jacz.util.queues.event_processing.MessageHandler;
 import jacz.util.queues.event_processing.MessageProcessor;
-import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
 
 import java.io.IOException;
 import java.util.List;
 
 /**
  * This class handles a slave that serves a resource to a master
- *
+ * <p/>
  * todo notify the resource that we finished (either completer, or error or timeout)
  */
-public class SlaveResourceStreamer implements jacz.peerengineservice.util.datatransfer.ResourceStreamingManager.SubchannelOwner, SimpleTimerAction, jacz.peerengineservice.util.datatransfer.GenericPriorityManager.RegulatedResource {
+public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResource implements jacz.peerengineservice.util.datatransfer.ResourceStreamingManager.SubchannelOwner, SimpleTimerAction {
 
     static class RemovedRange {
 
@@ -124,15 +125,9 @@ public class SlaveResourceStreamer implements jacz.peerengineservice.util.datatr
      */
     public static final long SURVIVE_TIME_MILLIS = 30000;
 
-    final static LongRange stopMessage = new LongRange(-1l, 0l);
+    final static LongRange stopMessage = new LongRange(-1L, 0L);
 
     static final String HASH_ALGORITHM = "SHA-256";
-
-    /**
-     * The initial uploading speed (25KB allows files around 100kb to be transferred quickly, and still does not heavily affect other transfers)
-     * todo maybe this value should be variable, depending on the last transfers (average speed of each individual transfer)
-     */
-    public static final float INITIAL_SPEED = 25600;
 
     private final UniqueIdentifier id;
 
@@ -151,14 +146,6 @@ public class SlaveResourceStreamer implements jacz.peerengineservice.util.datatr
     private SlaveMessageReader messageReader;
 
     private ResourceSegmentQueue resourceSegmentQueue;
-
-    /**
-     * The speed that the other end has requested us to transmit at. This speed can never be surpassed
-     * If null, it means that the master still has not provided us with a value. We set it at the initial speed
-     *
-     * This value also acts as priority request by the master
-     */
-    private Float masterRequestedMaxSpeed;
 
     private boolean alive;
 
@@ -180,7 +167,6 @@ public class SlaveResourceStreamer implements jacz.peerengineservice.util.datatr
         this.resourceStreamingManager = resourceStreamingManager;
         this.resourceRequest = request;
         timeoutTimer = new Timer(SURVIVE_TIME_MILLIS, this);
-        masterRequestedMaxSpeed = INITIAL_SPEED;
         initialized = false;
         alive = true;
     }
@@ -191,7 +177,7 @@ public class SlaveResourceStreamer implements jacz.peerengineservice.util.datatr
         this.incomingChannel = incomingChannel;
         this.outgoingChannel = outgoingChannel;
         resourceSegmentQueue = new ResourceSegmentQueue(resourceRequest.getPreferredIntermediateHashesSize());
-        messageReader = new SlaveMessageReader(this, resourceSegmentQueue, resourceReader, INITIAL_SPEED);
+        messageReader = new SlaveMessageReader(this, resourceSegmentQueue, resourceReader);
         uploadSessionStatistics = uploadManager.getUploadSessionStatistics();
         MessageHandler messageHandler = new jacz.peerengineservice.util.datatransfer.slave.SlaveMessageHandler(resourceStreamingManager, otherPeer, outgoingChannel, uploadSessionStatistics);
         MessageProcessor dataSender = new MessageProcessor(messageReader, messageHandler, false);
@@ -223,6 +209,7 @@ public class SlaveResourceStreamer implements jacz.peerengineservice.util.datatr
             }
             MasterMessage masterMessage = new MasterMessage(data);
             if (masterMessage.order != null) {
+//                System.out.println("Slave - message received: " + masterMessage.order);
                 switch (masterMessage.order) {
                     case REPORT_RESOURCE_LENGTH:
                         try {
@@ -253,6 +240,7 @@ public class SlaveResourceStreamer implements jacz.peerengineservice.util.datatr
                         break;
 
                     case ADD_NEW_SEGMENT:
+                        System.out.println("Slave - segment: " + masterMessage.segment);
                         // get first and last byte of the segment to add
                         try {
                             if (resourceReader.availableSegments().contains(masterMessage.segment)) {
@@ -268,8 +256,10 @@ public class SlaveResourceStreamer implements jacz.peerengineservice.util.datatr
                         }
                         break;
 
-                    case SET_SPEED:
-                        masterRequestedMaxSpeed = masterMessage.speed;
+                    case THROTTLE:
+                        System.out.println("Slave - throttle: " + masterMessage.throttle);
+                        messageReader.throttle(masterMessage.throttle);
+//                        masterRequestedMaxSpeed = masterMessage.speed;
                         break;
 
                     case PING:
@@ -285,18 +275,15 @@ public class SlaveResourceStreamer implements jacz.peerengineservice.util.datatr
         }
     }
 
-
-    @Override
-    public void setSpeed(float speed) {
-        float finalSpeed = (masterRequestedMaxSpeed != null) ? Math.min(masterRequestedMaxSpeed, speed) : speed;
-        messageReader.setSpeed(finalSpeed);
-    }
-
     @Override
     public Float getAchievedSpeed() {
         return messageReader.getAchievedSpeed();
     }
 
+    public void throttle(float variation) {
+        System.out.println("THROTTLE " + variation);
+        messageReader.throttle(variation);
+    }
 
     public short getIncomingChannel() {
         return incomingChannel;
@@ -338,12 +325,25 @@ public class SlaveResourceStreamer implements jacz.peerengineservice.util.datatr
     }
 
     @Override
-    public String getStringId() {
-        return getId().toString();
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        SlaveResourceStreamer that = (SlaveResourceStreamer) o;
+
+        return id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + id.hashCode();
+        return result;
     }
 
     @Override
     public float getPriority() {
-        return masterRequestedMaxSpeed;
+        return 1;
     }
 }

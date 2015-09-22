@@ -74,6 +74,35 @@ import java.util.*;
  */
 public class ResourceStreamingManager {
 
+    private class RemotePeerStakeholder extends GenericPriorityManagerStakeholder {
+
+        private final PeerID peerID;
+
+        public RemotePeerStakeholder(PeerID peerID) {
+            this.peerID = peerID;
+        }
+
+        public float getPriority() {
+                                return 1f;
+                            }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            RemotePeerStakeholder that = (RemotePeerStakeholder) o;
+
+            return peerID.equals(that.peerID);
+
+        }
+
+        @Override
+        public int hashCode() {
+            return peerID.hashCode();
+        }
+    }
+
     /**
      * Object version of an object message plus a subchannel, so it can be used in the FSM api of the util library
      */
@@ -534,12 +563,13 @@ public class ResourceStreamingManager {
     /**
      * Manager for controlling upload speeds of resource transfers
      */
-    private final jacz.peerengineservice.util.datatransfer.GenericPriorityManager uploadPriorityManager;
+//    private final jacz.peerengineservice.util.datatransfer.GenericPriorityManager uploadPriorityManager;
+    private final jacz.peerengineservice.util.datatransfer.GenericPriorityManagerNew uploadPriorityManager;
 
     /**
      * Manager for controlling download speeds of resource transfers
      */
-    private final jacz.peerengineservice.util.datatransfer.GenericPriorityManager downloadPriorityManager;
+    private final jacz.peerengineservice.util.datatransfer.GenericPriorityManagerNew downloadPriorityManager;
 
     private final jacz.peerengineservice.util.datatransfer.GlobalUploadStatistics globalUploadStatistics;
 
@@ -576,8 +606,8 @@ public class ResourceStreamingManager {
         downloadsManager = new jacz.peerengineservice.util.datatransfer.DownloadsManager(peerClientPrivateInterface);
         uploadsManager = new jacz.peerengineservice.util.datatransfer.UploadsManager(peerClientPrivateInterface);
         //badRequestsManager = new BadRequestsManager(FAILED_REQUEST_RESUBMIT_DELAY, FAILED_REQUEST_RESUBMIT_FACTOR, this);
-        uploadPriorityManager = new jacz.peerengineservice.util.datatransfer.GenericPriorityManager();
-        downloadPriorityManager = new jacz.peerengineservice.util.datatransfer.GenericPriorityManager();
+        uploadPriorityManager = new jacz.peerengineservice.util.datatransfer.GenericPriorityManagerNew(true);
+        downloadPriorityManager = new jacz.peerengineservice.util.datatransfer.GenericPriorityManagerNew(false);
         this.globalUploadStatistics = globalUploadStatistics;
         this.peerStatistics = peerStatistics;
         this.accuracy = new ContinuousDegree(accuracy);
@@ -953,18 +983,7 @@ public class ResourceStreamingManager {
             Short incomingSubchannel = subchannelManager.requestSubchannel(slave);
             if (incomingSubchannel != null) {
                 slave.initialize(response.getResourceReader(), request.getRequestingPeer(), incomingSubchannel, request.getSubchannel(), uploadManager);
-                uploadPriorityManager.addRegulatedResource(new jacz.peerengineservice.util.datatransfer.GenericPriorityManager.Stakeholder() {
-                    @Override
-                    public String getStakeholderId() {
-                        return request.getRequestingPeer().toString();
-                    }
-
-                    @Override
-                    public float getStakeholderPriority() {
-                        // priority is a fixed value because we want equality here
-                        return 1f;
-                    }
-                }, slave, SlaveResourceStreamer.INITIAL_SPEED);
+                uploadPriorityManager.addRegulatedResource(new RemotePeerStakeholder(request.getRequestingPeer()), slave);
                 uploadsManager.addUpload(request.getStoreName(), uploadManager);
             } else {
                 // no subchannels available for this slave (the slave will eventually timeout and die,no need to notify him)
@@ -988,13 +1007,13 @@ public class ResourceStreamingManager {
      * @param slave the slave that just died
      */
     public void reportDeadSlaveResourceStreamer(SlaveResourceStreamer slave) {
-        uploadPriorityManager.removeRegulatedResource(slave.getResourceRequest().getRequestingPeer().toString(), slave);
+        uploadPriorityManager.removeRegulatedResource(new RemotePeerStakeholder(slave.getResourceRequest().getRequestingPeer()), slave);
         UploadManager uploadManager = uploadsManager.removeUpload(slave.getResourceRequest().getStoreName(), slave.getId());
         uploadManager.getUploadSessionStatistics().stop();
         freeSubchannel(slave.getIncomingChannel());
     }
 
-    public jacz.peerengineservice.util.datatransfer.GenericPriorityManager getDownloadPriorityManager() {
+    public jacz.peerengineservice.util.datatransfer.GenericPriorityManagerNew getDownloadPriorityManager() {
         return downloadPriorityManager;
     }
 
