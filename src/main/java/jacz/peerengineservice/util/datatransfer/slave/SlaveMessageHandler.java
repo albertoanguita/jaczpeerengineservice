@@ -31,13 +31,10 @@ public class SlaveMessageHandler implements MessageHandler {
         SlaveMessageReader.MessageForHandler messageForHandler = (SlaveMessageReader.MessageForHandler) o;
         if (messageForHandler.isFlush != null) {
             resourceStreamingManager.flush(otherPeer);
-        } else if (messageForHandler.resourceChunk != null) {
+        } else {
             byte[] dataToSend = SlaveMessage.generateResourceChunkMessage(messageForHandler.resourceChunk);
             resourceStreamingManager.write(otherPeer, outgoingChannel, dataToSend, true);
             uploadSessionStatistics.addUploadedSegment(messageForHandler.resourceChunk.getSegment());
-        } else if (messageForHandler.hashSegment != null) {
-            byte[] dataToSend = SlaveMessage.generateSegmentHashData(messageForHandler.correctHash, messageForHandler.hashAlgorithm, messageForHandler.hashSegment);
-            resourceStreamingManager.write(otherPeer, outgoingChannel, dataToSend, true);
         }
     }
 

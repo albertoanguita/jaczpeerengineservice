@@ -1,16 +1,10 @@
 package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
-import jacz.util.concurrency.ThreadUtil;
 import jacz.util.date_time.SpeedMonitor;
-import jacz.util.hash.HashFunction;
 import jacz.util.numeric.LongRange;
 import jacz.util.queues.event_processing.MessageReader;
 import jacz.util.queues.event_processing.StopReadingMessages;
-
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * This class implements a message reader that retrieves chunks of resources for being sent to other peer. These
@@ -30,30 +24,17 @@ class SlaveMessageReader implements MessageReader {
 
         final Boolean isFlush;
 
-        final LongRange hashSegment;
-
-        final String hashAlgorithm;
-
-        final byte[] correctHash;
-
         MessageForHandler(ResourceChunk resourceChunk) {
-            this(resourceChunk, null, null, null, null);
+            this(resourceChunk, null);
         }
 
         MessageForHandler(Boolean flush) {
-            this(null, flush, null, null, null);
+            this(null, flush);
         }
 
-        MessageForHandler(LongRange hashSegment, String hashAlgorithm, byte[] correctHash) {
-            this(null, null, hashSegment, hashAlgorithm, correctHash);
-        }
-
-        MessageForHandler(ResourceChunk resourceChunk, Boolean flush, LongRange hashSegment, String hashAlgorithm, byte[] correctHash) {
+        MessageForHandler(ResourceChunk resourceChunk, Boolean flush) {
             this.resourceChunk = resourceChunk;
             isFlush = flush;
-            this.hashSegment = hashSegment;
-            this.hashAlgorithm = hashAlgorithm;
-            this.correctHash = correctHash;
         }
     }
 
@@ -62,7 +43,9 @@ class SlaveMessageReader implements MessageReader {
      */
     private static final int MILLIS_SPEED_MEASURE = 3000;
 
-    private static final float INITIAL_BLOCK_SIZE = 1000f;
+    private static final double INITIAL_BLOCK_SIZE = 1000d;
+
+    private static final double BLOCK_SIZE_GROW_FACTOR = 1.003d;
 
     private final SlaveResourceStreamer slaveResourceStreamer;
 
@@ -71,8 +54,6 @@ class SlaveMessageReader implements MessageReader {
     private final ResourceReader resourceReader;
 
     private boolean mustFlush;
-
-    private ArrayBlockingQueue<Long> throttleQueue;
 
     /**
      * The preferred size for resource chunks (number of bytes). This size is set accordingly with the desired speed.
@@ -92,14 +73,12 @@ class SlaveMessageReader implements MessageReader {
         mustFlush = false;
         speedLimiter = new SpeedMonitor(MILLIS_SPEED_MEASURE);
         preferredBlockSize = INITIAL_BLOCK_SIZE;
-        throttleQueue = new ArrayBlockingQueue<>(1000, true);
     }
 
     public synchronized void throttle(float variation) {
         // insert a set of wait blocks among the following sending messages
         preferredBlockSize *= variation;
         preferredBlockSize = Math.max(preferredBlockSize, INITIAL_BLOCK_SIZE);
-        System.out.println("Throttle introduced");
     }
 
     public Float getAchievedSpeed() {
@@ -116,14 +95,12 @@ class SlaveMessageReader implements MessageReader {
             // flush the channel
             mustFlush = false;
             return new MessageForHandler(true);
-//            return ResourceChunk.generateFlushChunk();
         } else {
             SlaveResourceStreamer.RemovedRange removedRange;
             synchronized (this) {
-                System.out.println("PREF SIZE: " + (long) preferredBlockSize);
                 removedRange = resourceSegmentQueue.remove((long) preferredBlockSize);
             }
-            preferredBlockSize *= 1.003d;
+            preferredBlockSize *= BLOCK_SIZE_GROW_FACTOR;
             if (removedRange.range == SlaveResourceStreamer.stopMessage) {
                 // the slave resource streamer has requested us to die
                 resourceReader.stop();
@@ -133,37 +110,16 @@ class SlaveMessageReader implements MessageReader {
                 // mark the need to flush the channel in the next iteration
                 mustFlush = true;
             }
-            if (removedRange.isHash) {
-                // we must send a hash
-                try {
-                    HashFunction hashFunction = new HashFunction(SlaveResourceStreamer.HASH_ALGORITHM);
-                    byte[] correctHash;
-                    try {
-                        correctHash = hashFunction.digest(resourceReader.read(removedRange.range.getMin(), removedRange.range.size().intValue()));
-                        return new MessageForHandler(removedRange.range, SlaveResourceStreamer.HASH_ALGORITHM, correctHash);
-                    } catch (IOException e) {
-                        slaveResourceStreamer.die(true);
-                        return new StopReadingMessages();
-                    }
-                } catch (NoSuchAlgorithmException e) {
-                    // hash cannot be sent, send a flush instead
-                    return new MessageForHandler(true);
-                }
-            } else {
-                LongRange rangeToSend = removedRange.range;
-                speedLimiter.addProgress(rangeToSend.size());
-                if (!throttleQueue.isEmpty()) {
-                    ThreadUtil.safeSleep(throttleQueue.poll());
-                }
-                byte[] data;
-                try {
-                    data = resourceReader.read(rangeToSend.getMin(), rangeToSend.size().intValue());
-                } catch (Exception e) {
-                    slaveResourceStreamer.die(true);
-                    return new StopReadingMessages();
-                }
-                return new MessageForHandler(ResourceChunk.generateDataChunk(rangeToSend.getMin(), data));
+            LongRange rangeToSend = removedRange.range;
+            speedLimiter.addProgress(rangeToSend.size());
+            byte[] data;
+            try {
+                data = resourceReader.read(rangeToSend.getMin(), rangeToSend.size().intValue());
+            } catch (Exception e) {
+                slaveResourceStreamer.die(true);
+                return new StopReadingMessages();
             }
+            return new MessageForHandler(ResourceChunk.generateDataChunk(rangeToSend.getMin(), data));
         }
     }
 

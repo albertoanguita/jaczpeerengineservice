@@ -29,11 +29,8 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
 
         final LongRange range;
 
-        final boolean isHash;
-
-        RemovedRange(LongRange range, boolean isHash) {
+        RemovedRange(LongRange range) {
             this.range = range;
-            this.isHash = isHash;
         }
 
         @Override
@@ -43,7 +40,6 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
 
             RemovedRange that = (RemovedRange) o;
 
-            if (isHash != that.isHash) return false;
             if (!range.equals(that.range)) return false;
 
             return true;
@@ -52,7 +48,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         @Override
         public int hashCode() {
             int result = range.hashCode();
-            result = 31 * result + (isHash ? 1 : 0);
+            result = 31 * result;
             return result;
         }
     }
@@ -77,30 +73,23 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         RemovedRange remove(long preferredBlockSize) {
             if (!queue.isEmpty() && queue.getRanges().get(0) == stopMessage) {
                 // issue stop order
-                return new RemovedRange(queue.remove(stopMessage.size()), false);
+                return new RemovedRange(queue.remove(stopMessage.size()));
             }
-            if (preferredIntermediateHashesSize != null && currentHashSize == 0) {
-                LongRange rangeForHash = queue.peek(preferredIntermediateHashesSize);
-                currentHashSize = rangeForHash.size();
-                amountOfCurrentHashSent = 0;
-                return new RemovedRange(rangeForHash, true);
+            long maxChunkSize;
+            if (currentHashSize > 0) {
+                // the limit is the current hash size
+                maxChunkSize = Math.min(preferredBlockSize, currentHashSize - amountOfCurrentHashSent);
             } else {
-                long maxChunkSize;
-                if (currentHashSize > 0) {
-                    // the limit is the current hash size
-                    maxChunkSize = Math.min(preferredBlockSize, currentHashSize - amountOfCurrentHashSent);
-                } else {
-                    maxChunkSize = preferredBlockSize;
-                }
-                LongRange removedRange = queue.remove(maxChunkSize);
-                amountOfCurrentHashSent += removedRange.size();
-                if (amountOfCurrentHashSent == currentHashSize) {
-                    // the segment for the current hash has been fully sent -> reset
-                    amountOfCurrentHashSent = 0;
-                    currentHashSize = 0;
-                }
-                return new RemovedRange(removedRange, false);
+                maxChunkSize = preferredBlockSize;
             }
+            LongRange removedRange = queue.remove(maxChunkSize);
+            amountOfCurrentHashSent += removedRange.size();
+            if (amountOfCurrentHashSent == currentHashSize) {
+                // the segment for the current hash has been fully sent -> reset
+                amountOfCurrentHashSent = 0;
+                currentHashSize = 0;
+            }
+            return new RemovedRange(removedRange);
         }
 
         boolean isEmpty() {

@@ -413,14 +413,6 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         downloadReports.reportDownloadedSegment(resourceProvider, downloadedSegment);
     }
 
-    synchronized void reportCorrectIntermediateHash(LongRange range) {
-        downloadReports.reportCorrectIntermediateHash(range);
-    }
-
-    synchronized void reportFailedIntermediateHash(LongRange range) {
-        downloadReports.reportFailedIntermediateHash(range);
-    }
-
     /**
      * The download is complete, so resources must be freed and notifications must be submitted. Invoked by the scheduler, from a slave controller
      * thread

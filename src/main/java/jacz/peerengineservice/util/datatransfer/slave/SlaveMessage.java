@@ -23,8 +23,6 @@ public class SlaveMessage {
         SEGMENT_AVAILABILITY_REPORT,
         // report of the resource segment assignation
         SEGMENT_ASSIGNATION_REPORT,
-        // report of the hash of the subsequent data
-        SEGMENT_HASH_DATA,
         // a slave informs that he does not have the segments we have required him
         UNAVAILABLE_SEGMENT_WARNING,
         // a slave informs that he has died
@@ -51,12 +49,6 @@ public class SlaveMessage {
      */
     public final ResourcePart resourcePart;
 
-    public final byte[] correctHash;
-
-    public final String hashAlgorithm;
-
-    public final LongRange hashSegment;
-
     public SlaveMessage(byte[] data) {
         MutableOffset offset = new MutableOffset();
         messageType = Serializer.deserializeEnum(MessageType.class, data, offset);
@@ -66,18 +58,12 @@ public class SlaveMessage {
                     resourceChunk = new ResourceChunk(data, offset);
                     resourceSize = null;
                     resourcePart = null;
-                    correctHash = null;
-                    hashAlgorithm = null;
-                    hashSegment = null;
                     break;
 
                 case RESOURCE_SIZE_REPORT:
                     resourceChunk = null;
                     resourceSize = Serializer.deserializeLong(data, offset);
                     resourcePart = null;
-                    correctHash = null;
-                    hashAlgorithm = null;
-                    hashSegment = null;
                     break;
 
                 case SEGMENT_AVAILABILITY_REPORT:
@@ -91,20 +77,6 @@ public class SlaveMessage {
                         long max = Serializer.deserializeLong(data, offset);
                         resourcePart.add(new LongRange(min, max));
                     }
-                    correctHash = null;
-                    hashAlgorithm = null;
-                    hashSegment = null;
-                    break;
-
-                case SEGMENT_HASH_DATA:
-                    resourceChunk = null;
-                    resourceSize = null;
-                    resourcePart = null;
-                    correctHash = Serializer.deserializeBytes(data, offset);
-                    hashAlgorithm = Serializer.deserializeString(data, offset);
-                    Long min = Serializer.deserializeLong(data, offset);
-                    Long max = Serializer.deserializeLong(data, offset);
-                    hashSegment = new LongRange(min, max);
                     break;
 
                 case UNAVAILABLE_SEGMENT_WARNING:
@@ -113,17 +85,11 @@ public class SlaveMessage {
                     resourceChunk = null;
                     resourceSize = null;
                     resourcePart = null;
-                    correctHash = null;
-                    hashAlgorithm = null;
-                    hashSegment = null;
             }
         } else {
             resourceChunk = null;
             resourceSize = null;
             resourcePart = null;
-            correctHash = null;
-            hashAlgorithm = null;
-            hashSegment = null;
         }
     }
 
@@ -155,11 +121,6 @@ public class SlaveMessage {
             message = Serializer.addArrays(message, Serializer.serialize(aSegment.getMax()));
         }
         return message;
-    }
-
-    static byte[] generateSegmentHashData(byte[] correctHash, String hashAlgorithm, LongRange hashSegment) {
-        byte[] messageType = Serializer.serialize(MessageType.SEGMENT_HASH_DATA);
-        return Serializer.addArrays(messageType, Serializer.serialize(correctHash), Serializer.serialize(hashAlgorithm), Serializer.serialize(hashSegment.getMin()), Serializer.serialize(hashSegment.getMax()));
     }
 
     static byte[] generateUnavailableSegmentsMessage() {

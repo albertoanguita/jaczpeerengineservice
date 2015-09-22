@@ -2,7 +2,6 @@ package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.slave.ResourceChunk;
-import jacz.util.hash.HashFunction;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.util.numeric.ContinuousDegree;
@@ -11,8 +10,6 @@ import jacz.util.numeric.NumericUtil;
 import jacz.util.numeric.RangeSet;
 import jacz.util.stochastic.StochasticUtil;
 
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -23,55 +20,6 @@ import java.util.PriorityQueue;
  * The methods of the ResourcePartScheduler are not thread-safe, so concurrency issues must be dealt with externally.
  */
 class ResourcePartScheduler {
-
-    private class AssignedPartHash {
-
-        private final LongRange hashRange;
-
-        private final ResourcePart remainingHash;
-
-        private final byte[] correctHash;
-
-        /**
-         * Digested message so far
-         */
-        private HashFunction hashFunction;
-
-        private AssignedPartHash(LongRange hashRange, byte[] correctHash, String hashAlgorithm) {
-            this.hashRange = hashRange;
-            remainingHash = new ResourcePart(hashRange);
-            this.correctHash = correctHash;
-            try {
-                hashFunction = new HashFunction(hashAlgorithm);
-            } catch (NoSuchAlgorithmException e) {
-                masterResourceStreamer.reportInvalidHashAlgorithm(hashRange, hashAlgorithm);
-                hashFunction = null;
-            }
-        }
-
-        private LongRange getHashRange() {
-            return hashRange;
-        }
-
-        private void digestData(ResourceChunk resourceChunk) {
-            if (hashFunction != null) {
-                // digest data
-                hashFunction.update(resourceChunk.getData());
-                remainingHash.remove(resourceChunk.getSegment());
-            } else {
-                // wrong chunk received, stop digesting
-                hashFunction = null;
-            }
-        }
-
-        private boolean isHashCheckingComplete() {
-            return remainingHash.isEmpty();
-        }
-
-        private boolean isCorrectHash() {
-            return Arrays.equals(correctHash, hashFunction.digest());
-        }
-    }
 
     /**
      * Data about each slave that the ResourcePartScheduler handles for its calculations. The data stored here includes
@@ -100,12 +48,6 @@ class ResourcePartScheduler {
          */
         private ResourcePart assignedPart;
 
-        /**
-         * Hash of the assignment. The hash is received before any assignment chunk, and is checked after the assignment has been fully received
-         * Null means that no hash is set to the currently assigned part
-         */
-        private AssignedPartHash assignedPartHash;
-
         SlaveData(UniqueIdentifier id) {
             this(id, new ResourcePart(), new ResourcePart(), new ResourcePart());
         }
@@ -114,7 +56,6 @@ class ResourcePartScheduler {
             this.id = id;
             setSharedPart(sharedPart, usefulPart);
             this.assignedPart = assignedPart;
-            assignedPartHash = null;
         }
 
         /**
@@ -143,11 +84,6 @@ class ResourcePartScheduler {
          */
         void clearAssignation() {
             assignedPart.clear();
-            clearSegmentHash();
-        }
-
-        void setSegmentHash(LongRange segment, byte[] hash, String hashAlgorithm) {
-            assignedPartHash = new AssignedPartHash(segment, hash, hashAlgorithm);
         }
 
         /**
@@ -157,28 +93,6 @@ class ResourcePartScheduler {
          */
         void assignedSegmentDownloaded(ResourceChunk resourceChunk) {
             assignedPart.remove(resourceChunk.getSegment());
-            if (assignedPartHash != null) {
-                assignedPartHash.digestData(resourceChunk);
-            }
-        }
-
-        /**
-         * @return true if this chunk completed a hash checking
-         */
-        boolean isHashCheckingComplete() {
-            return assignedPartHash != null && assignedPartHash.isHashCheckingComplete();
-        }
-
-        boolean isCorrectHash() {
-            return assignedPartHash != null && assignedPartHash.isCorrectHash();
-        }
-
-        LongRange getHashSegment() {
-            return assignedPartHash.getHashRange();
-        }
-
-        void clearSegmentHash() {
-            assignedPartHash = null;
         }
 
         /**
@@ -343,7 +257,7 @@ class ResourcePartScheduler {
         this.resourceSize = resourceSize;
         initializeRemainingPart(ownedPart);
         assignedPart = new ResourcePart();
-        activeSlaves = new HashMap<UniqueIdentifier, SlaveData>(0);
+        activeSlaves = new HashMap<>(0);
         this.streamingNeed = new ContinuousDegree(streamingNeed);
     }
 
@@ -367,15 +281,6 @@ class ResourcePartScheduler {
         }
     }
 
-    synchronized void reportSegmentHash(SlaveController slaveController, byte[] correctHash, String hashAlgorithm, LongRange hashSegment) {
-        if (checkSizeIsKnown()) {
-            if (activeSlaves.containsKey(slaveController.getId())) {
-                SlaveData slaveData = activeSlaves.get(slaveController.getId());
-                slaveData.setSegmentHash(hashSegment, correctHash, hashAlgorithm);
-            }
-        }
-    }
-
     synchronized void reportDownloadedSegment(SlaveController slaveController, ResourceChunk resourceChunk) {
         LongRange downloadedSegment = resourceChunk.getSegment();
         if (checkSizeIsKnown()) {
@@ -384,18 +289,6 @@ class ResourcePartScheduler {
                 masterResourceStreamer.reportDownloadedSegment(slaveController.getResourceProvider(), downloadedSegment);
                 SlaveData slaveData = activeSlaves.get(slaveController.getId());
                 slaveData.assignedSegmentDownloaded(resourceChunk);
-                if (slaveData.isHashCheckingComplete()) {
-                    // hash segment completed -> check correct hash
-                    if (slaveData.isCorrectHash()) {
-                        // the hash matches, everything is ok
-                        masterResourceStreamer.reportCorrectIntermediateHash(slaveData.getHashSegment());
-                    } else {
-                        // incorrect hash! discard the hash segment (put it as remaining part again)
-                        masterResourceStreamer.reportFailedIntermediateHash(slaveData.getHashSegment());
-                        remainingPart.add(slaveData.getHashSegment());
-                    }
-                    slaveData.clearSegmentHash();
-                }
                 if (downloadIsComplete()) {
                     // no need to parallelize these MasterResourceStreamer calls because the master resource streamer is owning always this thread
                     masterResourceStreamer.reportDownloadComplete();
@@ -535,7 +428,7 @@ class ResourcePartScheduler {
                     return new ObjectListWrapper(NoAssignationCause.NO_USEFUL_PARTS);
                 }
 
-                Long selectedPosition = null;
+                Long selectedPosition;
                 if (streamingNeed.isMax()) {
                     // for maximum streaming need we skip all calculations and simply get the first block
                     selectedPosition = assignableSegments.getPosition(0);
@@ -547,7 +440,7 @@ class ResourcePartScheduler {
                     // resource. We keep count of how many slaves are sharing all the resource (speed up calculations)
                     // and which share just part of the resource (in these, we distinguish from those with little share
                     // and those with more than little share (false -> big share, true -> low share)
-                    Map<SlaveData, Boolean> slavesNotSharingAll = new HashMap<SlaveData, Boolean>(0);
+                    Map<SlaveData, Boolean> slavesNotSharingAll = new HashMap<>(0);
                     int slaveSharingAllCount = 0;
                     int totalSlaveCount = activeSlaves.size() - 1;
                     for (UniqueIdentifier aSlaveID : activeSlaves.keySet()) {
@@ -573,7 +466,7 @@ class ResourcePartScheduler {
                     double initialScore = 1.0d;
 
                     // this queue stores the candidates blocks, ordering them from higher to lower score
-                    PriorityQueue<CandidateBlock> blockCandidates = new PriorityQueue<CandidateBlock>();
+                    PriorityQueue<CandidateBlock> blockCandidates = new PriorityQueue<>();
 
                     for (int i = 0; i < blockCount; i++) {
                         // part of the total assignable part that this block covers (in terms of fraction, e.g. 3/10 ->

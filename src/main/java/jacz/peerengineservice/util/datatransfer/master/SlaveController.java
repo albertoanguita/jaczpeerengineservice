@@ -330,10 +330,6 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
                             // ignore this message. See if this is useful in the future
                             break;
 
-                        case SEGMENT_HASH_DATA:
-                            resourcePartScheduler.reportSegmentHash(this, slaveMessage.correctHash, slaveMessage.hashAlgorithm, slaveMessage.hashSegment);
-                            break;
-
                         case UNAVAILABLE_SEGMENT_WARNING:
                             // we have wrong segments assigned to this slave, request again his share
                             resourceLink.requestAvailableSegments();

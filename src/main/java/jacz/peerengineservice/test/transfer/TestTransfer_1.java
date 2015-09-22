@@ -34,7 +34,7 @@ public class TestTransfer_1 {
         client.getPeerClient().addForeignResourceStore("files", foreignStoreShare);
         client.startClient();
 
-        client.getPeerClient().setMaxDesiredDownloadSpeed(75000f);
+        client.getPeerClient().setMaxDesiredDownloadSpeed(750000f);
 
         ThreadUtil.safeSleep(1000);
 
