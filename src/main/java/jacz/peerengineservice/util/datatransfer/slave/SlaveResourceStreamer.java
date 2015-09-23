@@ -166,9 +166,9 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         this.incomingChannel = incomingChannel;
         this.outgoingChannel = outgoingChannel;
         resourceSegmentQueue = new ResourceSegmentQueue(resourceRequest.getPreferredIntermediateHashesSize());
-        messageReader = new SlaveMessageReader(this, resourceSegmentQueue, resourceReader);
         uploadSessionStatistics = uploadManager.getUploadSessionStatistics();
-        MessageHandler messageHandler = new jacz.peerengineservice.util.datatransfer.slave.SlaveMessageHandler(resourceStreamingManager, otherPeer, outgoingChannel, uploadSessionStatistics);
+        SlaveMessageHandler messageHandler = new jacz.peerengineservice.util.datatransfer.slave.SlaveMessageHandler(resourceStreamingManager, otherPeer, outgoingChannel, uploadSessionStatistics);
+        messageReader = new SlaveMessageReader(this, resourceSegmentQueue, resourceReader, messageHandler);
         MessageProcessor dataSender = new MessageProcessor(messageReader, messageHandler, false);
         dataSender.start();
         sendInitializationMessage(incomingChannel);
@@ -229,7 +229,6 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
                         break;
 
                     case ADD_NEW_SEGMENT:
-                        System.out.println("Slave - segment: " + masterMessage.segment);
                         // get first and last byte of the segment to add
                         try {
                             if (resourceReader.availableSegments().contains(masterMessage.segment)) {

@@ -80,7 +80,7 @@ public class DownloadManager {
         return masterResourceStreamer.getResourceSize();
     }
 
-    public Statistics getStatistics() {
+    public ResourceDownloadStatistics getStatistics() {
         return masterResourceStreamer.getStatistics();
     }
 

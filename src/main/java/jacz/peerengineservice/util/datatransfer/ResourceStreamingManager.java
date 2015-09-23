@@ -564,12 +564,12 @@ public class ResourceStreamingManager {
      * Manager for controlling upload speeds of resource transfers
      */
 //    private final jacz.peerengineservice.util.datatransfer.GenericPriorityManager uploadPriorityManager;
-    private final jacz.peerengineservice.util.datatransfer.GenericPriorityManagerNew uploadPriorityManager;
+    private final GenericPriorityManager uploadPriorityManager;
 
     /**
      * Manager for controlling download speeds of resource transfers
      */
-    private final jacz.peerengineservice.util.datatransfer.GenericPriorityManagerNew downloadPriorityManager;
+    private final GenericPriorityManager downloadPriorityManager;
 
     private final jacz.peerengineservice.util.datatransfer.GlobalUploadStatistics globalUploadStatistics;
 
@@ -606,8 +606,8 @@ public class ResourceStreamingManager {
         downloadsManager = new jacz.peerengineservice.util.datatransfer.DownloadsManager(peerClientPrivateInterface);
         uploadsManager = new jacz.peerengineservice.util.datatransfer.UploadsManager(peerClientPrivateInterface);
         //badRequestsManager = new BadRequestsManager(FAILED_REQUEST_RESUBMIT_DELAY, FAILED_REQUEST_RESUBMIT_FACTOR, this);
-        uploadPriorityManager = new jacz.peerengineservice.util.datatransfer.GenericPriorityManagerNew(true);
-        downloadPriorityManager = new jacz.peerengineservice.util.datatransfer.GenericPriorityManagerNew(false);
+        uploadPriorityManager = new GenericPriorityManager(true);
+        downloadPriorityManager = new GenericPriorityManager(false);
         this.globalUploadStatistics = globalUploadStatistics;
         this.peerStatistics = peerStatistics;
         this.accuracy = new ContinuousDegree(accuracy);
@@ -644,20 +644,20 @@ public class ResourceStreamingManager {
         ccp.registerGenericFSM(peerDataReceiver, "PeerDataReceiver", ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL);
     }
 
-    public void write(PeerID destinationPeer, short subchannel, Object message) {
-        connectedPeersMessenger.sendObjectMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, new SubchannelObjectMessage(subchannel, message), true);
+    public long write(PeerID destinationPeer, short subchannel, Object message) {
+        return connectedPeersMessenger.sendObjectMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, new SubchannelObjectMessage(subchannel, message), true);
     }
 
-    public void write(PeerID destinationPeer, short subchannel, byte[] message) {
-        write(destinationPeer, subchannel, message, true);
+    public long write(PeerID destinationPeer, short subchannel, byte[] message) {
+        return write(destinationPeer, subchannel, message, true);
     }
 
-    public void write(PeerID destinationPeer, short subchannel, byte[] message, boolean flush) {
-        connectedPeersMessenger.sendDataMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, SubchannelDataMessage.encode(subchannel, message), flush);
+    public long write(PeerID destinationPeer, short subchannel, byte[] message, boolean flush) {
+        return connectedPeersMessenger.sendDataMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, SubchannelDataMessage.encode(subchannel, message), flush);
     }
 
-    public void flush(PeerID destinationPeer) {
-        connectedPeersMessenger.flush(destinationPeer);
+    public long flush(PeerID destinationPeer) {
+        return connectedPeersMessenger.flush(destinationPeer);
     }
 
     synchronized void processMessage(Object o) {
@@ -1013,7 +1013,7 @@ public class ResourceStreamingManager {
         freeSubchannel(slave.getIncomingChannel());
     }
 
-    public jacz.peerengineservice.util.datatransfer.GenericPriorityManagerNew getDownloadPriorityManager() {
+    public GenericPriorityManager getDownloadPriorityManager() {
         return downloadPriorityManager;
     }
 

@@ -25,6 +25,10 @@ public class ResourceStoreImpl implements ResourceStore {
                 return "4de39a9e54d1272c524a50ccff3679ad";
             case "file_5":
                 return "7d5afa3195a2f872800b2ca4443b0f84";
+            case "file_6":
+                return "0a62fc26219082cc8ad568994a712fd3";
+            case "file_7":
+                return "dc8abfd2a07676e6dd82d3ca600ad03a";
             default:
                 return null;
         }
@@ -44,6 +48,10 @@ public class ResourceStoreImpl implements ResourceStore {
                     return ResourceStoreResponse.resourceApproved(new BasicFileReader("etc/files/file_4.rar"));
                 case "file_5":
                     return ResourceStoreResponse.resourceApproved(new BasicFileReader("etc/files/file_5.rar"));
+                case "file_6":
+                    return ResourceStoreResponse.resourceApproved(new BasicFileReader("etc/files/file_6.rar"));
+                case "file_7":
+                    return ResourceStoreResponse.resourceApproved(new BasicFileReader("etc/files/file_7.rar"));
                 default:
                     return ResourceStoreResponse.resourceNotFound();
             }

@@ -26,7 +26,7 @@ class DownloadReports {
 
     private final SequentialTaskExecutor sequentialTaskExecutor;
 
-    private Statistics statistics;
+    private ResourceDownloadStatistics resourceDownloadStatistics;
 
 
     DownloadReports(DownloadManager downloadManager, String resourceID, String storeName, DownloadProgressNotificationHandler downloadProgressNotificationHandler) {
@@ -37,12 +37,12 @@ class DownloadReports {
         sequentialTaskExecutor = new SequentialTaskExecutor();
     }
 
-    public Statistics getStatistics() {
-        return statistics;
+    public ResourceDownloadStatistics getResourceDownloadStatistics() {
+        return resourceDownloadStatistics;
     }
 
     public void initializeWriting(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerStatistics peerStatistics) throws IOException {
-        statistics = new Statistics(resourceWriter, globalDownloadStatistics, peerStatistics);
+        resourceDownloadStatistics = new ResourceDownloadStatistics(resourceWriter, globalDownloadStatistics, peerStatistics);
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -65,7 +65,7 @@ class DownloadReports {
     }
 
     void addProvider(final ResourceProvider resourceProvider) {
-        final ProviderStatistics providerStatistics = statistics.addProvider(resourceProvider);
+        final ProviderStatistics providerStatistics = resourceDownloadStatistics.addProvider(resourceProvider);
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -77,7 +77,7 @@ class DownloadReports {
     }
 
     void removeProvider(final ResourceProvider resourceProvider) {
-        final ProviderStatistics providerStatistics = statistics.removeProvider(resourceProvider);
+        final ProviderStatistics providerStatistics = resourceDownloadStatistics.removeProvider(resourceProvider);
         if (downloadProgressNotificationHandler != null && providerStatistics != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -89,7 +89,7 @@ class DownloadReports {
     }
 
     void reportSharedPart(ResourceProvider resourceProvider, final ResourcePart resourcePart) {
-        final ProviderStatistics providerStatistics = statistics.reportSharedPart(resourceProvider, resourcePart);
+        final ProviderStatistics providerStatistics = resourceDownloadStatistics.reportSharedPart(resourceProvider, resourcePart);
         if (downloadProgressNotificationHandler != null && providerStatistics != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -101,7 +101,7 @@ class DownloadReports {
     }
 
     void reportAssignedSegment(ResourceProvider resourceProvider, final LongRange segment) {
-        final ProviderStatistics providerStatistics = statistics.reportAssignedPart(resourceProvider, segment);
+        final ProviderStatistics providerStatistics = resourceDownloadStatistics.reportAssignedPart(resourceProvider, segment);
         if (downloadProgressNotificationHandler != null && providerStatistics != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -113,7 +113,7 @@ class DownloadReports {
     }
 
     void reportClearedAssignation(ResourceProvider resourceProvider) {
-        final ProviderStatistics providerStatistics = statistics.reportClearedAssignation(resourceProvider);
+        final ProviderStatistics providerStatistics = resourceDownloadStatistics.reportClearedAssignation(resourceProvider);
         if (downloadProgressNotificationHandler != null && providerStatistics != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -125,7 +125,7 @@ class DownloadReports {
     }
 
     void reportDownloadedSegment(ResourceProvider resourceProvider, final LongRange segment) {
-        statistics.reportDownloadedPart(resourceProvider, segment);
+        resourceDownloadStatistics.reportDownloadedPart(resourceProvider, segment);
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -137,7 +137,7 @@ class DownloadReports {
     }
 
     void reportCorrectIntermediateHash(final LongRange segment) {
-        statistics.reportCorrectIntermediateHash(segment);
+        resourceDownloadStatistics.reportCorrectIntermediateHash(segment);
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -149,7 +149,7 @@ class DownloadReports {
     }
 
     void reportFailedIntermediateHash(final LongRange segment) {
-        statistics.reportFailedIntermediateHash(segment);
+        resourceDownloadStatistics.reportFailedIntermediateHash(segment);
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -224,8 +224,8 @@ class DownloadReports {
                 }
             });
         }
-        statistics.downloadComplete();
-        statistics.stop();
+        resourceDownloadStatistics.downloadComplete();
+        resourceDownloadStatistics.stop();
     }
 
     void reportCancelled(final DownloadProgressNotificationHandler.CancellationReason reason) {
@@ -262,7 +262,7 @@ class DownloadReports {
     }
 
     void reportStopped() throws IOException {
-        statistics.stopSession();
+        resourceDownloadStatistics.stopSession();
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override

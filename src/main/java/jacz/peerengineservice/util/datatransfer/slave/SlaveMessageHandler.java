@@ -9,6 +9,8 @@ import jacz.util.queues.event_processing.MessageHandler;
  */
 public class SlaveMessageHandler implements MessageHandler {
 
+    private static final long CHOKE_THRESHOLD = 150L;
+
     private final ResourceStreamingManager resourceStreamingManager;
 
     private final PeerID otherPeer;
@@ -17,12 +19,15 @@ public class SlaveMessageHandler implements MessageHandler {
 
     private final UploadSessionStatistics uploadSessionStatistics;
 
+    private boolean isChoke;
+
 
     public SlaveMessageHandler(ResourceStreamingManager resourceStreamingManager, PeerID otherPeer, short outgoingChannel, UploadSessionStatistics uploadSessionStatistics) {
         this.resourceStreamingManager = resourceStreamingManager;
         this.otherPeer = otherPeer;
         this.outgoingChannel = outgoingChannel;
         this.uploadSessionStatistics = uploadSessionStatistics;
+        this.isChoke = false;
     }
 
     @Override
@@ -33,7 +38,10 @@ public class SlaveMessageHandler implements MessageHandler {
             resourceStreamingManager.flush(otherPeer);
         } else {
             byte[] dataToSend = SlaveMessage.generateResourceChunkMessage(messageForHandler.resourceChunk);
-            resourceStreamingManager.write(otherPeer, outgoingChannel, dataToSend, true);
+            long time = resourceStreamingManager.write(otherPeer, outgoingChannel, dataToSend, true);
+            synchronized (this) {
+                isChoke = time > CHOKE_THRESHOLD;
+            }
             uploadSessionStatistics.addUploadedSegment(messageForHandler.resourceChunk.getSegment());
         }
     }
@@ -41,5 +49,9 @@ public class SlaveMessageHandler implements MessageHandler {
     @Override
     public void finalizeHandler() {
         // nothing to do
+    }
+
+    synchronized boolean isChoke() {
+        return isChoke;
     }
 }

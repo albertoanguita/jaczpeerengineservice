@@ -34,10 +34,12 @@ public class ConnectedPeersMessenger {
      * @param peerID  ID of the peer to which the message is to be sent
      * @param message string message to send
      */
-    public void sendObjectMessage(PeerID peerID, byte channel, Serializable message, boolean flush) {
+    public long sendObjectMessage(PeerID peerID, byte channel, Serializable message, boolean flush) {
         ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerID);
         if (ccp != null) {
-            ccp.write(channel, message, flush);
+            return ccp.write(channel, message, flush);
+        } else {
+            return 0L;
         }
     }
 
@@ -59,9 +61,9 @@ public class ConnectedPeersMessenger {
      * @param peerID  ID of the peer to which the message is to be sent
      * @param message string message to send
      */
-    public void sendObjectRequest(PeerID peerID, Serializable message) {
+    public long sendObjectRequest(PeerID peerID, Serializable message) {
         RequestFromPeerToPeer requestFromPeerToPeer = RequestFromPeerToPeer.generateObjectMessageRequest(message);
-        sendObjectMessage(peerID, requestDispatcherChannel, requestFromPeerToPeer, true);
+        return sendObjectMessage(peerID, requestDispatcherChannel, requestFromPeerToPeer, true);
     }
 
     /**
@@ -81,17 +83,21 @@ public class ConnectedPeersMessenger {
      * @param peerID ID of the peer to which the message is to be sent
      * @param data   data to send
      */
-    public void sendDataMessage(PeerID peerID, byte channel, byte[] data, boolean flush) {
+    public long sendDataMessage(PeerID peerID, byte channel, byte[] data, boolean flush) {
         ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerID);
         if (ccp != null) {
-            ccp.write(channel, data, flush);
+            return ccp.write(channel, data, flush);
+        } else {
+            return 0L;
         }
     }
 
-    public void flush(PeerID peerID) {
+    public long flush(PeerID peerID) {
         ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerID);
         if (ccp != null) {
-            ccp.flush();
+            return ccp.flush();
+        } else {
+            return 0L;
         }
     }
 }

@@ -7,9 +7,7 @@ import jacz.commengine.communication.CommError;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.network.IP4Port;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This class represents the Peer Server that accepts connections from peer clients. The Peer Server mission is to allow clients find each other.
@@ -63,9 +61,16 @@ public class PeerServer {
 
 
     public PeerServer(PeerServerConfig peerServerConfig, PeerServerAction peerServerAction) {
-        connectedClients = new HashMap<PeerID, ConnectedClientData>();
-        clientIDToPeerID = new HashMap<UniqueIdentifier, PeerID>();
-        serverModule = new ServerModule(peerServerConfig.getPort(), new ServerActionImpl(this), null);
+        connectedClients = new HashMap<>();
+        clientIDToPeerID = new HashMap<>();
+        Set<Byte> allChannels = new HashSet<>();
+        for (Byte channel = Byte.MIN_VALUE; channel < Byte.MAX_VALUE; channel++) {
+            allChannels.add(channel);
+        }
+        allChannels.add(Byte.MAX_VALUE);
+        Set<Set<Byte>> concurrentChannels = new HashSet<>();
+        concurrentChannels.add(allChannels);
+        serverModule = new ServerModule(peerServerConfig.getPort(), new ServerActionImpl(this), concurrentChannels);
         this.peerServerAction = peerServerAction;
         running = false;
     }

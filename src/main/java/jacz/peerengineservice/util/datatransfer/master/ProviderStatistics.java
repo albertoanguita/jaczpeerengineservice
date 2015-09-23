@@ -76,7 +76,7 @@ public class ProviderStatistics {
         dateStartedThisSession = new GregorianCalendar().getTime();
         sharedPart.clear();
         assignedPart.clear();
-        speed = new SpeedMonitor(Statistics.MILLIS_FOR_SPEED_MEASURE);
+        speed = new SpeedMonitor(ResourceDownloadStatistics.MILLIS_FOR_SPEED_MEASURE);
     }
 
     public ResourceProvider getResourceProvider() {

@@ -42,7 +42,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     /**
      * Time in millis that a slave is allowed to live without producing any signal
      */
-    private static final long SLAVE_TIMEOUT_MILLIS = 30000;
+    private static final long SLAVE_TIMEOUT_MILLIS = 20000;
 
     private static final long MILLIS_TO_MEASURE_SPEED = 5000;
 
@@ -268,7 +268,6 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         // it we are still waiting for an initialization message, initialize, as it is presumably such message.
         // if not, die as every message must be received as byte[]
         if (alive) {
-            System.out.println("RESET TIMER OBJECT");
             resetTimeoutTimer();
             if (isWaitingForRequestResponse()) {
                 initialize(message);
@@ -411,7 +410,6 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
             if (timer == timeoutTimer) {
                 // this slave died, either from too much time to answer the initial requests, or from too much time without
                 // any activity (the reason does not matter at this point). The timer is killed afterwards
-                System.out.println("SLAVE TIMEOUT!!!");
                 die(true);
                 return 0l;
             } else if (timer == requestAssignationTimer) {
@@ -480,7 +478,6 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
                     case LOW_SPEED:
                         // remove all assignation to this slave (try later). Also reset timeout to avoid dying
                         eraseCurrentAssignment();
-                        System.out.println("RESET TIMER LOW SPEED");
                         resetTimeoutTimer();
                         setUpRequestAssignationTimer();
                         break;
@@ -499,7 +496,6 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
                     case NO_USEFUL_PARTS:
                         // this slave has no useful parts -> try later (maybe some part will become useful)
                         // we also reset the timeout to avoid dying for non useful parts
-                        System.out.println("RESET TIMER NO USEFUL PARTS");
                         resetTimeoutTimer();
                         setUpRequestAssignationTimer();
                         break;

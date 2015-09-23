@@ -38,7 +38,7 @@ public class ForeignStoreShare implements NotificationEmitter {
      * Class constructor
      */
     public ForeignStoreShare() {
-        remoteResources = new HashMap<String, Set<PeerID>>();
+        remoteResources = new HashMap<>();
         notificationProcessor = new NotificationProcessor();
     }
 
@@ -50,8 +50,7 @@ public class ForeignStoreShare implements NotificationEmitter {
      */
     public synchronized void addResourceProvider(String resourceID, PeerID peerID) {
         if (!remoteResources.containsKey(resourceID)) {
-            Set<PeerID> providers = new HashSet<PeerID>();
-            remoteResources.put(resourceID, providers);
+            remoteResources.put(resourceID, new HashSet<PeerID>());
         }
         remoteResources.get(resourceID).add(peerID);
         notificationProcessor.newEvent(resourceID);
@@ -92,9 +91,9 @@ public class ForeignStoreShare implements NotificationEmitter {
      */
     public synchronized Set<PeerID> getForeignPeerShares(String resourceID) {
         if (remoteResources.containsKey(resourceID)) {
-            return new HashSet<PeerID>(remoteResources.get(resourceID));
+            return new HashSet<>(remoteResources.get(resourceID));
         } else {
-            return new HashSet<PeerID>();
+            return new HashSet<>();
         }
     }
 

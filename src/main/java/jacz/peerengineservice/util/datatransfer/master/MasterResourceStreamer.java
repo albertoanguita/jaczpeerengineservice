@@ -218,8 +218,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         return state;
     }
 
-    public Statistics getStatistics() {
-        return downloadReports.getStatistics();
+    public ResourceDownloadStatistics getStatistics() {
+        return downloadReports.getResourceDownloadStatistics();
     }
 
     /**
@@ -554,7 +554,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     }
 
     synchronized Float getSlaveControllerAchievedSpeed(SlaveController slaveController) {
-        ProviderStatistics providerStatistics = downloadReports.getStatistics().getProviders().get(slaveController.getResourceProvider().getID());
+        ProviderStatistics providerStatistics = downloadReports.getResourceDownloadStatistics().getProviders().get(slaveController.getResourceProvider().getID());
         if (providerStatistics != null) {
             Double speed = providerStatistics.getSpeed();
             return (speed != null) ? speed.floatValue() : null;

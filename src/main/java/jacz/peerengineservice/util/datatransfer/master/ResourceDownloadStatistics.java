@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Statistics for a resource download. These statistics cover the different sessions for a download process
  */
-public class Statistics {
+public class ResourceDownloadStatistics {
 
     private static final String RESOURCE_WRITER_STATISTICS_GROUP = "@RESOURCE_WRITER_DOWNLOAD_STATISTICS_GROUP";
     private static final String RESOURCE_WRITER_CREATION_DATE_FIELD = "@CREATION_DATE";
@@ -95,7 +95,7 @@ public class Statistics {
 
     private final PeerStatistics peerStatistics;
 
-    Statistics(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerStatistics peerStatistics) throws IOException {
+    ResourceDownloadStatistics(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerStatistics peerStatistics) throws IOException {
         this.resourceWriter = resourceWriter;
         Map<String, Serializable> storedStatistics = resourceWriter.getCustomGroup(RESOURCE_WRITER_STATISTICS_GROUP);
         if (storedStatistics != null && storedStatistics.containsKey(RESOURCE_WRITER_CREATION_DATE_FIELD)) {

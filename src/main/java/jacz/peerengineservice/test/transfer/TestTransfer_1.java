@@ -31,17 +31,19 @@ public class TestTransfer_1 {
         foreignStoreShare.addResourceProvider("file_3", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_4", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_5", PeerIDGenerator.peerID(2));
+        foreignStoreShare.addResourceProvider("file_6", PeerIDGenerator.peerID(2));
+        foreignStoreShare.addResourceProvider("file_7", PeerIDGenerator.peerID(2));
         client.getPeerClient().addForeignResourceStore("files", foreignStoreShare);
         client.startClient();
 
-        client.getPeerClient().setMaxDesiredDownloadSpeed(750000f);
+//        client.getPeerClient().setMaxDesiredDownloadSpeed(750000f);
 
         ThreadUtil.safeSleep(1000);
 
 
         client.getPeerClient().setVisibleDownloadsTimer(5000);
 //            client.getPeerClient().downloadResource(new PeerID("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f);
-        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "file_4", new BasicFileWriter("./etc/basic_transfer/file_1.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_4"), "MD5", 1000000L);
+        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "file_3", new BasicFileWriter("./etc/basic_transfer/file.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_3"), "MD5", 1000000L);
 
 
         ThreadUtil.safeSleep(5000);

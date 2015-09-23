@@ -11,17 +11,11 @@ import java.util.Set;
 
 /**
  * Created by Alberto on 21/09/2015.
+ *
+ * todo check possibility of updating communications to java NIO socketchannel. Even to udp.
+ * http://tutorials.jenkov.com/java-nio/socketchannel.html
  */
-public class GenericPriorityManagerNew implements SimpleTimerAction {
-
-//    public static enum Throttle {
-//        VERY_LOW,
-//        LOW,
-//        MEDIUM,
-//        HIGH,
-//        VERY_HIGH
-//    }
-
+public class GenericPriorityManager implements SimpleTimerAction {
 
     private static final long WAIT_TIME = 2500;
 
@@ -34,7 +28,7 @@ public class GenericPriorityManagerNew implements SimpleTimerAction {
     private final boolean regulateOnlyStakeholderLevel;
 
 
-    public GenericPriorityManagerNew(boolean regulateOnlyStakeholderLevel) {
+    public GenericPriorityManager(boolean regulateOnlyStakeholderLevel) {
         resources = new HashMap<>();
         totalMaxDesiredSpeed = null;
         timer = new Timer(WAIT_TIME, this);
