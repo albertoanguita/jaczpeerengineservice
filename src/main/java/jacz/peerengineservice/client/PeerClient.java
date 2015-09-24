@@ -3,6 +3,7 @@ package jacz.peerengineservice.client;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.ErrorControl;
+import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.connection.*;
@@ -40,8 +41,6 @@ public class PeerClient {
      * Actions invoked by the PeerClient upon some events (connection of a new peer, new chat message, etc)
      */
     private final PeerClientAction peerClientAction;
-
-    private final GlobalDownloadStatistics globalDownloadStatistics;
 
     private final PeerClientPrivateInterface peerClientPrivateInterface;
 
@@ -131,8 +130,7 @@ public class PeerClient {
                 peerClientData.getPort(),
                 peerClientData.getPeerServerData(),
                 peerRelations);
-        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), connectedPeersMessenger, peerClientPrivateInterface, globalUploadStatistics, peerStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
-        this.globalDownloadStatistics = globalDownloadStatistics;
+        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), connectedPeersMessenger, peerClientPrivateInterface, globalDownloadStatistics, globalUploadStatistics, peerStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
         if (dataAccessorContainer != null) {
             dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer, peerClientData.getOwnPeerID());
@@ -368,8 +366,8 @@ public class PeerClient {
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm,
-            Long preferredSizeForIntermediateHashes) {
-        return resourceStreamingManager.downloadResource(resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
+            Long preferredSizeForIntermediateHashes) throws NotAliveException {
+        return resourceStreamingManager.downloadResource(resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
     }
 
     /**
@@ -397,8 +395,8 @@ public class PeerClient {
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm,
-            Long preferredSizeForIntermediateHashes) {
-        return resourceStreamingManager.downloadResource(serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
+            Long preferredSizeForIntermediateHashes) throws NotAliveException {
+        return resourceStreamingManager.downloadResource(serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
     }
 
     public synchronized Float getMaxDesiredDownloadSpeed() {

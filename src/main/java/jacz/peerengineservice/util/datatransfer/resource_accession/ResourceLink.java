@@ -33,7 +33,9 @@ public interface ResourceLink {
 
     void addNewSegment(LongRange segment);
 
-    void throttle(float variation);
+    void hardThrottle(float variation);
+
+    void softThrottle();
 
     /**
      * Keep the resource link alive

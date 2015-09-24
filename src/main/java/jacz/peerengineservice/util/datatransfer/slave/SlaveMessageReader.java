@@ -16,7 +16,6 @@ import jacz.util.queues.event_processing.StopReadingMessages;
  * desired speed, and it makes its best for keeping up with the assigned value. It also allows reading the achieved
  * speed.
  * <p/>
- * todo block size must not grow to infinite, or it can choke the connection. If the speed does not grow, we should self-throttle
  */
 class SlaveMessageReader implements MessageReader {
 
@@ -53,6 +52,10 @@ class SlaveMessageReader implements MessageReader {
 
     private static final double LARGE_BLOCK_SIZE_GROW_FACTOR = 1.010d;
 
+    private static final float AUTO_THROTTLE_FACTOR = 0.999f;
+
+    private static final float SOFT_THROTTLE_FACTOR = 0.992f;
+
     private static final int NUMBER_OF_GROWS_TO_GO_LARGER = 100;
 
     private final SlaveResourceStreamer slaveResourceStreamer;
@@ -73,6 +76,8 @@ class SlaveMessageReader implements MessageReader {
 
     private int numberOfBlockSizeGrows;
 
+    private final Object blockSizeLock = new Object();
+
     /**
      * For measuring and controlling the writing speed
      */
@@ -89,11 +94,21 @@ class SlaveMessageReader implements MessageReader {
         numberOfBlockSizeGrows = 0;
     }
 
-    public synchronized void throttle(float variation) {
-        // reduce the preferred block size, and reset number of grows
-        preferredBlockSize *= variation;
-        preferredBlockSize = Math.max(preferredBlockSize, INITIAL_BLOCK_SIZE);
-        numberOfBlockSizeGrows = 0;
+    public void hardThrottle(float variation) {
+        synchronized (blockSizeLock) {
+            // reduce the preferred block size, and reset number of grows
+            preferredBlockSize *= variation;
+            preferredBlockSize = Math.max(preferredBlockSize, INITIAL_BLOCK_SIZE);
+            numberOfBlockSizeGrows = 0;
+        }
+    }
+
+    public void softThrottle() {
+        synchronized (blockSizeLock) {
+            // reduce the preferred block size, and reset number of grows
+            preferredBlockSize *= SOFT_THROTTLE_FACTOR;
+            preferredBlockSize = Math.max(preferredBlockSize, INITIAL_BLOCK_SIZE);
+        }
     }
 
     public Float getAchievedSpeed() {
@@ -116,18 +131,19 @@ class SlaveMessageReader implements MessageReader {
                 removedRange = resourceSegmentQueue.remove((long) preferredBlockSize);
             }
             if (messageHandler.isChoke()) {
-                // auto throttle
-                System.out.println("AUTO THROTTLE!!!");
-                throttle(0.999f);
+                // auto hardThrottle
+                hardThrottle(AUTO_THROTTLE_FACTOR);
             } else {
-                if (numberOfBlockSizeGrows < NUMBER_OF_GROWS_TO_GO_LARGER) {
-                    preferredBlockSize *= SMALL_BLOCK_SIZE_GROW_FACTOR;
-                    numberOfBlockSizeGrows++;
-                } else if (numberOfBlockSizeGrows < 2 * NUMBER_OF_GROWS_TO_GO_LARGER) {
-                    preferredBlockSize *= MEDIUM_BLOCK_SIZE_GROW_FACTOR;
-                    numberOfBlockSizeGrows++;
-                } else {
-                    preferredBlockSize *= LARGE_BLOCK_SIZE_GROW_FACTOR;
+                synchronized (blockSizeLock) {
+                    if (numberOfBlockSizeGrows < NUMBER_OF_GROWS_TO_GO_LARGER) {
+                        preferredBlockSize *= SMALL_BLOCK_SIZE_GROW_FACTOR;
+                        numberOfBlockSizeGrows++;
+                    } else if (numberOfBlockSizeGrows < 2 * NUMBER_OF_GROWS_TO_GO_LARGER) {
+                        preferredBlockSize *= MEDIUM_BLOCK_SIZE_GROW_FACTOR;
+                        numberOfBlockSizeGrows++;
+                    } else {
+                        preferredBlockSize *= LARGE_BLOCK_SIZE_GROW_FACTOR;
+                    }
                 }
             }
             if (removedRange.range == SlaveResourceStreamer.stopMessage) {

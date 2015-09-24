@@ -44,30 +44,28 @@ public class GenericPriorityManager implements SimpleTimerAction {
         }
 
         // update variations of stakeholders
-        PriorityResourceDistribution.distributeResources(resources.keySet(), totalMaxDesiredSpeed);
+        float totalConsumption = PriorityResourceDistribution.distributeResources(resources.keySet(), totalMaxDesiredSpeed);
+        boolean maxSpeedReached = totalMaxDesiredSpeed != null && totalConsumption > totalMaxDesiredSpeed;
 
         // transmit variations to resources
         for (Map.Entry<GenericPriorityManagerStakeholder, Set<GenericPriorityManagerRegulatedResource>> stakeholderResources : resources.entrySet()) {
             float stakeholderVariation = stakeholderResources.getKey().getVariation();
+//            System.out.println("UPLOAD VARIATION for " + stakeholderResources.getKey() + ": " + stakeholderVariation);
             for (GenericPriorityManagerRegulatedResource regulatedResource : stakeholderResources.getValue()) {
                 float variation = stakeholderVariation;
                 if (!regulateOnlyStakeholderLevel) {
                     variation *= regulatedResource.getVariation();
                 }
-                System.out.println("UPLOAD VARIATION: " + variation);
                 if (variation < 1f) {
-                    regulatedResource.throttle(variation);
+                    if (maxSpeedReached) {
+                        regulatedResource.hardThrottle(variation);
+                    } else {
+                        regulatedResource.softThrottle();
+                    }
                 }
             }
         }
     }
-
-//    private Throttle calculateThrottle(float variation) {
-//        Throttle throttle = null;
-//        if (variation < 1f) {
-//            throttle
-//        }
-//    }
 
     public synchronized Float getTotalMaxDesiredSpeed() {
         return totalMaxDesiredSpeed;
@@ -86,6 +84,9 @@ public class GenericPriorityManager implements SimpleTimerAction {
 
     public synchronized void removeRegulatedResource(GenericPriorityManagerStakeholder stakeholder, GenericPriorityManagerRegulatedResource regulatedResource) {
         resources.get(stakeholder).remove(regulatedResource);
+        if (resources.get(stakeholder).isEmpty()) {
+            resources.remove(stakeholder);
+        }
     }
 
 

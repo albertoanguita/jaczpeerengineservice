@@ -3,6 +3,7 @@ package jacz.peerengineservice.util.datatransfer;
 import jacz.peerengineservice.PeerID;
 import jacz.util.io.object_serialization.VersionedObject;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
+import jacz.util.io.object_serialization.VersionedSerializationException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,6 +15,8 @@ public class PeerStatistics implements VersionedObject {
 
     public static class OnePeerStatistics {
 
+        private static final String VERSION_0_1 = "0.1";
+
         public final TransferStatistics downloads;
 
         public final TransferStatistics uploads;
@@ -22,17 +25,19 @@ public class PeerStatistics implements VersionedObject {
             downloads = new TransferStatistics() {
                 @Override
                 public String getCurrentVersion() {
-                    return "1.0";
+                    return VERSION_0_1;
                 }
             };
             uploads = new TransferStatistics() {
                 @Override
                 public String getCurrentVersion() {
-                    return "1.0";
+                    return VERSION_0_1;
                 }
             };
         }
     }
+
+    private static final String VERSION_0_1 = "0.1";
 
     private Map<PeerID, OnePeerStatistics> statistics;
 
@@ -40,7 +45,7 @@ public class PeerStatistics implements VersionedObject {
         reset();
     }
 
-    public PeerStatistics(byte[] data) {
+    public PeerStatistics(byte[] data) throws VersionedSerializationException {
         VersionedObjectSerializer.deserializeVersionedObject(this, data);
     }
 
@@ -103,7 +108,7 @@ public class PeerStatistics implements VersionedObject {
 
     @Override
     public String getCurrentVersion() {
-        return "1.0";
+        return VERSION_0_1;
     }
 
     @Override
@@ -117,10 +122,4 @@ public class PeerStatistics implements VersionedObject {
     public void deserialize(String version, Map<String, Object> attributes) throws RuntimeException {
         statistics = (Map<PeerID, OnePeerStatistics>) attributes.get("statistics");
     }
-
-    @Override
-    public void errorDeserializing(String version, Map<String, Object> attributes) {
-        // todo notify client and reset
-    }
-
 }

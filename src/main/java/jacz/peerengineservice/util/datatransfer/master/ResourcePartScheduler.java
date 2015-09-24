@@ -9,6 +9,7 @@ import jacz.util.numeric.LongRange;
 import jacz.util.numeric.NumericUtil;
 import jacz.util.numeric.RangeSet;
 import jacz.util.stochastic.StochasticUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -150,7 +151,7 @@ class ResourcePartScheduler {
         }
 
         @Override
-        public int compareTo(CandidateBlock otherCandidateBlock) {
+        public int compareTo(@NotNull CandidateBlock otherCandidateBlock) {
             // higher score means before
             if (score > otherCandidateBlock.score) {
                 return -1;

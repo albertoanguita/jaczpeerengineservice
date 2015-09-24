@@ -23,8 +23,9 @@ public class MasterMessage {
         ERASE_SEGMENTS,
         // this slave must add a new segment to the list of "segments to send"
         ADD_NEW_SEGMENT,
-        // throttle speed to slow down
-        THROTTLE,
+        // hardThrottle speed to slow down
+        HARD_THROTTLE,
+        SOFT_THROTTLE,
         // ping message to keep slave alive
         PING,
         // the master reports that he died, so we should die as well to free resources
@@ -48,7 +49,7 @@ public class MasterMessage {
             segment = new LongRange(min, max);
             speed = null;
             throttle = 0;
-        } else if (order != null && order == Order.THROTTLE) {
+        } else if (order != null && order == Order.HARD_THROTTLE) {
             segment = null;
             speed = null;
             throttle = Serializer.deserializeFloat(data, offset);
@@ -80,9 +81,13 @@ public class MasterMessage {
         return Serializer.addArrays(order, Serializer.serialize(segment.getMin()), Serializer.serialize(segment.getMax()));
     }
 
-    public static byte[] generateThrottleMessage(float variation) {
-        byte[] order = Serializer.serialize(Order.THROTTLE);
+    public static byte[] generateHardThrottleMessage(float variation) {
+        byte[] order = Serializer.serialize(Order.HARD_THROTTLE);
         return Serializer.addArrays(order, Serializer.serialize(variation));
+    }
+
+    public static byte[] generateSoftThrottleMessage() {
+        return  Serializer.serialize(Order.SOFT_THROTTLE);
     }
 
     public static byte[] generatePingMessage() {

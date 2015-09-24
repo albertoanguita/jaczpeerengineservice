@@ -3,6 +3,7 @@ package jacz.peerengineservice;
 import jacz.util.hash.SHA_256;
 import jacz.util.io.SixBitSerializer;
 import jacz.util.lists.Duple;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -73,7 +74,7 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
             }
     }
 
-    public int compareTo(PeerID o) {
+    public int compareTo(@NotNull PeerID o) {
         return SixBitSerializer.serialize(id).compareTo(SixBitSerializer.serialize(o.id));
     }
 

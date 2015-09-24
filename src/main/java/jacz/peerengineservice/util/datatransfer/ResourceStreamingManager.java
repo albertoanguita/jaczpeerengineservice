@@ -1,5 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
+import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.connection.ConnectedPeersMessenger;
@@ -32,20 +33,13 @@ import java.util.*;
 
 /**
  * This class maintains connections with all connected peers in order to send and receive files at request. Every time
- * a new peer connects, our ResourceStreamingManager connects with the corresponding ResourceStreamingManager. They will be
- * able to ask each other for files, and inform about the transfer capabilities.
+ * a new peer connects, our ResourceStreamingManager connects with the corresponding ResourceStreamingManager. They
+ * will be able to ask each other for files, and inform about the transfer capabilities.
  * <p/>
- * The peer client can ask the ResourceStreamingManager to download files. The ResourceStreamingManager will look for peers
- * that share that file and organize the download. A file is actually downloaded by a MasterResourceStreamer, which is
- * created by this ResourceStreamingManager class
+ * The peer client can ask the ResourceStreamingManager to download files. The ResourceStreamingManager will look
+ * for peers that share that file and organize the download. A file is actually downloaded by a
+ * MasterResourceStreamer, which is created by this ResourceStreamingManager class
  * <p/>
- * todo
- * each time a peer is added to the peerShare, this class can get its ccp from it and send messages to it. However, it
- * also has to set up the PeerRequestDispatcherFSM for that new peer, so it can process new requests from it. This must
- * happen at both ends before they receive any message. How to synchronize this???
- * JacuzziClient will set it up, so it is ready when the client gets it
- * <p/>
- * // todo take to peerclient?
  * Part selection algorithm:
  * Each download is treated in order to improve efficiency and reduce total download time. For this, there is a
  * specific algorithm that works with several parameters. In general, this algorithm tells a download process which
@@ -82,6 +76,18 @@ public class ResourceStreamingManager {
             this.peerID = peerID;
         }
 
+//        @Override
+//        public String toString() {
+//            return this.getClass().toString() + "-" + peerID.toString();
+//        }
+
+        @Override
+        public String toString() {
+            return "RemotePeerStakeholder{" +
+                    "peerID=" + peerID +
+                    '}';
+        }
+
         public float getPriority() {
                                 return 1f;
                             }
@@ -94,7 +100,6 @@ public class ResourceStreamingManager {
             RemotePeerStakeholder that = (RemotePeerStakeholder) o;
 
             return peerID.equals(that.peerID);
-
         }
 
         @Override
@@ -571,9 +576,11 @@ public class ResourceStreamingManager {
      */
     private final GenericPriorityManager downloadPriorityManager;
 
-    private final jacz.peerengineservice.util.datatransfer.GlobalUploadStatistics globalUploadStatistics;
+    private final GlobalDownloadStatistics globalDownloadStatistics;
 
-    private final jacz.peerengineservice.util.datatransfer.PeerStatistics peerStatistics;
+    private final GlobalUploadStatistics globalUploadStatistics;
+
+    private final PeerStatistics peerStatistics;
 
     /**
      * The accuracy employed in downloads for selecting the parts to assign to each resource provider
@@ -587,14 +594,21 @@ public class ResourceStreamingManager {
     private final ContinuousDegree accuracy;
 
     /**
-     * Whether this resource streaming manager is active or not. If not active, it will nto accept any requests (writes, stores, downloads).
+     * Whether this resource streaming manager is alive or not. If not alive, no new requests will be accepted
+     * (writes, stores, downloads).
      * <p/>
      * Once it becomes inactive, it cannot be activated anymore
-     * todo use in all required methods
      */
-    private boolean active;
+    private boolean alive;
 
-    public ResourceStreamingManager(PeerID ownPeerID, ConnectedPeersMessenger connectedPeersMessenger, PeerClientPrivateInterface peerClientPrivateInterface, jacz.peerengineservice.util.datatransfer.GlobalUploadStatistics globalUploadStatistics, jacz.peerengineservice.util.datatransfer.PeerStatistics peerStatistics, double accuracy) {
+    public ResourceStreamingManager(
+            PeerID ownPeerID,
+            ConnectedPeersMessenger connectedPeersMessenger,
+            PeerClientPrivateInterface peerClientPrivateInterface,
+            GlobalDownloadStatistics globalDownloadStatistics,
+            GlobalUploadStatistics globalUploadStatistics,
+            PeerStatistics peerStatistics,
+            double accuracy) {
         this.ownPeerID = ownPeerID;
         this.connectedPeersMessenger = connectedPeersMessenger;
         DoubleElementArrayList<Short, SubchannelOwner> occupiedSubchannels = new DoubleElementArrayList<>(1);
@@ -607,11 +621,12 @@ public class ResourceStreamingManager {
         uploadsManager = new jacz.peerengineservice.util.datatransfer.UploadsManager(peerClientPrivateInterface);
         //badRequestsManager = new BadRequestsManager(FAILED_REQUEST_RESUBMIT_DELAY, FAILED_REQUEST_RESUBMIT_FACTOR, this);
         uploadPriorityManager = new GenericPriorityManager(true);
-        downloadPriorityManager = new GenericPriorityManager(false);
+        downloadPriorityManager = new GenericPriorityManager(true);
+        this.globalDownloadStatistics = globalDownloadStatistics;
         this.globalUploadStatistics = globalUploadStatistics;
         this.peerStatistics = peerStatistics;
         this.accuracy = new ContinuousDegree(accuracy);
-        active = true;
+        alive = true;
     }
 
 
@@ -622,7 +637,7 @@ public class ResourceStreamingManager {
      * @return the assigned subchannel, or null of no subchannel was assigned
      */
     public synchronized Short requestIncomingSubchannel(SubchannelOwner owner) {
-        if (active) {
+        if (alive) {
             return subchannelManager.requestSubchannel(owner);
         } else {
             return null;
@@ -755,7 +770,6 @@ public class ResourceStreamingManager {
      * @param resourceWriter           object in charge of writing the resource
      * @param downloadProgressNotificationHandler
      *                                 handler for receiving notifications concerning this download
-     * @param globalDownloadStatistics global downloads statistics object from the client
      * @param streamingNeed            the need for streaming this file (0: no need, 1: max need). The higher the need,
      *                                 the greater efforts that the scheduler will do for downloading the first parts
      *                                 of the resource before the last parts. Can hamper total download efficience
@@ -770,18 +784,21 @@ public class ResourceStreamingManager {
             String resourceStoreName,
             String resourceID,
             ResourceWriter resourceWriter,
-            jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler downloadProgressNotificationHandler,
-            jacz.peerengineservice.util.datatransfer.GlobalDownloadStatistics globalDownloadStatistics,
+            DownloadProgressNotificationHandler downloadProgressNotificationHandler,
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm,
-            Long preferredSizeForIntermediateHashes) {
-        // the download is created even if there is no matching global resource store
-        MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, null, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
-        activeDownloadSet.addDownload(masterResourceStreamer);
-        reportProvidersForOneActiveDownload(resourceStoreName, resourceID);
-        downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
-        return masterResourceStreamer.getDownloadManager();
+            Long preferredSizeForIntermediateHashes) throws NotAliveException {
+        if (alive) {
+            // the download is created even if there is no matching global resource store
+            MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, null, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
+            activeDownloadSet.addDownload(masterResourceStreamer);
+            reportProvidersForOneActiveDownload(resourceStoreName, resourceID);
+            downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
+            return masterResourceStreamer.getDownloadManager();
+        } else {
+            throw new NotAliveException();
+        }
     }
 
     /**
@@ -795,7 +812,6 @@ public class ResourceStreamingManager {
      * @param resourceWriter           object in charge of writing the resource
      * @param downloadProgressNotificationHandler
      *                                 handler for receiving notifications concerning this download
-     * @param globalDownloadStatistics global downloads statistics object from the client
      * @param streamingNeed            the need for streaming this file (0: no need, 1: max need). The higher the need,
      *                                 the greater efforts that the scheduler will do for downloading the first parts
      *                                 of the resource before the last parts. Can hamper total download efficiency
@@ -811,17 +827,20 @@ public class ResourceStreamingManager {
             String resourceStoreName,
             String resourceID,
             ResourceWriter resourceWriter,
-            jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler downloadProgressNotificationHandler,
-            jacz.peerengineservice.util.datatransfer.GlobalDownloadStatistics globalDownloadStatistics,
+            DownloadProgressNotificationHandler downloadProgressNotificationHandler,
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm,
-            Long preferredSizeForIntermediateHashes) {
-        MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
-        activeDownloadSet.addDownload(masterResourceStreamer);
-        reportResourceProviderForPeerSpecificDownload(serverPeerID, masterResourceStreamer);
-        downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
-        return masterResourceStreamer.getDownloadManager();
+            Long preferredSizeForIntermediateHashes) throws NotAliveException {
+        if (alive) {
+            MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
+            activeDownloadSet.addDownload(masterResourceStreamer);
+            reportResourceProviderForPeerSpecificDownload(serverPeerID, masterResourceStreamer);
+            downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
+            return masterResourceStreamer.getDownloadManager();
+        } else {
+            throw new NotAliveException();
+        }
     }
 
     public synchronized Float getMaxDesiredDownloadSpeed() {
@@ -892,7 +911,7 @@ public class ResourceStreamingManager {
             tfiCollection.add(tfi);
         }
         TaskFinalizationIndicator.waitForFinalization(tfiCollection);
-        active = false;
+        alive = false;
     }
 
     public synchronized void removeDownload(MasterResourceStreamer masterResourceStreamer) {

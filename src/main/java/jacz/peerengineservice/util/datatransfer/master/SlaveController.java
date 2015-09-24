@@ -125,7 +125,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
      * Timer for submitting a new assignation request to the scheduler. Used when we got no assignation and we
      * still want one
      */
-    private final Timer requestAssignationTimer;
+    private Timer requestAssignationTimer;
 
     /**
      * Timer for submitting available segment requests. We issue these periodical requests in case some self
@@ -159,7 +159,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         state = State.AWAITING_REQUEST_RESPONSE;
         timeoutTimer = new Timer(requestLifeMillis, this, true, "MasterResourceStreamer/timeoutTimer");
         resourceLinkTimeoutTimer = new Timer((resourceLink.surviveTimeMillis() * 2) / 3, this, false, "resourceLinkTimeoutTimer");
-        requestAssignationTimer = new Timer(MILLIS_FOR_ASSIGNMENT_RECHECK, this, false, "MasterResourceStreamer/requestAssignationTimer");
+        requestAssignationTimer = null;
         requestAvailableSegmentsTimer = new Timer(MILLIS_FOR_AUTOMATIC_SEGMENT_AVAILABILITY_REQUEST, this);
         resourceSegmentQueueWithMonitoring = new ResourceSegmentQueueWithMonitoring(MILLIS_TO_MEASURE_SPEED, MILLIS_SPEED_MEASURE_IS_NOT_VALID, this, new LongRange(null, null), MILLIS_ALLOWED_OUT_OF_SPEED_RANGE, MILLIS_REMAINING_FOR_REPORT);
         this.resourcePartScheduler = resourcePartScheduler;
@@ -217,7 +217,8 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
 
     private synchronized void setUpRequestAssignationTimer() {
         // this has to be done in a separate thread to avoid synch issues
-        requestAssignationTimer.reset();
+        stopRequestAssignationTimer();
+        requestAssignationTimer = new Timer(MILLIS_FOR_ASSIGNMENT_RECHECK, this, true, "MasterResourceStreamer/requestAssignationTimer");
     }
 
     private synchronized boolean isWaitingForRequestResponse() {
@@ -291,7 +292,6 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
                     switch (slaveMessage.messageType) {
 
                         case RESOURCE_CHUNK:
-//                            System.out.println("Slave - resource chunk");
                             boolean correct = resourceSegmentQueueWithMonitoring.removeNonBlocking(slaveMessage.resourceChunk.getSegment());
                             if (correct) {
                                 try {
@@ -390,7 +390,9 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     }
 
     private synchronized void stopRequestAssignationTimer() {
-        requestAssignationTimer.kill();
+        if (requestAssignationTimer != null) {
+            requestAssignationTimer.kill();
+        }
     }
 
     private synchronized void stopRequestAvailableSegmentsTimer() {
@@ -422,7 +424,6 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
                 resourceLink.ping();
                 return null;
             } else if (timer == requestAvailableSegmentsTimer) {
-                //System.out.println("/////////////////////////////////////////REQUEST AVAILABLE SEGMENTS/////////////////////////////////////////////////////");
                 // request segment availability from slave (to make sure it is updated). The timer keeps running forever
                 resourceLink.requestAvailableSegments();
                 return null;
@@ -465,14 +466,11 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
             if (assignment.getObjects().size() == 2) {
                 // we got something assigned
                 LongRange assignedSegment = (LongRange) assignment.getObjects().get(0);
-                //System.out.println("Assignment: " + assignedSegment + ". Size: " + assignedSegment.size());
                 resourceSegmentQueueWithMonitoring.add(assignedSegment);
                 resourceSegmentQueueWithMonitoring.setSpeedMonitorRange((LongRange) assignment.getObjects().get(1));
                 resourceLink.addNewSegment(assignedSegment);
-                //System.out.println("New segment assigned: " + assignedSegment);
             } else {
                 ResourcePartScheduler.NoAssignationCause noAssignationCause = (ResourcePartScheduler.NoAssignationCause) assignment.getObjects().get(0);
-                //System.out.println("Segment not assigned due to " + noAssignationCause);
                 switch (noAssignationCause) {
 
                     case LOW_SPEED:
@@ -529,16 +527,14 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         return masterResourceStreamer.getSlaveControllerAchievedSpeed(this);
     }
 
-//    @Override
-//    public synchronized void setSpeed(float speed) {
-//        System.out.println("Slave controller for " + masterResourceStreamer.getResourceID() + " set speed: " + speed / 1024f);
-//        resourceLink.setSpeed(speed);
-//    }
+    @Override
+    public void hardThrottle(float variation) {
+        resourceLink.hardThrottle(variation);
+    }
 
     @Override
-    public void throttle(float variation) {
-        System.out.println("SLAVE - THROTTLE: " + variation);
-        resourceLink.throttle(variation);
+    public void softThrottle() {
+        resourceLink.softThrottle();
     }
 
     @Override

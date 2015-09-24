@@ -23,6 +23,13 @@ public class PeerResourceLink implements ResourceLink {
     }
 
     @Override
+    public String toString() {
+        return "PeerResourceLink{" +
+                "otherPeer=" + otherPeer +
+                '}';
+    }
+
+    @Override
     public long recommendedMillisForRequest() {
         return 10000;
     }
@@ -63,8 +70,13 @@ public class PeerResourceLink implements ResourceLink {
     }
 
     @Override
-    public void throttle(float variation) {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateThrottleMessage(variation));
+    public void hardThrottle(float variation) {
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateHardThrottleMessage(variation));
+    }
+
+    @Override
+    public void softThrottle() {
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateSoftThrottleMessage());
     }
 
     @Override

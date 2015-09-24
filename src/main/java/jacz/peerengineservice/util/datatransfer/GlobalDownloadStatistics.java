@@ -1,14 +1,15 @@
 package jacz.peerengineservice.util.datatransfer;
 
+import jacz.util.io.object_serialization.VersionedSerializationException;
+
 import java.util.Map;
 
 /**
  * Global download statistics
- *
- * todo some downloads must not account for global
- * todo do we count lists synch? no
  */
-public class GlobalDownloadStatistics extends jacz.peerengineservice.util.datatransfer.TransferStatistics {
+public class GlobalDownloadStatistics extends TransferStatistics {
+
+    private static final String VERSION_0_1 = "0.1";
 
     /**
      * Amount of downloads that have been successfully completed
@@ -19,7 +20,7 @@ public class GlobalDownloadStatistics extends jacz.peerengineservice.util.datatr
         reset();
     }
 
-    public GlobalDownloadStatistics(byte[] data) {
+    public GlobalDownloadStatistics(byte[] data) throws VersionedSerializationException {
         super(data);
     }
 
@@ -38,7 +39,7 @@ public class GlobalDownloadStatistics extends jacz.peerengineservice.util.datatr
 
     @Override
     public String getCurrentVersion() {
-        return "1.0";
+        return VERSION_0_1;
     }
 
     @Override

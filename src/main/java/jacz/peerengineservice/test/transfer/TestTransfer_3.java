@@ -24,7 +24,7 @@ public class TestTransfer_3 {
 
         Client client = new Client(personalData, peerClientData, peerRelations, new SimplePeerClientActionImplTransfer(), new HashMap<String, PeerFSMFactory>());
         client.getPeerClient().addLocalResourceStore("files", new ResourceStoreImpl());
-        client.getPeerClient().setMaxDesiredUploadSpeed(5000000f);
+//        client.getPeerClient().setMaxDesiredUploadSpeed(50000f);
         client.startClient();
     }
 }

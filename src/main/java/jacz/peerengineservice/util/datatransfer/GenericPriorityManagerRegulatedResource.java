@@ -18,5 +18,7 @@ public abstract class GenericPriorityManagerRegulatedResource extends PriorityRe
 
     public abstract Float getAchievedSpeed();
 
-    public abstract void throttle(float variation);
+    public abstract void hardThrottle(float variation);
+
+    public abstract void softThrottle();
 }

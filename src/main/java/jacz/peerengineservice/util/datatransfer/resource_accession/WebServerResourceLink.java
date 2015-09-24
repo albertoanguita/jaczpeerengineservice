@@ -60,7 +60,12 @@ public class WebServerResourceLink implements ResourceLink {
     }
 
     @Override
-    public void throttle(float variation) {
+    public void hardThrottle(float variation) {
+
+    }
+
+    @Override
+    public void softThrottle() {
 
     }
 

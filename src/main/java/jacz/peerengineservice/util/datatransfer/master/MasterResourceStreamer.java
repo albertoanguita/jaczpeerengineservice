@@ -6,6 +6,8 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceLink;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.peerengineservice.util.datatransfer.slave.ResourceChunk;
+import jacz.util.concurrency.daemon.Daemon;
+import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.hash.HashFunction;
@@ -36,6 +38,19 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
 //        COMPLETED,
 //        CANCELLED
 //    }
+
+    private final class WriteDaemon implements DaemonAction {
+
+        @Override
+        public boolean solveState() {
+            WriteDataBuffer.DataElement dataElement = writeDataBuffer.getDataElement();
+            while (dataElement != null) {
+                writeDataInBackground(dataElement);
+                dataElement = writeDataBuffer.getDataElement();
+            }
+            return true;
+        }
+    }
 
     private static final String RESOURCE_WRITER_MASTER_GROUP = "@RESOURCE_WRITER_MASTER_RESOURCE_STREAMING_GROUP";
 
@@ -89,6 +104,16 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * Writer for the requested resource
      */
     private final ResourceWriter resourceWriter;
+
+    /**
+     * Buffer of data to be written
+     */
+    private final WriteDataBuffer writeDataBuffer;
+
+    /**
+     * Daemon for writing data in background
+     */
+    private final Daemon writeDaemon;
 
     /**
      * Scheduler that assigns segments to each active slave
@@ -150,6 +175,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         this.storeName = storeName;
         this.resourceID = resourceID;
         this.resourceWriter = resourceWriter;
+        writeDataBuffer = new WriteDataBuffer();
+        writeDaemon = new Daemon(new WriteDaemon());
         activeSlaves = new HashMap<>();
         RangeSet<LongRange, Long> availableSegments = null;
         priority = DEFAULT_PRIORITY;
@@ -196,6 +223,13 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
 
     public UniqueIdentifier getId() {
         return id;
+    }
+
+    @Override
+    public String toString() {
+        return "MasterResourceStreamer{" +
+                "resId=" + resourceID +
+                '}';
     }
 
     public String getStoreName() {
@@ -308,7 +342,12 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 activeSlaves.get(subchannel).getResourceLink().die();
             }
             final SlaveController slaveController = activeSlaves.remove(subchannel);
-            slaveController.finishExecution();
+            ParallelTaskExecutor.executeTask(new ParallelTask() {
+                @Override
+                public void performTask() {
+                    slaveController.finishExecution();
+                }
+            });
             resourceStreamingManager.freeSubchannel(subchannel);
             ParallelTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -400,13 +439,24 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @throws IllegalArgumentException the received chunk has something wrong in it
      */
     synchronized void writeData(ResourceChunk resourceChunk) throws IllegalArgumentException {
+        if (resourceSize != null) {
+//                resourceWriter.write(resourceChunk.getFirstByte(), resourceChunk.getData());
+            writeDataBuffer.addResourceChunk(resourceChunk);
+            writeDaemon.stateChange();
+        }
+    }
+
+    private void writeDataInBackground(WriteDataBuffer.DataElement dataElement) {
         try {
-            if (resourceSize != null) {
-                resourceWriter.write(resourceChunk.getFirstByte(), resourceChunk.getData());
-            }
+            resourceWriter.write(dataElement.firstByte, dataElement.data);
         } catch (IOException e) {
             reportErrorWriting();
         }
+    }
+
+    private void flushWriteData() {
+        writeDaemon.stateChange();
+        writeDaemon.blockUntilStateIsSolved();
     }
 
     synchronized void reportDownloadedSegment(ResourceProvider resourceProvider, LongRange downloadedSegment) {
@@ -420,6 +470,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     synchronized void reportDownloadComplete() {
         if (alive) {
             try {
+                flushWriteData();
                 resourceWriter.complete();
                 checkTotalHash();
                 downloadReports.reportCompleted(resourceWriter);
@@ -519,6 +570,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     synchronized void cancel(DownloadProgressNotificationHandler.CancellationReason cancellationReason) {
         if (alive) {
             freeAssignedResources();
+            flushWriteData();
             resourceWriter.cancel();
             alive = false;
             downloadReports.reportCancelled(cancellationReason);
@@ -532,6 +584,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     synchronized void stop() {
         if (alive) {
             freeAssignedResources();
+            flushWriteData();
             resourceWriter.stop();
             alive = false;
             try {

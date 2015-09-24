@@ -12,7 +12,6 @@ import jacz.util.identifier.UniqueIdentifierFactory;
 import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.util.numeric.LongRange;
 import jacz.util.numeric.RangeQueue;
-import jacz.util.queues.event_processing.MessageHandler;
 import jacz.util.queues.event_processing.MessageProcessor;
 
 import java.io.IOException;
@@ -20,8 +19,6 @@ import java.util.List;
 
 /**
  * This class handles a slave that serves a resource to a master
- * <p/>
- * todo notify the resource that we finished (either completer, or error or timeout)
  */
 public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResource implements jacz.peerengineservice.util.datatransfer.ResourceStreamingManager.SubchannelOwner, SimpleTimerAction {
 
@@ -198,7 +195,6 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
             }
             MasterMessage masterMessage = new MasterMessage(data);
             if (masterMessage.order != null) {
-//                System.out.println("Slave - message received: " + masterMessage.order);
                 switch (masterMessage.order) {
                     case REPORT_RESOURCE_LENGTH:
                         try {
@@ -244,10 +240,12 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
                         }
                         break;
 
-                    case THROTTLE:
-                        System.out.println("Slave - throttle: " + masterMessage.throttle);
-                        messageReader.throttle(masterMessage.throttle);
-//                        masterRequestedMaxSpeed = masterMessage.speed;
+                    case HARD_THROTTLE:
+                        hardThrottle(masterMessage.throttle);
+                        break;
+
+                    case SOFT_THROTTLE:
+                        softThrottle();
                         break;
 
                     case PING:
@@ -268,9 +266,12 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         return messageReader.getAchievedSpeed();
     }
 
-    public void throttle(float variation) {
-        System.out.println("THROTTLE " + variation);
-        messageReader.throttle(variation);
+    public void hardThrottle(float variation) {
+        messageReader.hardThrottle(variation);
+    }
+
+    public void softThrottle() {
+        messageReader.softThrottle();
     }
 
     public short getIncomingChannel() {
@@ -304,6 +305,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
     @Override
     public Long wakeUp(Timer timer) {
         // too much time without receiving any input -> die
+        System.out.println("TIMEOUT DIE!!!!!!!!!!!!!");
         die(true);
         return 0l;
     }

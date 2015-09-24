@@ -2,6 +2,7 @@ package jacz.peerengineservice.util.datatransfer;
 
 import jacz.util.io.object_serialization.VersionedObject;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
+import jacz.util.io.object_serialization.VersionedSerializationException;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -36,7 +37,7 @@ public abstract class TransferStatistics implements VersionedObject {
         reset();
     }
 
-    public TransferStatistics(byte[] data) {
+    public TransferStatistics(byte[] data) throws VersionedSerializationException {
         VersionedObjectSerializer.deserializeVersionedObject(this, data);
     }
 
@@ -96,10 +97,5 @@ public abstract class TransferStatistics implements VersionedObject {
             // no field can be null -> error
             throw new RuntimeException();
         }
-    }
-
-    @Override
-    public void errorDeserializing(String version, Map<String, Object> attributes) {
-        // todo notify client and reset
     }
 }

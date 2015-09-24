@@ -60,7 +60,6 @@ import java.util.*;
  * <p/>
  * todo make index file xml or json
  * todo index backup, check errors in index file (hash?)
- * todo use java 7 nio package for files access
  */
 public class TempFileManager {
 
@@ -179,7 +178,6 @@ public class TempFileManager {
      */
     public synchronized String createNewTempFile() throws IOException {
         // generate the file names and the actual files
-//        ArrayList<String> fileNames = generateNewTempFileName();
         List<Duple<String, String>> fileNames = FileUtil.createFiles(
                 baseDir,
                 buildBaseFileNameList(),
