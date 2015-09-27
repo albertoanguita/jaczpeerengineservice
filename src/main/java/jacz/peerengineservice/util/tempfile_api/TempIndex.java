@@ -1,15 +1,12 @@
 package jacz.peerengineservice.util.tempfile_api;
 
 import jacz.util.files.RandomAccess;
-import jacz.util.io.object_serialization.StrCast;
-import jacz.util.io.object_serialization.XMLReader;
-import jacz.util.io.object_serialization.XMLWriter;
-import jacz.util.lists.Duple;
+import jacz.util.io.object_serialization.VersionedObject;
+import jacz.util.io.object_serialization.VersionedObjectSerializer;
+import jacz.util.io.object_serialization.VersionedSerializationException;
 import jacz.util.numeric.LongRange;
 import jacz.util.numeric.RangeSet;
 
-import javax.xml.stream.XMLStreamException;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
@@ -24,98 +21,104 @@ import java.util.Map;
  * Index file are the entry point to manage the data of their corresponding data files. Read or write tasks are
  * handled by the index files, which themselves access the data files.
  */
-class TempIndex implements Serializable {
+class TempIndex implements VersionedObject {
 
-    public static class TempIndexVersionException extends Exception {
+//    public static class TempIndexVersionException extends Exception {
+//
+//        public final String illegalVersion;
+//
+//        private TempIndexVersionException(String illegalVersion) {
+//            this.illegalVersion = illegalVersion;
+//        }
+//    }
 
-        public final String illegalVersion;
+    private final static String VERSION_0_1 = "0.1";
 
-        private TempIndexVersionException(String illegalVersion) {
-            this.illegalVersion = illegalVersion;
-        }
-    }
+    private final static String CURRENT_VERSION = VERSION_0_1;
 
-    private final static String VERSION = "0.1";
-
-    private final String tempDataFilePath;
+    private String tempDataFilePath;
 
     private Long totalResourceSize;
 
-    private final Map<String, Map<String, Serializable>> customData;
+    private HashMap<String, Map<String, Serializable>> customData;
 
     /**
      * Segments of data which the data file already owns. The data outside these segments is undetermined.
      */
-    private final RangeSet<LongRange, Long> data;
+    private RangeSet<LongRange, Long> data;
 
     TempIndex(String tempDataFilePath) throws IOException {
         this(tempDataFilePath, null, new HashMap<String, Map<String, Serializable>>(), new RangeSet<LongRange, Long>());
         setupDataFile(0);
     }
 
-    private TempIndex(String tempDataFilePath, Long totalResourceSize, Map<String, Map<String, Serializable>> customData, RangeSet<LongRange, Long> data) {
+    private TempIndex(String tempDataFilePath, Long totalResourceSize, HashMap<String, Map<String, Serializable>> customData, RangeSet<LongRange, Long> data) {
         this.tempDataFilePath = tempDataFilePath;
         this.totalResourceSize = totalResourceSize;
         this.customData = customData;
         this.data = data;
     }
 
-    public void saveToXML(String path) throws IOException, XMLStreamException {
-        XMLWriter xmlWriter = new XMLWriter("index-file");
-        xmlWriter.addField("VERSION", VERSION);
-        xmlWriter.addField("tempDataFilePath", tempDataFilePath);
-        xmlWriter.addField("totalResourceSize", totalResourceSize);
-        xmlWriter.beginStruct("customData");
-        for (Map.Entry<String, Map<String, Serializable>> customGroup : customData.entrySet()) {
-            xmlWriter.beginStruct(customGroup.getKey());
-            for (Map.Entry<String, Serializable> entry : customGroup.getValue().entrySet()) {
-                xmlWriter.addField(entry.getKey(), entry.getValue());
-            }
-            xmlWriter.endStruct();
-        }
-        xmlWriter.endStruct();
-        xmlWriter.beginStruct("data");
-        for (LongRange longRange : data.getRanges()) {
-            xmlWriter.beginStruct();
-            xmlWriter.addValue(longRange.getMin());
-            xmlWriter.addValue(longRange.getMax());
-            xmlWriter.endStruct();
-        }
-        xmlWriter.endStruct();
-        xmlWriter.write(path);
+    public TempIndex(byte[] data) throws VersionedSerializationException {
+        VersionedObjectSerializer.deserialize(this, data);
     }
 
-    public static TempIndex readFromXML(String path) throws FileNotFoundException, XMLStreamException, TempIndexVersionException {
-        XMLReader xmlReader = new XMLReader(path);
-        String VERSION = xmlReader.getFieldValue("VERSION");
-        if (!VERSION.equals(TempIndex.VERSION)) {
-            // wrong version detected
-            throw new TempIndexVersionException(VERSION);
-        }
-        String tempDataFilePath = xmlReader.getFieldValue("tempDataFilePath");
-        Long totalResourceSize = StrCast.asLong(xmlReader.getFieldValue("totalResourceSize"));
-        Map<String, Map<String, Serializable>> customData = new HashMap<>();
-        xmlReader.getStruct("customData");
-        while (xmlReader.hasMoreChildren()) {
-            String groupName = xmlReader.getNextStructAndName();
-            Map<String, Serializable> customGroup = new HashMap<>();
-            while (xmlReader.hasMoreChildren()) {
-                Duple<String, String> fieldAndValue = xmlReader.getNextFieldAndValue();
-                customGroup.put(fieldAndValue.element1, fieldAndValue.element2);
-            }
-            customData.put(groupName, customGroup);
-        }
-        RangeSet<LongRange, Long> data = new RangeSet<>();
-        xmlReader.getStruct("data");
-        while (xmlReader.hasMoreChildren()) {
-            xmlReader.getNextStruct();
-            Long min = StrCast.asLong(xmlReader.getNextValue());
-            Long max = StrCast.asLong(xmlReader.getNextValue());
-            data.add(new LongRange(min, max));
-            xmlReader.gotoParent();
-        }
-        return new TempIndex(tempDataFilePath, totalResourceSize, customData, data);
-    }
+//    public void saveToXML(String path) throws IOException, XMLStreamException {
+//        XMLWriter xmlWriter = new XMLWriter("index-file");
+//        xmlWriter.addField("VERSION", VERSION_0_1);
+//        xmlWriter.addField("tempDataFilePath", tempDataFilePath);
+//        xmlWriter.addField("totalResourceSize", totalResourceSize);
+//        xmlWriter.beginStruct("customData");
+//        for (Map.Entry<String, Map<String, Serializable>> customGroup : customData.entrySet()) {
+//            xmlWriter.beginStruct(customGroup.getKey());
+//            for (Map.Entry<String, Serializable> entry : customGroup.getValue().entrySet()) {
+//                xmlWriter.addField(entry.getKey(), entry.getValue());
+//            }
+//            xmlWriter.endStruct();
+//        }
+//        xmlWriter.endStruct();
+//        xmlWriter.beginStruct("data");
+//        for (LongRange longRange : data.getRanges()) {
+//            xmlWriter.beginStruct();
+//            xmlWriter.addValue(longRange.getMin());
+//            xmlWriter.addValue(longRange.getMax());
+//            xmlWriter.endStruct();
+//        }
+//        xmlWriter.endStruct();
+//        xmlWriter.write(path);
+//    }
+
+//    public static TempIndex readFromXML(String path) throws FileNotFoundException, XMLStreamException, TempIndexVersionException {
+//        XMLReader xmlReader = new XMLReader(path);
+//        String VERSION = xmlReader.getFieldValue("VERSION");
+//        if (!VERSION.equals(TempIndex.VERSION_0_1)) {
+//            // wrong version detected
+//            throw new TempIndexVersionException(VERSION);
+//        }
+//        String tempDataFilePath = xmlReader.getFieldValue("tempDataFilePath");
+//        Long totalResourceSize = StrCast.asLong(xmlReader.getFieldValue("totalResourceSize"));
+//        Map<String, Map<String, Serializable>> customData = new HashMap<>();
+//        xmlReader.getStruct("customData");
+//        while (xmlReader.hasMoreChildren()) {
+//            String groupName = xmlReader.getNextStructAndName();
+//            Map<String, Serializable> customGroup = new HashMap<>();
+//            while (xmlReader.hasMoreChildren()) {
+//                Duple<String, String> fieldAndValue = xmlReader.getNextFieldAndValue();
+//                customGroup.put(fieldAndValue.element1, fieldAndValue.element2);
+//            }
+//            customData.put(groupName, customGroup);
+//        }
+//        RangeSet<LongRange, Long> data = new RangeSet<>();
+//        xmlReader.getStruct("data");
+//        while (xmlReader.hasMoreChildren()) {
+//            xmlReader.getNextStruct();
+//            Long min = StrCast.asLong(xmlReader.getNextValue());
+//            Long max = StrCast.asLong(xmlReader.getNextValue());
+//            data.add(new LongRange(min, max));
+//            xmlReader.gotoParent();
+//        }
+//        return new TempIndex(tempDataFilePath, totalResourceSize, customData, data);
+//    }
 
     Map<String, Serializable> getCustomGroup(String groupName) {
         return customData.get(groupName);
@@ -194,5 +197,32 @@ class TempIndex implements Serializable {
 
     private static LongRange generateRangeFromOffsetAndLength(long offset, int length) {
         return new LongRange(offset, offset + length - 1);
+    }
+
+    @Override
+    public String getCurrentVersion() {
+        return CURRENT_VERSION;
+    }
+
+    @Override
+    public Map<String, Serializable> serialize() {
+        Map<String, Serializable> map = new HashMap<>();
+        map.put("tempDataFilePath", tempDataFilePath);
+        map.put("totalResourceSize", totalResourceSize);
+        map.put("customData", customData);
+        map.put("data", data);
+        return map;
+    }
+
+    @Override
+    public void deserialize(String version, Map<String, Object> attributes) throws RuntimeException, VersionedSerializationException {
+        if (version.equals(getCurrentVersion())) {
+            tempDataFilePath = (String) attributes.get("tempDataFilePath");
+            totalResourceSize = (Long) attributes.get("totalResourceSize");
+            customData = (HashMap<String, Map<String, Serializable>>) attributes.get("customData");
+            data = (RangeSet<LongRange, Long>) attributes.get("data");
+        } else {
+            throw new VersionedSerializationException(version, attributes, VersionedSerializationException.Reason.UNRECOGNIZED_VERSION);
+        }
     }
 }

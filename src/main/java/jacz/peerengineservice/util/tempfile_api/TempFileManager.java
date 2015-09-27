@@ -4,8 +4,9 @@ import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWri
 import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWriteBasic;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
-import jacz.util.files.FileReaderWriter;
-import jacz.util.files.FileUtil;
+import jacz.util.files.*;
+import jacz.util.io.object_serialization.VersionedObjectSerializer;
+import jacz.util.io.object_serialization.VersionedSerializationException;
 import jacz.util.lists.Duple;
 import jacz.util.numeric.LongRange;
 import jacz.util.numeric.RangeSet;
@@ -199,7 +200,8 @@ public class TempFileManager {
      */
     private void generateInitialIndexFile(String indexFileName, String dataFileName) throws IOException {
         TempIndex index = new TempIndex(baseDir + dataFileName);
-        FileReaderWriter.writeObject(baseDir + indexFileName, index);
+//        FileReaderWriter.writeObject(baseDir + indexFileName, index);
+        writeIndexFile(baseDir + indexFileName, index);
     }
 
     /**
@@ -417,12 +419,16 @@ public class TempFileManager {
         return baseDir + tempFileName;
     }
 
-    static TempIndex readIndexFile(String indexFilePath) throws IOException, ClassNotFoundException {
-        return (TempIndex) FileReaderWriter.readObject(indexFilePath);
+    static TempIndex readIndexFile(String indexFilePath) throws IOException, VersionedSerializationException {
+//        return (TempIndex) FileReaderWriter.readObject(indexFilePath);
+        byte[] data = jacz.util.files.FileReaderWriter.readBytes(indexFilePath);
+        return new TempIndex(data);
     }
 
     static void writeIndexFile(String indexFilePath, TempIndex index) throws IOException {
-        FileReaderWriter.writeObject(indexFilePath, index);
+//        FileReaderWriter.writeObject(indexFilePath, index);
+        byte[] data = VersionedObjectSerializer.serialize(index, 4);
+        jacz.util.files.FileReaderWriter.writeBytes(indexFilePath, data);
     }
 
     public String tempFileToDataPath(String tempFileName) {

@@ -55,6 +55,9 @@ public interface DataAccessor {
      */
     List<? extends Serializable> getElements(Integer latestClientTimestamp) throws DataAccessException;
 
+    int elementsPerMessage();
+
+    int CRCBytes();
 
     /**
      * This method adds an element in object mode to this list. It is responsibility of the list implementation to

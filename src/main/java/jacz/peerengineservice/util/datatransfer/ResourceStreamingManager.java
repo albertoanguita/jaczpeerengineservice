@@ -1,5 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
+import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
@@ -12,13 +13,11 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.PeerResourceP
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.peerengineservice.util.datatransfer.slave.SlaveResourceStreamer;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
-import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
 import jacz.util.concurrency.timer.SimpleTimerAction;
 import jacz.util.concurrency.timer.Timer;
-import jacz.util.date_time.DateTime;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.io.object_serialization.MutableOffset;
 import jacz.util.io.object_serialization.ObjectListWrapper;
@@ -30,6 +29,8 @@ import jacz.util.sets.availableelements.AvailableElementsShort;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class maintains connections with all connected peers in order to send and receive files at request. Every time
@@ -89,8 +90,8 @@ public class ResourceStreamingManager {
         }
 
         public float getPriority() {
-                                return 1f;
-                            }
+            return 1f;
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -133,14 +134,8 @@ public class ResourceStreamingManager {
         }
 
         public static SubchannelDataMessage decode(byte[] bytes) {
-//            byte[] subchannelBytes = new byte[2];
-//            System.arraycopy(bytes, 0, subchannelBytes, 0, 2);
-//            short subchannel = Serializer.deserializeShort(subchannelBytes, new MutableOffset());
-//            byte[] data = new byte[bytes.length - 2];
-//            System.arraycopy(bytes, 2, data, 0, data.length);
-//            return new SubchannelDataMessage(subchannel, data);
             MutableOffset mutableOffset = new MutableOffset();
-            short subchannel = Serializer.deserializeShort(bytes, mutableOffset);
+            short subchannel = Serializer.deserializeShortValue(bytes, mutableOffset);
             byte[] data = Serializer.deserializeRest(bytes, mutableOffset);
             return new SubchannelDataMessage(subchannel, data);
         }
@@ -212,7 +207,7 @@ public class ResourceStreamingManager {
          * @param storeName  store
          * @param resourceID resource
          * @return collections of master resource streamers that are downloading the specified resource (an empty collection if the resource is
-         *         not being downloaded)
+         * not being downloaded)
          */
         private synchronized Collection<MasterResourceStreamer> getDownload(String storeName, String resourceID) {
             try {
@@ -593,6 +588,8 @@ public class ResourceStreamingManager {
      */
     private final ContinuousDegree accuracy;
 
+    private final Lock writeDataLock;
+
     /**
      * Whether this resource streaming manager is alive or not. If not alive, no new requests will be accepted
      * (writes, stores, downloads).
@@ -626,6 +623,7 @@ public class ResourceStreamingManager {
         this.globalUploadStatistics = globalUploadStatistics;
         this.peerStatistics = peerStatistics;
         this.accuracy = new ContinuousDegree(accuracy);
+        writeDataLock = new ReentrantLock(true);
         alive = true;
     }
 
@@ -645,9 +643,7 @@ public class ResourceStreamingManager {
     }
 
     public synchronized void freeSubchannel(short subchannel) {
-        sout("freeSubchannel", 1);
         subchannelManager.freeSubchannel(subchannel);
-        sout("freeSubchannel", -1);
     }
 
     public synchronized void freeAllSubchannels(SubchannelOwner owner) {
@@ -681,10 +677,8 @@ public class ResourceStreamingManager {
     }
 
     synchronized void processMessage(byte[] bytes) {
-        sout("processMessage", 1);
         SubchannelDataMessage subchannelDataMessage = SubchannelDataMessage.decode(bytes);
         subchannelManager.processMessage(subchannelDataMessage.subchannel, subchannelDataMessage.data);
-        sout("processMessage", -1);
     }
 
     /**
@@ -765,20 +759,18 @@ public class ResourceStreamingManager {
      * try to get the resource from very peer sharing it (he will look in the related peers share to find appropriate
      * peers)
      *
-     * @param resourceStoreName        name of the store allocating the resource
-     * @param resourceID               ID of the resource
-     * @param resourceWriter           object in charge of writing the resource
-     * @param downloadProgressNotificationHandler
-     *                                 handler for receiving notifications concerning this download
-     * @param streamingNeed            the need for streaming this file (0: no need, 1: max need). The higher the need,
-     *                                 the greater efforts that the scheduler will do for downloading the first parts
-     *                                 of the resource before the last parts. Can hamper total download efficience
-     * @param totalHash                hexadecimal value for the total resource hash (null if not used)
-     * @param totalHashAlgorithm       algorithm for calculating the total hash (null if not used)
-     * @param preferredSizeForIntermediateHashes
-     *                                 preferred size for intermediate hashes (null if not used)
+     * @param resourceStoreName                   name of the store allocating the resource
+     * @param resourceID                          ID of the resource
+     * @param resourceWriter                      object in charge of writing the resource
+     * @param downloadProgressNotificationHandler handler for receiving notifications concerning this download
+     * @param streamingNeed                       the need for streaming this file (0: no need, 1: max need). The higher the need,
+     *                                            the greater efforts that the scheduler will do for downloading the first parts
+     *                                            of the resource before the last parts. Can hamper total download efficience
+     * @param totalHash                           hexadecimal value for the total resource hash (null if not used)
+     * @param totalHashAlgorithm                  algorithm for calculating the total hash (null if not used)
+     * @param preferredSizeForIntermediateHashes  preferred size for intermediate hashes (null if not used)
      * @return a DownloadManager object for controlling this download, or null if the download could not be created
-     *         (due to the resource store name given not corresponding to any existing resource store)
+     * (due to the resource store name given not corresponding to any existing resource store)
      */
     public synchronized DownloadManager downloadResource(
             String resourceStoreName,
@@ -806,21 +798,19 @@ public class ResourceStreamingManager {
      * specify the target store. However, it is not required that we have this store updated (not even registered) with
      * the resources shared on it
      *
-     * @param serverPeerID             ID of the Peer from which the resource is to be downloaded
-     * @param resourceStoreName        name of the individual store to access
-     * @param resourceID               ID of the resource
-     * @param resourceWriter           object in charge of writing the resource
-     * @param downloadProgressNotificationHandler
-     *                                 handler for receiving notifications concerning this download
-     * @param streamingNeed            the need for streaming this file (0: no need, 1: max need). The higher the need,
-     *                                 the greater efforts that the scheduler will do for downloading the first parts
-     *                                 of the resource before the last parts. Can hamper total download efficiency
-     * @param totalHash                hexadecimal value for the total resource hash (null if not used)
-     * @param totalHashAlgorithm       algorithm for calculating the total hash (null if not used)
-     * @param preferredSizeForIntermediateHashes
-     *                                 preferred size for intermediate hashes (null if not used)
+     * @param serverPeerID                        ID of the Peer from which the resource is to be downloaded
+     * @param resourceStoreName                   name of the individual store to access
+     * @param resourceID                          ID of the resource
+     * @param resourceWriter                      object in charge of writing the resource
+     * @param downloadProgressNotificationHandler handler for receiving notifications concerning this download
+     * @param streamingNeed                       the need for streaming this file (0: no need, 1: max need). The higher the need,
+     *                                            the greater efforts that the scheduler will do for downloading the first parts
+     *                                            of the resource before the last parts. Can hamper total download efficiency
+     * @param totalHash                           hexadecimal value for the total resource hash (null if not used)
+     * @param totalHashAlgorithm                  algorithm for calculating the total hash (null if not used)
+     * @param preferredSizeForIntermediateHashes  preferred size for intermediate hashes (null if not used)
      * @return a DownloadManager object for controlling this download, or null if the download could not be created
-     *         (due to the resource store name given not corresponding to any existing resource store)
+     * (due to the resource store name given not corresponding to any existing resource store)
      */
     public synchronized DownloadManager downloadResource(
             PeerID serverPeerID,
@@ -927,7 +917,6 @@ public class ResourceStreamingManager {
     }
 
     private void reportProvidersForOneActiveDownload(String resourceStoreName, String resourceID) {
-        sout("reportProvidersForOneActiveDownload" + resourceStoreName + "/" + resourceID, 1);
         ForeignStoreShare foreignStoreShare = foreignShareManager.getResourceProviderShare(resourceStoreName);
         /*if (foreignStoreShare == null) {
             // if this store is not registered in the foreign share manager, try with the general store
@@ -939,12 +928,9 @@ public class ResourceStreamingManager {
             resourceProviders = new HashSet<>(peersSharing.size());
             for (PeerID peerID : peersSharing) {
                 PeerResourceProvider peerResourceProvider = generatePeerResourceProvider(peerID);
-                if (peerResourceProvider != null) {
-                    resourceProviders.add(peerResourceProvider);
-                }
+                resourceProviders.add(peerResourceProvider);
             }
         }
-        sout("reportProvidersForOneActiveDownload" + resourceStoreName + "/" + resourceID, 2);
         if (resourceProviders != null) {
             for (MasterResourceStreamer masterResourceStreamer : activeDownloadSet.getDownload(resourceStoreName, resourceID)) {
                 if (masterResourceStreamer.getSpecificPeerDownload() == null) {
@@ -960,16 +946,13 @@ public class ResourceStreamingManager {
                 reportResourceProviderForPeerSpecificDownload(masterResourceStreamer.getSpecificPeerDownload(), masterResourceStreamer);
             }
         }
-        sout("reportProvidersForOneActiveDownload" + resourceStoreName + "/" + resourceID, -1);
     }
 
     private void reportResourceProviderForPeerSpecificDownload(PeerID serverPeerID, MasterResourceStreamer masterResourceStreamer) {
         PeerResourceProvider peerResourceProvider = generatePeerResourceProvider(serverPeerID);
-        if (peerResourceProvider != null) {
-            List<PeerResourceProvider> providerList = new ArrayList<>(1);
-            providerList.add(peerResourceProvider);
-            masterResourceStreamer.reportAvailableResourceProviders(providerList);
-        }
+        List<PeerResourceProvider> providerList = new ArrayList<>(1);
+        providerList.add(peerResourceProvider);
+        masterResourceStreamer.reportAvailableResourceProviders(providerList);
     }
 
     private PeerResourceProvider generatePeerResourceProvider(PeerID peerID) {
@@ -1036,6 +1019,14 @@ public class ResourceStreamingManager {
         return downloadPriorityManager;
     }
 
+    public void acquireWriteDataLock() {
+        writeDataLock.lock();
+    }
+
+    public void releaseWriteDataLock() {
+        writeDataLock.unlock();
+    }
+
     @Override
     protected void finalize() throws Throwable {
         try {
@@ -1045,10 +1036,10 @@ public class ResourceStreamingManager {
         }
     }
 
-    private void sout(String method, int count) {
-        String time = DateTime.getFormattedCurrentDateTime(DateTime.DateTimeElement.hh, ":", DateTime.DateTimeElement.mm, ":", DateTime.DateTimeElement.ss);
-        String state = (count >= 0) ? Integer.toString(count) : "END";
-        //System.out.println(time + " - " + method + ", " + state);
-    }
+//    private void sout(String method, int count) {
+//        String time = DateTime.getFormattedCurrentDateTime(DateTime.DateTimeElement.hh, ":", DateTime.DateTimeElement.mm, ":", DateTime.DateTimeElement.ss);
+//        String state = (count >= 0) ? Integer.toString(count) : "END";
+//        //System.out.println(time + " - " + method + ", " + state);
+//    }
 
 }

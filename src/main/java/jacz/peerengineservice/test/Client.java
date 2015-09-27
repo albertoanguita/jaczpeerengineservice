@@ -87,15 +87,13 @@ public class Client {
 //        return ownData;
 //    }
 
-    void newFriendConnected(PeerID peerID) {
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
     public PeerClientData getPeerClientData() {
         return peerClientData;
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        System.out.println("END!!!");
     }
 }

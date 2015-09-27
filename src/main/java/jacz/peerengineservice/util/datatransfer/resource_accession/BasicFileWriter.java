@@ -1,7 +1,5 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.concurrency.daemon.Daemon;
-import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.files.FileUtil;
 import jacz.util.files.RandomAccess;
 import jacz.util.numeric.LongRange;
@@ -17,21 +15,11 @@ import java.util.Map;
 /**
  *
  */
-public class BasicFileWriter implements ResourceWriter, DaemonAction {
+public class BasicFileWriter implements ResourceWriter {
 
     private final String finalPath;
 
     private final File file;
-
-    /**
-     * Pending data to write
-     */
-    private final RangeSet<LongRange, Long> dataToWrite;
-
-    /**
-     * Daemon process for writing data to disk
-     */
-    private final Daemon writeDaemon;
 
     private boolean hasFailed;
 
@@ -46,7 +34,6 @@ public class BasicFileWriter implements ResourceWriter, DaemonAction {
         String fileWithoutExtension = FileUtil.getFileNameWithoutExtension(expectedFileName);
         String extension = FileUtil.getFileExtension(expectedFileName);
         finalPath = FileUtil.createFile(downloadDir, fileWithoutExtension, extension, " (", ")", true).element1;
-        //finalPath = downloadPathsBuilder.requestFinalFile(expectedFileName);
         file = new File(finalPath);
         if (!file.isFile()) {
             try {
@@ -55,8 +42,6 @@ public class BasicFileWriter implements ResourceWriter, DaemonAction {
                 hasFailed = true;
             }
         }
-        dataToWrite = new RangeSet<>();
-        writeDaemon = new Daemon(this);
         userGenericData = new HashMap<>();
     }
 
@@ -114,21 +99,10 @@ public class BasicFileWriter implements ResourceWriter, DaemonAction {
 
     @Override
     public void complete() throws IOException {
-        //deleteIndexFiles();
     }
-
-    /*private void deleteIndexFiles() {
-        // as it makes a move, the temp file does not need to be erase, and here we do not have any other temp files
-        try {
-            FileUtil.deleteFile(tempFileData);
-        } catch (IOException e) {
-            // ignore, do not throw this exception, it is not so important not being able to delete the meta file
-        }
-    }*/
 
     @Override
     public void cancel() {
-        // remove the temp file
         try {
             FileUtil.deleteFile(finalPath);
         } catch (IOException e) {
@@ -150,14 +124,5 @@ public class BasicFileWriter implements ResourceWriter, DaemonAction {
 
     public String getPath() {
         return finalPath;
-    }
-
-    @Override
-    public boolean solveState() {
-        // writes some pending data to disk
-        for (LongRange dataChunk : dataToWrite.getRanges()) {
-
-        }
-        return false;
     }
 }

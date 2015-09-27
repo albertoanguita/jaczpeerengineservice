@@ -2,6 +2,7 @@ package jacz.peerengineservice.util.tempfile_api;
 
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.files.FileUtil;
+import jacz.util.io.object_serialization.VersionedSerializationException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -33,10 +34,10 @@ class CompleterTask implements ParallelTask {
         try {
             index = TempFileManager.readIndexFile(indexFilePath);
             finalPath = index.getTempDataFilePath();
-        } catch (ClassNotFoundException e) {
-            ioException = new IOException("Problems reading the temp index file");
         } catch (IOException e) {
             ioException = e;
+        } catch (VersionedSerializationException e) {
+            ioException = new IOException("Problems reading the temp index file");
         }
         try {
             FileUtil.deleteFile(indexFilePath);

@@ -1,6 +1,7 @@
 package jacz.peerengineservice.util.tempfile_api;
 
 import jacz.util.concurrency.task_executor.ParallelTask;
+import jacz.util.io.object_serialization.VersionedSerializationException;
 import jacz.util.numeric.LongRange;
 import jacz.util.numeric.RangeSet;
 
@@ -33,10 +34,10 @@ class OwnedPartsTask implements ParallelTask {
         try {
             index = TempFileManager.readIndexFile(indexFilePath);
             ownedParts = index.getOwnedDataParts();
-        } catch (ClassNotFoundException e) {
-            ioException = new IOException("Problems reading the temp index file");
         } catch (IOException e) {
             ioException = e;
+        } catch (VersionedSerializationException e) {
+            ioException = new IOException("Problems reading the temp index file");
         }
     }
 

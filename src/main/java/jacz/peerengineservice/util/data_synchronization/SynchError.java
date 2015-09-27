@@ -13,6 +13,7 @@ public class SynchError {
         UNKNOWN_ACCESSOR,
         REQUEST_DENIED,
         SERVER_ERROR,
+        TRANSMISSION_ERROR,
         DATA_ACCESS_ERROR,
         UNDEFINED
     }

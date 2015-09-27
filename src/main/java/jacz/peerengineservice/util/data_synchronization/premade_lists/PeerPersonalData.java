@@ -70,6 +70,16 @@ public class PeerPersonalData implements DataAccessor {
     }
 
     @Override
+    public int elementsPerMessage() {
+        return 1;
+    }
+
+    @Override
+    public int CRCBytes() {
+        return 4;
+    }
+
+    @Override
     public void setElement(Object element) throws DataAccessException {
         setNick((String) element);
         if (peerClientAction != null) {

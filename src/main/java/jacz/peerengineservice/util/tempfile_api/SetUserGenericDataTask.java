@@ -1,6 +1,7 @@
 package jacz.peerengineservice.util.tempfile_api;
 
 import jacz.util.concurrency.task_executor.ParallelTask;
+import jacz.util.io.object_serialization.VersionedSerializationException;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -40,10 +41,10 @@ class SetUserGenericDataTask implements ParallelTask {
             index = TempFileManager.readIndexFile(indexFilePath);
             index.setCustomGroup(group, userGenericData);
             TempFileManager.writeIndexFile(indexFilePath, index);
-        } catch (ClassNotFoundException e) {
-            ioException = new IOException("Problems reading the temp index file");
         } catch (IOException e) {
             ioException = e;
+        } catch (VersionedSerializationException e) {
+            ioException = new IOException("Problems reading the temp index file");
         }
     }
 

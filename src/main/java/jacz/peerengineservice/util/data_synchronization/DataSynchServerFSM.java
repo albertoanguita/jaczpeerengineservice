@@ -6,6 +6,8 @@ import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
 import jacz.peerengineservice.util.ConnectionStatus;
+import jacz.util.hash.CRC;
+import jacz.util.io.object_serialization.Serializer;
 import jacz.util.notification.ProgressNotificationWithError;
 import jacz.util.numeric.NumericUtil;
 
@@ -77,8 +79,6 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
         }
     }
 
-    private static final int MAX_ELEMENT_PACKET_SIZE = 10;
-
     private byte outgoingChannel;
 
     private ConnectionStatus requestingPeerStatus;
@@ -88,6 +88,10 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
     private DataAccessor dataAccessor;
 
     private List<? extends Serializable> elementsToSend;
+
+    private int elementsPerMessage;
+
+    private int CRCBytes;
 
     private int elementToSendIndex;
 
@@ -155,6 +159,8 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
                 }
                 elementsToSend = dataAccessor.getElements(request.lastTimestamp);
                 elementToSendIndex = 0;
+                elementsPerMessage = Math.max(dataAccessor.elementsPerMessage(), 1);
+                CRCBytes = Math.max(dataAccessor.CRCBytes(), 0);
                 return sendElementPack(ccp);
             } else {
                 ccp.write(outgoingChannel, SynchRequestAnswer.SERVER_BUSY);
@@ -177,13 +183,16 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
     }
 
     public State sendElementPack(ChannelConnectionPoint ccp) throws IllegalArgumentException {
-        int packetSize = Math.min(elementsToSend.size() - elementToSendIndex, MAX_ELEMENT_PACKET_SIZE);
+        int packetSize = Math.min(elementsToSend.size() - elementToSendIndex, elementsPerMessage);
         List<Serializable> packet = new ArrayList<>();
         for (int index = elementToSendIndex; index < elementToSendIndex + packetSize; index++) {
             packet.add(elementsToSend.get(index));
         }
         elementToSendIndex += packetSize;
-        ccp.write(outgoingChannel, new ElementPacket(packet, elementToSendIndex, elementsToSend.size()));
+        byte[] bytePacket = Serializer.serializeObject(new ElementPacket(packet, elementToSendIndex, elementsToSend.size()));
+        bytePacket = CRC.addCRC(bytePacket, CRCBytes, true);
+//        ccp.write(outgoingChannel, new ElementPacket(packet, elementToSendIndex, elementsToSend.size()));
+        ccp.write(outgoingChannel, bytePacket);
         if (progress != null) {
             progress.addNotification(NumericUtil.displaceInRange(elementToSendIndex, 0, elementsToSend.size(), 0, DataSynchronizer.PROGRESS_MAX));
         }

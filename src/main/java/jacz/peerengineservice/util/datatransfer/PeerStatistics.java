@@ -5,6 +5,7 @@ import jacz.util.io.object_serialization.VersionedObject;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
 import jacz.util.io.object_serialization.VersionedSerializationException;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,40 +14,28 @@ import java.util.Map;
  */
 public class PeerStatistics implements VersionedObject {
 
-    public static class OnePeerStatistics {
-
-        private static final String VERSION_0_1 = "0.1";
+    public static class OnePeerStatistics implements Serializable {
 
         public final TransferStatistics downloads;
 
         public final TransferStatistics uploads;
 
         public OnePeerStatistics() {
-            downloads = new TransferStatistics() {
-                @Override
-                public String getCurrentVersion() {
-                    return VERSION_0_1;
-                }
-            };
-            uploads = new TransferStatistics() {
-                @Override
-                public String getCurrentVersion() {
-                    return VERSION_0_1;
-                }
-            };
+            downloads = new TransferStatistics() {};
+            uploads = new TransferStatistics() {};
         }
     }
 
     private static final String VERSION_0_1 = "0.1";
 
-    private Map<PeerID, OnePeerStatistics> statistics;
+    private HashMap<PeerID, OnePeerStatistics> statistics;
 
     public PeerStatistics() {
         reset();
     }
 
     public PeerStatistics(byte[] data) throws VersionedSerializationException {
-        VersionedObjectSerializer.deserializeVersionedObject(this, data);
+        VersionedObjectSerializer.deserialize(this, data);
     }
 
     public void reset() {
@@ -112,14 +101,14 @@ public class PeerStatistics implements VersionedObject {
     }
 
     @Override
-    public Map<String, Object> serialize() {
-        Map<String, Object> attributes = new HashMap<>();
+    public Map<String, Serializable> serialize() {
+        Map<String, Serializable> attributes = new HashMap<>();
         attributes.put("statistics", statistics);
         return attributes;
     }
 
     @Override
-    public void deserialize(String version, Map<String, Object> attributes) throws RuntimeException {
-        statistics = (Map<PeerID, OnePeerStatistics>) attributes.get("statistics");
+    public void deserialize(String version, Map<String, Object> attributes) throws RuntimeException, VersionedSerializationException {
+        statistics = (HashMap<PeerID, OnePeerStatistics>) attributes.get("statistics");
     }
 }

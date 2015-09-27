@@ -19,13 +19,19 @@ public class BasicFileReader implements ResourceReader {
     /**
      * Accessed file
      */
-    File file;
+    private final File file;
+
+    private final long fileSize;
+
+    private final DataCache dataCache;
 
     public BasicFileReader(String path) throws FileNotFoundException {
         if (!FileUtil.isFile(path)) {
             throw new FileNotFoundException();
         }
         file = new File(path);
+        fileSize = file.length();
+        dataCache = new DataCache();
     }
 
     @Override
@@ -40,11 +46,12 @@ public class BasicFileReader implements ResourceReader {
 
     @Override
     public RangeSet<LongRange, Long> availableSegments() {
-        return new RangeSet<LongRange, Long>(new LongRange(0l, length() - 1));
+        return new RangeSet<>(new LongRange(0l, length() - 1));
     }
 
     @Override
     public byte[] read(long offset, int length) throws IndexOutOfBoundsException, IOException {
+        // todo????
         ThreadUtil.safeSleep(100);
         return RandomAccess.read(file, offset, length);
     }

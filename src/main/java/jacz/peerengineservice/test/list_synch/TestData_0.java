@@ -87,6 +87,16 @@ public class TestData_0 implements DataAccessor {
     }
 
     @Override
+    public int elementsPerMessage() {
+        return 5;
+    }
+
+    @Override
+    public int CRCBytes() {
+        return 4;
+    }
+
+    @Override
     public void setElement(Object element) throws DataAccessException {
         Movie receivedMovie = (Movie) element;
         Iterator<Movie> i = movies.iterator();

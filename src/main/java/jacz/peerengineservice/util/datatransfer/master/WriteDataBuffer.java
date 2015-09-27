@@ -66,7 +66,9 @@ class WriteDataBuffer {
         dataBuffer.add(new DataElement(resourceChunk));
     }
 
-    public synchronized DataElement getDataElement() {
-        return dataBuffer.isEmpty() ? null : dataBuffer.remove(0);
+    public synchronized List<DataElement> getDataElements() {
+        List<DataElement> dataElements = new ArrayList<>(dataBuffer);
+        dataBuffer.clear();
+        return dataElements;
     }
 }

@@ -28,27 +28,26 @@ import java.util.*;
  */
 public class MasterResourceStreamer extends GenericPriorityManagerStakeholder implements ResourceStreamingManager.SubchannelOwner {
 
-//    /**
-//     * The possible states of a download
-//     */
-//    public static enum  State {
-//        RUNNING,
-//        PAUSED,
-//        STOPPED,
-//        COMPLETED,
-//        CANCELLED
-//    }
-
     private final class WriteDaemon implements DaemonAction {
+
+        private final ResourceStreamingManager resourceStreamingManager;
+
+        public WriteDaemon(ResourceStreamingManager resourceStreamingManager) {
+            this.resourceStreamingManager = resourceStreamingManager;
+        }
 
         @Override
         public boolean solveState() {
-            WriteDataBuffer.DataElement dataElement = writeDataBuffer.getDataElement();
-            while (dataElement != null) {
-                writeDataInBackground(dataElement);
-                dataElement = writeDataBuffer.getDataElement();
+            try {
+                resourceStreamingManager.acquireWriteDataLock();
+                List<WriteDataBuffer.DataElement> dataElements = writeDataBuffer.getDataElements();
+                for (WriteDataBuffer.DataElement dataElement : dataElements) {
+                    writeDataInBackground(dataElement);
+                }
+                return true;
+            } finally {
+                resourceStreamingManager.releaseWriteDataLock();
             }
-            return true;
         }
     }
 
@@ -176,7 +175,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         this.resourceID = resourceID;
         this.resourceWriter = resourceWriter;
         writeDataBuffer = new WriteDataBuffer();
-        writeDaemon = new Daemon(new WriteDaemon());
+        writeDaemon = new Daemon(new WriteDaemon(resourceStreamingManager));
         activeSlaves = new HashMap<>();
         RangeSet<LongRange, Long> availableSegments = null;
         priority = DEFAULT_PRIORITY;

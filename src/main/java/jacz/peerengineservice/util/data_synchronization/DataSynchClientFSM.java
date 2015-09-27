@@ -6,6 +6,10 @@ import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
+import jacz.util.hash.CRC;
+import jacz.util.hash.InvalidCRCException;
+import jacz.util.io.object_serialization.MutableOffset;
+import jacz.util.io.object_serialization.Serializer;
 import jacz.util.notification.ProgressNotificationWithError;
 import jacz.util.numeric.NumericUtil;
 
@@ -37,7 +41,7 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
         // hashes that we have, and wait for the server to say that he is done with this process
         // we leave this state when the server says we are done. We will then check if we must request elements, or we are done
         // TYPE: BYTE_ARRAY
-        INDEX_AND_HASH_SYNCH_PROCESS,
+//        INDEX_AND_HASH_SYNCH_PROCESS,
 
         // the index and hash synch process just finished
         // waiting for server to send the number of hashes that we need. After we get it, we will wait for the hashes themselves
@@ -48,27 +52,27 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
         // waiting for server to send the list of hashes that we need. With these data, we initialize the elementTransferSynchClient
         // with it, and execute its initiateDataTransferProcess, and start requesting elements
         // TYPE: BYTE_ARRAY
-        WAITING_FOR_INDEX_AND_HASHES_TO_REQUEST,
+//        WAITING_FOR_INDEX_AND_HASHES_TO_REQUEST,
 
         // the requested elements are objects
         // waiting for server to send the last requested element by the elementTransferSynchClient
         // received data is passed to the elementTransferSynchClient
         // TYPE: OBJECT
-        DATA_TRANSMISSION_PROCESS_OBJECT,
+//        DATA_TRANSMISSION_PROCESS_OBJECT,
 
         // the requested elements are byte arrays
         // the server must send us the name of the resource store for requesting the data
         // TYPE: BYTE_ARRAY
-        WAITING_FOR_BYTE_ARRAY_RESOURCE_STORE_NAME,
+//        WAITING_FOR_BYTE_ARRAY_RESOURCE_STORE_NAME,
 
         // process complete (final state). In addition, notify the completion to the progress element
-        SUCCESS_NOTIFY_COMPLETE,
+//        SUCCESS_NOTIFY_COMPLETE,
 
         // process complete (final state). Do not notify the completion of the progress
-        SUCCESS_NOT_NOTIFY_COMPLETE,
+//        SUCCESS_NOT_NOTIFY_COMPLETE,
 
         // error due to element modified in server during synchronization
-        ERROR_ELEMENT_CHANGED_IN_SERVER
+//        ERROR_ELEMENT_CHANGED_IN_SERVER
     }
 
     /**
@@ -153,8 +157,53 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
                     return State.ERROR;
                 }
 
+//            case SYNCHING:
+//                try {
+//                    if (!(message instanceof DataSynchServerFSM.ElementPacket)) {
+//                        // unrecognized class
+//                        throw new ClassNotFoundException("");
+//                    }
+//                    DataSynchServerFSM.ElementPacket elementPacket = (DataSynchServerFSM.ElementPacket) message;
+//                    if (elementPacket.SERVER_ERROR) {
+//                        // there was an error in the server
+//                        synchError = new SynchError(SynchError.Type.SERVER_ERROR, null);
+//                        return State.ERROR;
+//                    }
+//                    for (Serializable element : elementPacket.elementPacket) {
+//                        dataAccessor.setElement(element);
+//                    }
+//                    if (progress != null) {
+//                        progress.addNotification(NumericUtil.displaceInRange(elementPacket.elementsSent, 0, elementPacket.totalElementsToSend, 0, DataSynchronizer.PROGRESS_MAX));
+//                    }
+//                    if (elementPacket.elementsSent < elementPacket.totalElementsToSend) {
+//                        // ask for more elements
+//                        ccp.write(outgoingChannel, true);
+//                        return State.SYNCHING;
+//                    } else {
+//                        return State.SUCCESS;
+//                    }
+//                } catch (ClassNotFoundException e) {
+//                    // invalid class found, error
+//                    synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Received request object not recognized in state: " + currentState);
+//                    return State.ERROR;
+//                } catch (DataAccessException e) {
+//                    synchError = new SynchError(SynchError.Type.DATA_ACCESS_ERROR, "Error adding element to data accessor");
+//                    return State.ERROR;
+//                }
+
+            default:
+                synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Unexpected object data at state " + currentState);
+                return State.ERROR;
+        }
+    }
+
+    @Override
+    public State processMessage(State currentState, byte channel, byte[] data, ChannelConnectionPoint ccp) throws IllegalArgumentException {
+        switch (currentState) {
             case SYNCHING:
                 try {
+                    data = CRC.extractDataWithCRC(data);
+                    Object message = Serializer.deserializeObject(data, new MutableOffset());
                     if (!(message instanceof DataSynchServerFSM.ElementPacket)) {
                         // unrecognized class
                         throw new ClassNotFoundException("");
@@ -185,19 +234,15 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
                 } catch (DataAccessException e) {
                     synchError = new SynchError(SynchError.Type.DATA_ACCESS_ERROR, "Error adding element to data accessor");
                     return State.ERROR;
+                } catch (InvalidCRCException e) {
+                    synchError = new SynchError(SynchError.Type.TRANSMISSION_ERROR, "CRC check failed");
+                    return State.ERROR;
                 }
 
             default:
-                synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Unexpected object data at state " + currentState);
+                synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Unexpected byte array data at state " + currentState);
                 return State.ERROR;
         }
-    }
-
-    @Override
-    public State processMessage(State currentState, byte channel, byte[] data, ChannelConnectionPoint ccp) throws IllegalArgumentException {
-        // ignore, cannot happen
-        synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Unexpected byte array data");
-        return State.ERROR;
     }
 
     @Override
@@ -222,9 +267,7 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
                 return true;
 
             case ERROR:
-                if (dataAccessor != null) {
-                    dataAccessor.endSynchProcess(DataAccessor.Mode.CLIENT, false);
-                }
+                dataAccessor.endSynchProcess(DataAccessor.Mode.CLIENT, false);
                 if (progress != null) {
                     progress.error(synchError);
                 }
@@ -244,7 +287,7 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
     @Override
     public void timedOut(State state) {
-        dataAccessor.endSynchProcess(DataAccessor.Mode.SERVER, false);
+        dataAccessor.endSynchProcess(DataAccessor.Mode.CLIENT, false);
         if (progress != null) {
             progress.timeout();
         }
