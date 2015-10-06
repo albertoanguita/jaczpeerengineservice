@@ -1,9 +1,9 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.channel.ChannelFSMAction;
+import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.client.PeerClientPrivateInterface;
 
 /**
  * This class implements the FSM in charge of processing requests received from other PeerClients to which we are

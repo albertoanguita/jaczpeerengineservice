@@ -157,40 +157,6 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
                     return State.ERROR;
                 }
 
-//            case SYNCHING:
-//                try {
-//                    if (!(message instanceof DataSynchServerFSM.ElementPacket)) {
-//                        // unrecognized class
-//                        throw new ClassNotFoundException("");
-//                    }
-//                    DataSynchServerFSM.ElementPacket elementPacket = (DataSynchServerFSM.ElementPacket) message;
-//                    if (elementPacket.SERVER_ERROR) {
-//                        // there was an error in the server
-//                        synchError = new SynchError(SynchError.Type.SERVER_ERROR, null);
-//                        return State.ERROR;
-//                    }
-//                    for (Serializable element : elementPacket.elementPacket) {
-//                        dataAccessor.setElement(element);
-//                    }
-//                    if (progress != null) {
-//                        progress.addNotification(NumericUtil.displaceInRange(elementPacket.elementsSent, 0, elementPacket.totalElementsToSend, 0, DataSynchronizer.PROGRESS_MAX));
-//                    }
-//                    if (elementPacket.elementsSent < elementPacket.totalElementsToSend) {
-//                        // ask for more elements
-//                        ccp.write(outgoingChannel, true);
-//                        return State.SYNCHING;
-//                    } else {
-//                        return State.SUCCESS;
-//                    }
-//                } catch (ClassNotFoundException e) {
-//                    // invalid class found, error
-//                    synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Received request object not recognized in state: " + currentState);
-//                    return State.ERROR;
-//                } catch (DataAccessException e) {
-//                    synchError = new SynchError(SynchError.Type.DATA_ACCESS_ERROR, "Error adding element to data accessor");
-//                    return State.ERROR;
-//                }
-
             default:
                 synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Unexpected object data at state " + currentState);
                 return State.ERROR;

@@ -4,6 +4,7 @@ import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
+import jacz.util.io.object_serialization.Serializer;
 
 /**
  * Simple peer timed action example
@@ -30,12 +31,21 @@ public class ProvideFilesFSM implements PeerTimedFSMAction<ProvideFilesFSM.State
             case WAITING_FOR_REQUEST:
                 // provide file hashes
                 System.out.println("ProvideFilesFSM -> received request: " + o.toString());
+
+                ccp.write(outgoingChannel, new Boolean(true));
+//                ccp.write(outgoingChannel, new Boolean(false));
+
                 ObjectListWrapper objectListWrapper = new ObjectListWrapper();
                 objectListWrapper.getObjects().add("aaa");
-                objectListWrapper.getObjects().add("bbb");
-                objectListWrapper.getObjects().add("ccc");
-                objectListWrapper.getObjects().add("ddd");
-                ccp.write(outgoingChannel, objectListWrapper);
+//                objectListWrapper.getObjects().add("bbb");
+//                objectListWrapper.getObjects().add("ccc");
+//                objectListWrapper.getObjects().add("ddd");
+                byte[] data = Serializer.serializeObject(objectListWrapper);
+                data = new byte[1];
+                data[0] = 5;
+                System.out.println("sending data of length: " + data.length);
+//                ccp.write(outgoingChannel, objectListWrapper);
+                ccp.write(outgoingChannel, data);
                 return State.SUCCESS;
         }
         return State.ERROR;

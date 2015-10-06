@@ -305,7 +305,6 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
     @Override
     public Long wakeUp(Timer timer) {
         // too much time without receiving any input -> die
-        System.out.println("TIMEOUT DIE!!!!!!!!!!!!!");
         die(true);
         return 0l;
     }

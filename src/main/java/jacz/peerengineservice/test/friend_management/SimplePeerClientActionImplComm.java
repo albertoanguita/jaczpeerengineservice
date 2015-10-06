@@ -14,8 +14,15 @@ public class SimplePeerClientActionImplComm extends SimplePeerClientActionImpl {
         super.newPeerConnected(peerID, status);
         if (equalsPeerID(1)) {
             client.getPeerClient().sendObjectMessage(peerID, "Hola 2, soy 1");
+
+            client.getPeerClient().sendObjectMessage(peerID, "jajaja");
+            client.getPeerClient().sendObjectMessage(peerID, "mierda");
+            client.getPeerClient().sendObjectMessage(peerID, "joder");
         } else if (equalsPeerID(2)) {
             client.getPeerClient().sendObjectMessage(peerID, "Object: Hola 1, soy 2");
+            client.getPeerClient().sendObjectMessage(peerID, "uffff");
+            client.getPeerClient().sendObjectMessage(peerID, "puta");
+            client.getPeerClient().sendObjectMessage(peerID, "lalelo");
         }
     }
 }

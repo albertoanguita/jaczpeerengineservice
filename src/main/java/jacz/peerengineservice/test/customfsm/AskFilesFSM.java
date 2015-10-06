@@ -1,10 +1,13 @@
 package jacz.peerengineservice.test.customfsm;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
+import jacz.util.io.object_serialization.MutableOffset;
 import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
+import jacz.util.io.object_serialization.Serializer;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,6 +18,7 @@ public class AskFilesFSM implements PeerTimedFSMAction<AskFilesFSM.State> {
 
     enum State {
         REQUEST_SENT,
+        REQUEST_SENT_2,
         SUCCESS,
         ERROR
     }
@@ -29,25 +33,51 @@ public class AskFilesFSM implements PeerTimedFSMAction<AskFilesFSM.State> {
         switch (state) {
 
             case REQUEST_SENT:
+//            case REQUEST_SENT_2:
                 // files received
-                if (message instanceof ObjectListWrapper) {
-                    ObjectListWrapper objectListWrapper = (ObjectListWrapper) message;
-                    Set<String> fileHashes = new HashSet<String>(objectListWrapper.getObjects().size());
-                    for (Object o : objectListWrapper.getObjects()) {
-                        fileHashes.add((String) o);
-                    }
-                    System.out.println("AskFilesFSM -> Received file hashes: " + fileHashes);
-                    return State.SUCCESS;
-                } else {
-                    return State.ERROR;
-                }
+                System.out.println(message);
+//                if (message instanceof ObjectListWrapper) {
+//                    ObjectListWrapper objectListWrapper = (ObjectListWrapper) message;
+//                    Set<String> fileHashes = new HashSet<String>(objectListWrapper.getObjects().size());
+//                    for (Object o : objectListWrapper.getObjects()) {
+//                        fileHashes.add((String) o);
+//                    }
+//                    System.out.println("AskFilesFSM -> Received file hashes: " + fileHashes);
+//                    return State.SUCCESS;
+//                } else {
+//                    return State.ERROR;
+//                }
+                return State.REQUEST_SENT_2;
         }
         return State.ERROR;
     }
 
     @Override
     public State processMessage(State state, byte channel, byte[] data, ChannelConnectionPoint ccp) throws IllegalArgumentException {
-        // unexpected data
+        switch (state) {
+
+            case REQUEST_SENT_2:
+                System.out.println(Arrays.toString(data));
+                return State.SUCCESS;
+                // files received
+//                Object message;
+//                try {
+//                    message = Serializer.deserializeObject(data, new MutableOffset());
+//                } catch (ClassNotFoundException e) {
+//                    throw new IllegalArgumentException();
+//                }
+//                if (message instanceof ObjectListWrapper) {
+//                    ObjectListWrapper objectListWrapper = (ObjectListWrapper) message;
+//                    Set<String> fileHashes = new HashSet<String>(objectListWrapper.getObjects().size());
+//                    for (Object o : objectListWrapper.getObjects()) {
+//                        fileHashes.add((String) o);
+//                    }
+//                    System.out.println("AskFilesFSM -> Received file hashes: " + fileHashes);
+//                    return State.SUCCESS;
+//                } else {
+//                    return State.ERROR;
+//                }
+        }
         return State.ERROR;
     }
 

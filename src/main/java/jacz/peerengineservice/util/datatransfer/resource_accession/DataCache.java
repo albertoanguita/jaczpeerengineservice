@@ -30,13 +30,16 @@ class DataCache {
         offset = 0;
     }
 
-    byte[] readData(LongRange requestedDataSegment) {
-        RangeToRangeComparison comparison = dataSegment.compareTo(requestedDataSegment);
+    boolean isDataStoredFrom(long from) {
+        return !dataSegment.isEmpty() && dataSegment.getMin() == from;
+    }
 
-        if (comparison == RangeToRangeComparison.EQUALS) {
-            clearDataSegment();
-            return Arrays.copyOfRange(data, offset, data.length);
-        } else if (comparison == RangeToRangeComparison.INSIDE && dataSegment.getMin().equals(requestedDataSegment.getMin())) {
+    byte[] readData(LongRange requestedDataSegment) {
+        if (dataSegment.isEmpty()) {
+            return null;
+        }
+        RangeToRangeComparison comparison = dataSegment.compareTo(requestedDataSegment);
+        if (comparison == RangeToRangeComparison.EQUALS || (comparison == RangeToRangeComparison.INSIDE && dataSegment.getMin().equals(requestedDataSegment.getMin()))) {
             clearDataSegment();
             return Arrays.copyOfRange(data, offset, data.length);
         } else if (comparison == RangeToRangeComparison.CONTAINS && dataSegment.getMin().equals(requestedDataSegment.getMin())) {
