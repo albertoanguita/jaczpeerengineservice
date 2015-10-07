@@ -5,9 +5,9 @@ import jacz.peerengineservice.util.datatransfer.slave.ResourceChunk;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.util.numeric.ContinuousDegree;
-import jacz.util.numeric.LongRange;
 import jacz.util.numeric.NumericUtil;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.LongRangeList;
 import jacz.util.stochastic.StochasticUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -113,7 +113,7 @@ class ResourcePartScheduler {
          */
         void partIsAgainUseful(ResourcePart part) {
             ResourcePart usefulPartInThisSlave = sharedPart.intersection(part);
-            usefulPart.add(usefulPartInThisSlave.getRanges());
+            usefulPart.add(usefulPartInThisSlave.getRangesAsList());
         }
 
         @Override
@@ -252,7 +252,7 @@ class ResourcePartScheduler {
      */
     private ContinuousDegree streamingNeed;
 
-    ResourcePartScheduler(MasterResourceStreamer masterResourceStreamer, ResourceStreamingManager resourceStreamingManager, Long resourceSize, RangeSet<LongRange, Long> ownedPart, double streamingNeed) {
+    ResourcePartScheduler(MasterResourceStreamer masterResourceStreamer, ResourceStreamingManager resourceStreamingManager, Long resourceSize, LongRangeList ownedPart, double streamingNeed) {
         this.masterResourceStreamer = masterResourceStreamer;
         this.resourceStreamingManager = resourceStreamingManager;
         this.resourceSize = resourceSize;
@@ -262,7 +262,7 @@ class ResourcePartScheduler {
         this.streamingNeed = new ContinuousDegree(streamingNeed);
     }
 
-    private void initializeRemainingPart(RangeSet<LongRange, Long> ownedPart) {
+    private void initializeRemainingPart(LongRangeList ownedPart) {
         if (sizeIsKnown()) {
             remainingPart = new ResourcePart(new LongRange((long) 0, resourceSize - 1));
             remainingPart.remove(ownedPart);
@@ -354,8 +354,8 @@ class ResourcePartScheduler {
         if (sizeIsKnown()) {
             if (activeSlaves.containsKey(slaveController.getId())) {
                 SlaveData slaveData = activeSlaves.get(slaveController.getId());
-                remainingPart.add(slaveData.assignedPart.getRanges());
-                assignedPart.remove(slaveData.assignedPart.getRanges());
+                remainingPart.add(slaveData.assignedPart.getRangesAsList());
+                assignedPart.remove(slaveData.assignedPart.getRangesAsList());
                 for (SlaveData anotherSlaveData : activeSlaves.values()) {
                     anotherSlaveData.partIsAgainUseful(slaveData.assignedPart);
                 }
@@ -450,7 +450,7 @@ class ResourcePartScheduler {
                             continue;
                         }
                         SlaveData aSlaveData = activeSlaves.get(aSlaveID);
-                        if (aSlaveData.sharedPart.getRanges().size() == 1 && aSlaveData.sharedPart.size() == resourceSize) {
+                        if (aSlaveData.sharedPart.getRangesAsList().size() == 1 && aSlaveData.sharedPart.size() == resourceSize) {
                             slaveSharingAllCount++;
                         } else {
                             // here we store all slaves that don't share all the resource. We also mark if their useful share
@@ -498,7 +498,7 @@ class ResourcePartScheduler {
                     selectedPosition = selectBlock(blockCandidates, streamingNeed);
                 }
                 if (selectedPosition != null) {
-                    LongRange assignedSegment = assignableSegments.getSegmentAroundPosition(selectedPosition, preferredSize);
+                    LongRange assignedSegment = (LongRange) assignableSegments.getSegmentAroundPosition(selectedPosition, preferredSize);
                     if (assignedSegment != null) {
                         long minSpeed = 0;
                         if (averageSpeed != null) {

@@ -6,7 +6,7 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.PeerResourceP
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.util.date_time.SpeedMonitor;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 
 import java.io.IOException;
 import java.io.Serializable;

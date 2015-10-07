@@ -2,8 +2,10 @@ package jacz.peerengineservice.util.tempfile_api;
 
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.io.object_serialization.VersionedSerializationException;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.oldrange.RangeSet;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 
@@ -17,7 +19,7 @@ class OwnedPartsTask implements ParallelTask {
      */
     private String indexFilePath;
 
-    private RangeSet<LongRange, Long> ownedParts;
+    private LongRangeList ownedParts;
 
     private IOException ioException;
 
@@ -41,7 +43,7 @@ class OwnedPartsTask implements ParallelTask {
         }
     }
 
-    public RangeSet<LongRange, Long> getOwnedParts() throws IOException {
+    public LongRangeList getOwnedParts() throws IOException {
         if (ownedParts != null) {
             return ownedParts;
         } else {

@@ -1,8 +1,10 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.util.numeric.LongRange;
 import jacz.util.numeric.NumericUtil;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.Range;
+import jacz.util.numeric.range.RangeList;
 
 import java.util.Collection;
 import java.util.List;
@@ -14,7 +16,7 @@ import java.util.List;
  * Date: 19-mar-2011<br>
  * Last Modified: 19-mar-2011
  */
-public class ResourcePart extends RangeSet<LongRange, Long> {
+public class ResourcePart extends LongRangeList {
 
     private int segmentSearchIndex;
 
@@ -36,7 +38,7 @@ public class ResourcePart extends RangeSet<LongRange, Long> {
         resetOffsetCache();
     }
 
-    public ResourcePart(RangeSet<LongRange, Long> rangeSet) {
+    public ResourcePart(LongRangeList rangeSet) {
         super(rangeSet);
         resetOffsetCache();
     }
@@ -53,6 +55,7 @@ public class ResourcePart extends RangeSet<LongRange, Long> {
         resetOffsetCache();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void add(LongRange... ranges) {
         super.add(ranges);
@@ -71,6 +74,7 @@ public class ResourcePart extends RangeSet<LongRange, Long> {
         resetOffsetCache();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void remove(LongRange... ranges) {
         super.remove(ranges);
@@ -89,20 +93,20 @@ public class ResourcePart extends RangeSet<LongRange, Long> {
      * @return the absolute position that the offset means in this resource part
      */
     public Long getPosition(long offset) {
-        if (segmentSearchIndex >= getRanges().size() || offset < accumulatedOffset) {
+        if (segmentSearchIndex >= getRangesAsList().size() || offset < accumulatedOffset) {
             resetOffsetCache();
         }
         offset -= accumulatedOffset;
-        while (segmentSearchIndex < getRanges().size() && offset >= getRanges().get(segmentSearchIndex).size()) {
-            offset -= getRanges().get(segmentSearchIndex).size();
-            accumulatedOffset += getRanges().get(segmentSearchIndex).size();
+        while (segmentSearchIndex < getRangesAsList().size() && offset >= getRangesAsList().get(segmentSearchIndex).size()) {
+            offset -= getRangesAsList().get(segmentSearchIndex).size();
+            accumulatedOffset += getRangesAsList().get(segmentSearchIndex).size();
             segmentSearchIndex++;
         }
-        if (segmentSearchIndex < getRanges().size()) {
+        if (segmentSearchIndex < getRangesAsList().size()) {
             // range found at index
-            return getRanges().get(segmentSearchIndex).getMin() + offset;
+            return getRangesAsList().get(segmentSearchIndex).getMin() + offset;
         } else {
-            return getRanges().get(getRanges().size() - 1).getMax();
+            return getRangesAsList().get(getRangesAsList().size() - 1).getMax();
         }
     }
 
@@ -111,10 +115,10 @@ public class ResourcePart extends RangeSet<LongRange, Long> {
         return new ResourcePart(super.intersection(anotherResourcePart));
     }
 
-    public LongRange getSegmentAroundPosition(long position, long preferredSize) {
-        int index = searchRange(position);
+    public Range<Long> getSegmentAroundPosition(long position, long preferredSize) {
+        int index = search(position);
         if (index >= 0) {
-            LongRange range = getRanges().get(index);
+            Range<Long> range = getRangesAsList().get(index);
             if (range.size() <= preferredSize) {
                 return range;
             } else {

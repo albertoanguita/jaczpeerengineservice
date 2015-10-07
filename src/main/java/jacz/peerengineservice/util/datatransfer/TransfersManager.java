@@ -51,16 +51,16 @@ public abstract class TransfersManager<T> implements SimpleTimerAction {
      * @param id    id of the download to remove
      */
     synchronized T removeTransfer(String store, UniqueIdentifier id) {
-        try {
+//        try {
             return activeTransfers.get(store).remove(id);
-        } catch (NullPointerException e) {
-            System.out.println("NULL REMOVE TRANSFER");
-            for (Map.Entry<String, Map<UniqueIdentifier, T>> entry : activeTransfers.entrySet()) {
-                System.out.println(entry.getKey());
-                System.out.println(entry.getValue());
-            }
-            throw e;
-        }
+//        } catch (NullPointerException e) {
+//            System.out.println("NULL REMOVE TRANSFER");
+//            for (Map.Entry<String, Map<UniqueIdentifier, T>> entry : activeTransfers.entrySet()) {
+//                System.out.println(entry.getKey());
+//                System.out.println(entry.getValue());
+//            }
+//            throw e;
+//        }
     }
 
     /**

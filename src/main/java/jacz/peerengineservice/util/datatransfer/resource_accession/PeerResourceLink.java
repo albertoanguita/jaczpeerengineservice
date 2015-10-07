@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
 import jacz.peerengineservice.util.datatransfer.master.MasterMessage;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.slave.SlaveResourceStreamer;

@@ -17,6 +17,7 @@ public class ResourceRequest implements Serializable {
 
     private short subchannel;
 
+    // todo remove
     private final Long preferredIntermediateHashesSize;
 
     private Float priority;
@@ -50,9 +51,9 @@ public class ResourceRequest implements Serializable {
         return subchannel;
     }
 
-    public Long getPreferredIntermediateHashesSize() {
-        return preferredIntermediateHashesSize;
-    }
+//    public Long getPreferredIntermediateHashesSize() {
+//        return preferredIntermediateHashesSize;
+//    }
 
     public Float getPriority() {
         return priority;

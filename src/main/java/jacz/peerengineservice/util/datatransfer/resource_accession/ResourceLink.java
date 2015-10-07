@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 
 /**
  * This interface contains the methods for implementing a resource link. A resource link is the access point that we

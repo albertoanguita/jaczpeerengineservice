@@ -1,15 +1,13 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.peerengineservice.util.data_synchronization.DataAccessException;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.util.io.object_serialization.MutableOffset;
 import jacz.util.io.object_serialization.Serializer;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -52,7 +50,7 @@ public class ByteArrayWriter implements ResourceWriter {
     }
 
     @Override
-    public RangeSet<LongRange, Long> getAvailableSegments() throws IOException {
+    public LongRangeList getAvailableSegments() throws IOException {
         // no ranges owned
         return null;
     }

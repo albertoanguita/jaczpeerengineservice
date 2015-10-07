@@ -2,8 +2,8 @@ package jacz.peerengineservice.util.datatransfer.resource_accession;
 
 import jacz.util.files.FileUtil;
 import jacz.util.files.RandomAccess;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,7 +52,7 @@ public class BasicFileWriter implements ResourceWriter {
     }
 
     @Override
-    public RangeSet<LongRange, Long> getAvailableSegments() {
+    public LongRangeList getAvailableSegments() {
         // no share in the beginning
         return null;
     }

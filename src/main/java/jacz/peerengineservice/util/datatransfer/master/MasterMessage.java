@@ -2,7 +2,7 @@ package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.util.io.object_serialization.MutableOffset;
 import jacz.util.io.object_serialization.Serializer;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 
 /**
  * Messages created by a Master for a Slave

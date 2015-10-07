@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 
@@ -34,7 +34,7 @@ public interface ResourceReader {
      * @return a range set with long ranges representing the resource segments that this resource reader can effectively read
      * @throws IOException error accessing the resource
      */
-    public RangeSet<LongRange, Long> availableSegments() throws IOException;
+    public LongRangeList availableSegments() throws IOException;
 
     /**
      * Reads an array of bytes from the resource

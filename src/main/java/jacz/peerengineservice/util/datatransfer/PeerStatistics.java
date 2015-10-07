@@ -1,6 +1,7 @@
 package jacz.peerengineservice.util.datatransfer;
 
 import jacz.peerengineservice.PeerID;
+import jacz.util.io.object_serialization.UnrecognizedVersionException;
 import jacz.util.io.object_serialization.VersionedObject;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
 import jacz.util.io.object_serialization.VersionedSerializationException;
@@ -108,7 +109,7 @@ public class PeerStatistics implements VersionedObject {
     }
 
     @Override
-    public void deserialize(String version, Map<String, Object> attributes) throws RuntimeException, VersionedSerializationException {
+    public void deserialize(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
         statistics = (HashMap<PeerID, OnePeerStatistics>) attributes.get("statistics");
     }
 }

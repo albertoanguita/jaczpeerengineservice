@@ -4,8 +4,9 @@ import jacz.util.concurrency.ThreadUtil;
 import jacz.util.files.FileUtil;
 import jacz.util.files.RandomAccess;
 import jacz.util.io.object_serialization.Serializer;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -43,19 +44,17 @@ public class BasicFileReader implements ResourceReader {
     }
 
     @Override
-    public RangeSet<LongRange, Long> availableSegments() {
-        return new RangeSet<>(new LongRange(0l, length() - 1));
+    public LongRangeList availableSegments() {
+        return new LongRangeList(new LongRange(0l, length() - 1));
     }
 
     @Override
     public byte[] read(long offset, int length) throws IndexOutOfBoundsException, IOException {
-        // todo does not work, download stops at 99,8%
         // try to get the data from the memory cache
         byte[] data = new byte[0];
         while (data.length < length) {
             data = Serializer.addArrays(data, readAux(offset + data.length, length - data.length));
         }
-        ThreadUtil.safeSleep(100);
         return data;
     }
 

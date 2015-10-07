@@ -1,7 +1,7 @@
 package jacz.peerengineservice.test;
 
 import jacz.peerengineservice.util.datatransfer.master.ProviderStatistics;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;

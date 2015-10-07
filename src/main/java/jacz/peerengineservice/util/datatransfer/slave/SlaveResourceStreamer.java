@@ -10,8 +10,8 @@ import jacz.util.concurrency.timer.Timer;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.identifier.UniqueIdentifierFactory;
 import jacz.util.io.object_serialization.ObjectListWrapper;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeQueue;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.LongRangeQueue;
 import jacz.util.queues.event_processing.MessageProcessor;
 
 import java.io.IOException;
@@ -52,17 +52,14 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
 
     static class ResourceSegmentQueue {
 
-        private final RangeQueue<LongRange, Long> queue;
-
-        private final Long preferredIntermediateHashesSize;
+        private final LongRangeQueue queue;
 
         private long currentHashSize;
 
         private long amountOfCurrentHashSent;
 
-        ResourceSegmentQueue(Long preferredIntermediateHashesSize) {
-            queue = new RangeQueue<>();
-            this.preferredIntermediateHashesSize = preferredIntermediateHashesSize;
+        ResourceSegmentQueue() {
+            queue = new LongRangeQueue();
             amountOfCurrentHashSent = 0;
             currentHashSize = 0;
         }
@@ -70,7 +67,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         RemovedRange remove(long preferredBlockSize) {
             if (!queue.isEmpty() && queue.getRanges().get(0) == stopMessage) {
                 // issue stop order
-                return new RemovedRange(queue.remove(stopMessage.size()));
+                return new RemovedRange((LongRange) queue.remove(stopMessage.size()));
             }
             long maxChunkSize;
             if (currentHashSize > 0) {
@@ -79,7 +76,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
             } else {
                 maxChunkSize = preferredBlockSize;
             }
-            LongRange removedRange = queue.remove(maxChunkSize);
+            LongRange removedRange = (LongRange) queue.remove(maxChunkSize);
             amountOfCurrentHashSent += removedRange.size();
             if (amountOfCurrentHashSent == currentHashSize) {
                 // the segment for the current hash has been fully sent -> reset
@@ -162,7 +159,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         this.otherPeer = otherPeer;
         this.incomingChannel = incomingChannel;
         this.outgoingChannel = outgoingChannel;
-        resourceSegmentQueue = new ResourceSegmentQueue(resourceRequest.getPreferredIntermediateHashesSize());
+        resourceSegmentQueue = new ResourceSegmentQueue();
         uploadSessionStatistics = uploadManager.getUploadSessionStatistics();
         SlaveMessageHandler messageHandler = new jacz.peerengineservice.util.datatransfer.slave.SlaveMessageHandler(resourceStreamingManager, otherPeer, outgoingChannel, uploadSessionStatistics);
         messageReader = new SlaveMessageReader(this, resourceSegmentQueue, resourceReader, messageHandler);

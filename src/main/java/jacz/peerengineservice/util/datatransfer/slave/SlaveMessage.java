@@ -3,7 +3,8 @@ package jacz.peerengineservice.util.datatransfer.slave;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.util.io.object_serialization.MutableOffset;
 import jacz.util.io.object_serialization.Serializer;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.Range;
 
 /**
  * Internal representation of a message received from a slave. It also contains static methods to create
@@ -115,8 +116,8 @@ public class SlaveMessage {
 
     private static byte[] serializeResourcePart(ResourcePart resourcePart) {
         // serialize the number of segments, and then each segment
-        byte[] message = Serializer.serialize(resourcePart.getRanges().size());
-        for (LongRange aSegment : resourcePart.getRanges()) {
+        byte[] message = Serializer.serialize(resourcePart.getRangesAsList().size());
+        for (Range<Long> aSegment : resourcePart.getRangesAsList()) {
             message = Serializer.addArrays(message, Serializer.serialize(aSegment.getMin()));
             message = Serializer.addArrays(message, Serializer.serialize(aSegment.getMax()));
         }

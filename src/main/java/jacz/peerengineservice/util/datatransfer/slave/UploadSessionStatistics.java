@@ -5,7 +5,7 @@ import jacz.peerengineservice.util.datatransfer.GlobalUploadStatistics;
 import jacz.peerengineservice.util.datatransfer.PeerStatistics;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.util.date_time.SpeedMonitor;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 
 import java.util.Date;
 import java.util.GregorianCalendar;

@@ -1,8 +1,8 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 
@@ -32,7 +32,7 @@ public class TempFileReader implements ResourceReader {
     }
 
     @Override
-    public RangeSet<LongRange, Long> availableSegments() throws IOException {
+    public LongRangeList availableSegments() throws IOException {
         return tempFileManager.getTemporaryOwnedParts(tempFile);
     }
 

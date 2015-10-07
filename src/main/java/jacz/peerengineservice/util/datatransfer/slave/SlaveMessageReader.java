@@ -1,8 +1,9 @@
 package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
+import jacz.util.date_time.PerformRegularAction;
 import jacz.util.date_time.SpeedMonitor;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 import jacz.util.queues.event_processing.MessageReader;
 import jacz.util.queues.event_processing.StopReadingMessages;
 
@@ -46,6 +47,10 @@ class SlaveMessageReader implements MessageReader {
 
     private static final double INITIAL_BLOCK_SIZE = 1024d;
 
+    private static final double MINIMUM_BLOCK_SIZE = 8d;
+
+    private static final long MILLIS_PACKET_SIZE_RECALCULATION = 100L;
+
     private static final double SMALL_BLOCK_SIZE_GROW_FACTOR = 1.001d;
 
     private static final double MEDIUM_BLOCK_SIZE_GROW_FACTOR = 1.003d;
@@ -74,6 +79,8 @@ class SlaveMessageReader implements MessageReader {
      */
     private double preferredBlockSize;
 
+    private PerformRegularAction increasePacketSizeAction;
+
     private int numberOfBlockSizeGrows;
 
     private final Object blockSizeLock = new Object();
@@ -91,6 +98,7 @@ class SlaveMessageReader implements MessageReader {
         mustFlush = false;
         speedMonitor = new SpeedMonitor(MILLIS_SPEED_MEASURE);
         preferredBlockSize = INITIAL_BLOCK_SIZE;
+        increasePacketSizeAction = PerformRegularAction.timeElapsePerformRegularAction(MILLIS_PACKET_SIZE_RECALCULATION);
         numberOfBlockSizeGrows = 0;
     }
 
@@ -98,7 +106,7 @@ class SlaveMessageReader implements MessageReader {
         synchronized (blockSizeLock) {
             // reduce the preferred block size, and reset number of grows
             preferredBlockSize *= variation;
-            preferredBlockSize = Math.max(preferredBlockSize, INITIAL_BLOCK_SIZE);
+            preferredBlockSize = Math.max(preferredBlockSize, MINIMUM_BLOCK_SIZE);
             numberOfBlockSizeGrows = 0;
         }
     }
@@ -107,7 +115,7 @@ class SlaveMessageReader implements MessageReader {
         synchronized (blockSizeLock) {
             // reduce the preferred block size, and reset number of grows
             preferredBlockSize *= SOFT_THROTTLE_FACTOR;
-            preferredBlockSize = Math.max(preferredBlockSize, INITIAL_BLOCK_SIZE);
+            preferredBlockSize = Math.max(preferredBlockSize, MINIMUM_BLOCK_SIZE);
         }
     }
 
@@ -135,14 +143,17 @@ class SlaveMessageReader implements MessageReader {
                 hardThrottle(AUTO_THROTTLE_FACTOR);
             } else {
                 synchronized (blockSizeLock) {
-                    if (numberOfBlockSizeGrows < NUMBER_OF_GROWS_TO_GO_LARGER) {
-                        preferredBlockSize *= SMALL_BLOCK_SIZE_GROW_FACTOR;
-                        numberOfBlockSizeGrows++;
-                    } else if (numberOfBlockSizeGrows < 2 * NUMBER_OF_GROWS_TO_GO_LARGER) {
-                        preferredBlockSize *= MEDIUM_BLOCK_SIZE_GROW_FACTOR;
-                        numberOfBlockSizeGrows++;
-                    } else {
-                        preferredBlockSize *= LARGE_BLOCK_SIZE_GROW_FACTOR;
+                    if (increasePacketSizeAction.mustPerformAction()) {
+                        // time to recalculate packet size
+                        if (numberOfBlockSizeGrows < NUMBER_OF_GROWS_TO_GO_LARGER) {
+                            preferredBlockSize *= SMALL_BLOCK_SIZE_GROW_FACTOR;
+                            numberOfBlockSizeGrows++;
+                        } else if (numberOfBlockSizeGrows < 2 * NUMBER_OF_GROWS_TO_GO_LARGER) {
+                            preferredBlockSize *= MEDIUM_BLOCK_SIZE_GROW_FACTOR;
+                            numberOfBlockSizeGrows++;
+                        } else {
+                            preferredBlockSize *= LARGE_BLOCK_SIZE_GROW_FACTOR;
+                        }
                     }
                 }
             }

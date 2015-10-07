@@ -1,5 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
+import jacz.util.io.object_serialization.UnrecognizedVersionException;
 import jacz.util.io.object_serialization.VersionedObject;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
 import jacz.util.io.object_serialization.VersionedSerializationException;
@@ -122,7 +123,7 @@ public class TransferStatistics implements VersionedObject {
     }
 
     @Override
-    public void deserialize(String version, Map<String, Object> attributes) throws RuntimeException, VersionedSerializationException {
+    public void deserialize(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
         if (version.equals(CURRENT_VERSION)) {
             creationDate = (Date) attributes.get("creationDate");
             transferredSize = (long) attributes.get("transferredSize");
@@ -133,7 +134,7 @@ public class TransferStatistics implements VersionedObject {
                 throw new RuntimeException();
             }
         } else {
-            throw new VersionedSerializationException(version, attributes, VersionedSerializationException.Reason.UNRECOGNIZED_VERSION);
+            throw new UnrecognizedVersionException();
         }
     }
 }

@@ -2,7 +2,7 @@ package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.util.io.object_serialization.MutableOffset;
 import jacz.util.io.object_serialization.Serializer;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 
 /**
  * This class is able to store a chunk of file (a continuous set of bytes of the file). For that effect, the initial

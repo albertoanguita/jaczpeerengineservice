@@ -2,6 +2,8 @@ package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
+import jacz.util.date_time.PerformRegularAction;
+import jacz.util.date_time.SpeedLimiter;
 import jacz.util.queues.event_processing.MessageHandler;
 
 /**
@@ -10,6 +12,14 @@ import jacz.util.queues.event_processing.MessageHandler;
 public class SlaveMessageHandler implements MessageHandler {
 
     private static final long CHOKE_THRESHOLD = 150L;
+
+    private static final long PACKETS_PER_SECOND_MEASURE_TIME = 1000L;
+
+    private static final double MAX_PACKETS_PER_SECOND = 50d;
+
+    private static final long MILLIS_BETWEEN_FLUSHES = 200L;
+
+
 
     private final ResourceStreamingManager resourceStreamingManager;
 
@@ -21,6 +31,10 @@ public class SlaveMessageHandler implements MessageHandler {
 
     private boolean isChoke;
 
+    private final SpeedLimiter sendPacketSpeedLimiter;
+
+    private final PerformRegularAction flushDataRegularAction;
+
 
     public SlaveMessageHandler(ResourceStreamingManager resourceStreamingManager, PeerID otherPeer, short outgoingChannel, UploadSessionStatistics uploadSessionStatistics) {
         this.resourceStreamingManager = resourceStreamingManager;
@@ -28,6 +42,8 @@ public class SlaveMessageHandler implements MessageHandler {
         this.outgoingChannel = outgoingChannel;
         this.uploadSessionStatistics = uploadSessionStatistics;
         this.isChoke = false;
+        sendPacketSpeedLimiter = new SpeedLimiter(PACKETS_PER_SECOND_MEASURE_TIME, MAX_PACKETS_PER_SECOND);
+        flushDataRegularAction = PerformRegularAction.timeElapsePerformRegularAction(MILLIS_BETWEEN_FLUSHES);
     }
 
     @Override
@@ -38,7 +54,11 @@ public class SlaveMessageHandler implements MessageHandler {
             resourceStreamingManager.flush(otherPeer);
         } else {
             byte[] dataToSend = SlaveMessage.generateResourceChunkMessage(messageForHandler.resourceChunk);
-            long time = resourceStreamingManager.write(otherPeer, outgoingChannel, dataToSend, true);
+            sendPacketSpeedLimiter.addProgress(1L);
+            long time = resourceStreamingManager.write(otherPeer, outgoingChannel, dataToSend, false);
+            if (flushDataRegularAction.mustPerformAction()) {
+                resourceStreamingManager.flush(otherPeer);
+            }
             synchronized (this) {
                 isChoke = time > CHOKE_THRESHOLD;
             }

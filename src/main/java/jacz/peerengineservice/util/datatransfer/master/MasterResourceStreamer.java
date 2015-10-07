@@ -14,8 +14,9 @@ import jacz.util.hash.HashFunction;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.identifier.UniqueIdentifierFactory;
 import jacz.util.notification.ProgressNotification;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.File;
 import java.io.IOException;
@@ -177,7 +178,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         writeDataBuffer = new WriteDataBuffer();
         writeDaemon = new Daemon(new WriteDaemon(resourceStreamingManager));
         activeSlaves = new HashMap<>();
-        RangeSet<LongRange, Long> availableSegments = null;
+        LongRangeList availableSegments = null;
         priority = DEFAULT_PRIORITY;
         boolean error = false;
         try {

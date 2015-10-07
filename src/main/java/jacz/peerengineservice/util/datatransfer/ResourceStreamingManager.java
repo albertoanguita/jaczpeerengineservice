@@ -500,7 +500,6 @@ public class ResourceStreamingManager {
             // new request for a slave
             if (message instanceof jacz.peerengineservice.util.datatransfer.ResourceRequest) {
                 jacz.peerengineservice.util.datatransfer.ResourceRequest resourceRequest = (jacz.peerengineservice.util.datatransfer.ResourceRequest) message;
-                System.out.println("New resource request received -> " + resourceRequest);
                 resourceStreamingManager.requestNewResource(resourceRequest);
             }
         }

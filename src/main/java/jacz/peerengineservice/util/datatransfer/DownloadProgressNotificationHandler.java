@@ -3,7 +3,7 @@ package jacz.peerengineservice.util.datatransfer;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.master.ProviderStatistics;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 
 /**

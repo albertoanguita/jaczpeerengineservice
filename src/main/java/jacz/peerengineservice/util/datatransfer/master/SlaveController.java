@@ -12,7 +12,7 @@ import jacz.util.date_time.RemainingTimeAction;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.identifier.UniqueIdentifierFactory;
 import jacz.util.io.object_serialization.ObjectListWrapper;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 
 /**
  * This private class stores information about one active slave, and handles some messages from such slave.
@@ -292,7 +292,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
                     switch (slaveMessage.messageType) {
 
                         case RESOURCE_CHUNK:
-                            boolean correct = resourceSegmentQueueWithMonitoring.removeNonBlocking(slaveMessage.resourceChunk.getSegment());
+                            boolean correct = resourceSegmentQueueWithMonitoring.removeRange(slaveMessage.resourceChunk.getSegment());
                             if (correct) {
                                 try {
                                     // we do not need to parallelize this call because the processMessage method is itself invoked from the MasterResourcesStreamer

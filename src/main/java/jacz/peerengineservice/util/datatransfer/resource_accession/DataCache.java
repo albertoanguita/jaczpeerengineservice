@@ -1,7 +1,8 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeToRangeComparison;
+import jacz.util.numeric.oldrange.RangeToRangeComparison;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.Range;
 
 import java.util.Arrays;
 
@@ -38,11 +39,11 @@ class DataCache {
         if (dataSegment.isEmpty()) {
             return null;
         }
-        RangeToRangeComparison comparison = dataSegment.compareTo(requestedDataSegment);
-        if (comparison == RangeToRangeComparison.EQUALS || (comparison == RangeToRangeComparison.INSIDE && dataSegment.getMin().equals(requestedDataSegment.getMin()))) {
+        Range.RangeComparison comparison = dataSegment.compareTo(requestedDataSegment);
+        if (comparison == Range.RangeComparison.EQUALS || (comparison == Range.RangeComparison.INSIDE && dataSegment.getMin().equals(requestedDataSegment.getMin()))) {
             clearDataSegment();
             return Arrays.copyOfRange(data, offset, data.length);
-        } else if (comparison == RangeToRangeComparison.CONTAINS && dataSegment.getMin().equals(requestedDataSegment.getMin())) {
+        } else if (comparison == Range.RangeComparison.CONTAINS && dataSegment.getMin().equals(requestedDataSegment.getMin())) {
             dataSegment = new LongRange(dataSegment.getMin() + requestedDataSegment.size(), dataSegment.getMax());
             byte[] dataToReturn = Arrays.copyOfRange(data, offset, (int) (offset + requestedDataSegment.size()));
             offset += requestedDataSegment.size();

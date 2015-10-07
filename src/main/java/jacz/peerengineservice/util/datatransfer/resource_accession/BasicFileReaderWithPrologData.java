@@ -1,8 +1,8 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
 import jacz.util.io.object_serialization.Serializer;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class BasicFileReaderWithPrologData implements ResourceReader {
     }
 
     @Override
-    public RangeSet<LongRange, Long> availableSegments() throws IOException {
+    public LongRangeList availableSegments() throws IOException {
         return resourceReader.availableSegments();
     }
 

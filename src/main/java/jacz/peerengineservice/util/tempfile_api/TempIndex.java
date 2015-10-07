@@ -1,11 +1,13 @@
 package jacz.peerengineservice.util.tempfile_api;
 
 import jacz.util.files.RandomAccess;
+import jacz.util.io.object_serialization.UnrecognizedVersionException;
 import jacz.util.io.object_serialization.VersionedObject;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
 import jacz.util.io.object_serialization.VersionedSerializationException;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -45,14 +47,14 @@ class TempIndex implements VersionedObject {
     /**
      * Segments of data which the data file already owns. The data outside these segments is undetermined.
      */
-    private RangeSet<LongRange, Long> data;
+    private LongRangeList data;
 
     TempIndex(String tempDataFilePath) throws IOException {
-        this(tempDataFilePath, null, new HashMap<String, Map<String, Serializable>>(), new RangeSet<LongRange, Long>());
+        this(tempDataFilePath, null, new HashMap<String, Map<String, Serializable>>(), new LongRangeList());
         setupDataFile(0);
     }
 
-    private TempIndex(String tempDataFilePath, Long totalResourceSize, HashMap<String, Map<String, Serializable>> customData, RangeSet<LongRange, Long> data) {
+    private TempIndex(String tempDataFilePath, Long totalResourceSize, HashMap<String, Map<String, Serializable>> customData, LongRangeList data) {
         this.tempDataFilePath = tempDataFilePath;
         this.totalResourceSize = totalResourceSize;
         this.customData = customData;
@@ -156,8 +158,8 @@ class TempIndex implements VersionedObject {
         setupDataFile(size);
     }
 
-    RangeSet<LongRange, Long> getOwnedDataParts() {
-        return new RangeSet<>(data);
+    LongRangeList getOwnedDataParts() {
+        return new LongRangeList(data);
     }
 
     private void setupDataFile(long fileSize) throws IOException {
@@ -180,7 +182,7 @@ class TempIndex implements VersionedObject {
     void write(long offset, byte[] bytesToWrite) throws IOException {
         LongRange range = generateRangeFromOffsetAndLength(offset, bytesToWrite.length);
         checkCorrectRange(range);
-        RangeSet<LongRange, Long> inputRangeSet = new RangeSet<>(range);
+        LongRangeList inputRangeSet = new LongRangeList(range);
         inputRangeSet.remove(data);
         RandomAccess.write(tempDataFilePath, offset, bytesToWrite);
         data.add(range);
@@ -215,14 +217,14 @@ class TempIndex implements VersionedObject {
     }
 
     @Override
-    public void deserialize(String version, Map<String, Object> attributes) throws RuntimeException, VersionedSerializationException {
+    public void deserialize(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
         if (version.equals(getCurrentVersion())) {
             tempDataFilePath = (String) attributes.get("tempDataFilePath");
             totalResourceSize = (Long) attributes.get("totalResourceSize");
             customData = (HashMap<String, Map<String, Serializable>>) attributes.get("customData");
-            data = (RangeSet<LongRange, Long>) attributes.get("data");
+            data = (LongRangeList) attributes.get("data");
         } else {
-            throw new VersionedSerializationException(version, attributes, VersionedSerializationException.Reason.UNRECOGNIZED_VERSION);
+            throw new UnrecognizedVersionException();
         }
     }
 }

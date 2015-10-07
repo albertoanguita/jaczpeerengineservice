@@ -2,15 +2,16 @@ package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.util.date_time.RemainingTimeAction;
 import jacz.util.date_time.SpeedMonitorWithRemainingTime;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeQueue;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.LongRangeQueue;
+import jacz.util.numeric.range.Range;
 
 import java.util.List;
 
 /**
  * This class adds speed monitoring features to the ResourceSegmentQueue class
  */
-public class ResourceSegmentQueueWithMonitoring extends RangeQueue<LongRange, Long> {
+public class ResourceSegmentQueueWithMonitoring extends LongRangeQueue {
 
     /**
      * The object that controls speed
@@ -132,14 +133,14 @@ public class ResourceSegmentQueueWithMonitoring extends RangeQueue<LongRange, Lo
 
     @Override
     public LongRange remove(Long maxSize) {
-        LongRange res = super.remove(maxSize);
+        LongRange res = (LongRange) super.remove(maxSize);
         speedMeasureWithRemainingTime.addProgress(res.size());
         return res;
     }
 
     @Override
-    public synchronized boolean removeNonBlocking(LongRange receivedRange) {
-        boolean result = super.removeNonBlocking(receivedRange);
+    public synchronized boolean removeRange(LongRange receivedRange) {
+        boolean result = super.removeRange(receivedRange);
         if (result) {
             speedMeasureWithRemainingTime.addProgress(receivedRange.size());
         }

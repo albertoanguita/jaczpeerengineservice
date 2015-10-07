@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * Created by Alberto on 21/09/2015.
  *
- * todo check possibility of updating communications to java NIO socketchannel. Even to udp.
+ * todo check possibility of updating communications to java NIO socketchannel
  * http://tutorials.jenkov.com/java-nio/socketchannel.html
  */
 public class GenericPriorityManager implements SimpleTimerAction {
@@ -50,7 +50,6 @@ public class GenericPriorityManager implements SimpleTimerAction {
         // transmit variations to resources
         for (Map.Entry<GenericPriorityManagerStakeholder, Set<GenericPriorityManagerRegulatedResource>> stakeholderResources : resources.entrySet()) {
             float stakeholderVariation = stakeholderResources.getKey().getVariation();
-//            System.out.println("UPLOAD VARIATION for " + stakeholderResources.getKey() + ": " + stakeholderVariation);
             for (GenericPriorityManagerRegulatedResource regulatedResource : stakeholderResources.getValue()) {
                 float variation = stakeholderVariation;
                 if (!regulateOnlyStakeholderLevel) {

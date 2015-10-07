@@ -2,7 +2,7 @@ package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.util.date_time.SpeedMonitor;
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 
 import java.util.Date;
 import java.util.GregorianCalendar;

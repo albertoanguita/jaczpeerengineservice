@@ -1,8 +1,8 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -50,7 +50,7 @@ public class TempFileWriter implements ResourceWriter {
     }
 
     @Override
-    public RangeSet<LongRange, Long> getAvailableSegments() throws IOException {
+    public LongRangeList getAvailableSegments() throws IOException {
         return tempFileManager.getTemporaryOwnedParts(tempFile);
     }
 

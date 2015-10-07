@@ -5,8 +5,9 @@ import jacz.peerengineservice.util.data_synchronization.SynchError;
 import jacz.util.io.buffer.BufferStream;
 import jacz.util.io.buffer.ReadBuffer;
 import jacz.util.notification.ProgressNotificationWithError;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRange;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 import java.util.List;
@@ -120,9 +121,9 @@ public class ByteArrayReader implements ResourceReader {
     }
 
     @Override
-    public RangeSet<LongRange, Long> availableSegments() throws IOException {
+    public LongRangeList availableSegments() throws IOException {
         // we own the complete resource
-        return new RangeSet<>(new LongRange(0l, length - 1));
+        return new LongRangeList(new LongRange(0l, length - 1));
     }
 
     @Override

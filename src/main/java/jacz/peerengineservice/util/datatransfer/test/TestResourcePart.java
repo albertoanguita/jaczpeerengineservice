@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.test;
 
-import jacz.util.numeric.LongRange;
+import jacz.util.numeric.range.LongRange;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 
 /**

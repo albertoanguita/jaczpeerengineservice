@@ -1,5 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
+import jacz.util.io.object_serialization.UnrecognizedVersionException;
 import jacz.util.io.object_serialization.VersionedSerializationException;
 
 import java.io.Serializable;
@@ -53,14 +54,14 @@ public class GlobalDownloadStatistics extends TransferStatistics {
     }
 
     @Override
-    public void deserialize(String version, Map<String, Object> attributes) throws RuntimeException, VersionedSerializationException {
+    public void deserialize(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
         // no older versions than 1.0
         String ownVersion = extractChildVersion(version);
         if (ownVersion.equals(CURRENT_VERSION)) {
             downloadsCompleted = (long) attributes.get("downloadsCompleted");
             super.deserialize(extractSuperVersion(version), attributes);
         } else {
-            throw new VersionedSerializationException(version, attributes, VersionedSerializationException.Reason.UNRECOGNIZED_VERSION);
+            throw new UnrecognizedVersionException();
         }
     }
 }

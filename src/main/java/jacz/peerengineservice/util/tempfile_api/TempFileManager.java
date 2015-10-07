@@ -4,12 +4,12 @@ import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWri
 import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWriteBasic;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
-import jacz.util.files.*;
+import jacz.util.files.FileUtil;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
 import jacz.util.io.object_serialization.VersionedSerializationException;
 import jacz.util.lists.Duple;
-import jacz.util.numeric.LongRange;
-import jacz.util.numeric.RangeSet;
+import jacz.util.numeric.range.LongRangeList;
+import jacz.util.numeric.range.RangeList;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -251,7 +251,7 @@ public class TempFileManager {
      * @return a range set of long ranges representing the stored segments of the resource
      * @throws IOException there were errors accessing the given temporary file
      */
-    public RangeSet<LongRange, Long> getTemporaryOwnedParts(String tempFileName) throws IOException {
+    public LongRangeList getTemporaryOwnedParts(String tempFileName) throws IOException {
         TaskFinalizationIndicator tfi;
         OwnedPartsTask ownedPartsTask = new OwnedPartsTask(generateIndexFilePath(tempFileName));
         synchronized (this) {
