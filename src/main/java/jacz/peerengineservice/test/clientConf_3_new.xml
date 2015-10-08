@@ -1,6 +1,5 @@
 <peer-client-config>
   <field name="nick">miki</field>
-  <field name="avatar"></field>
   <field name="port">10003</field>
   <field name="peer-id">pid{0000000000000000000000000000000000000000003}</field>
   <str name="peer-server-data">

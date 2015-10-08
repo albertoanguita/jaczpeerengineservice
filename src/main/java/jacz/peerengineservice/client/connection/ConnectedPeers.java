@@ -25,11 +25,6 @@ public class ConnectedPeers {
     private class PeerConnectionData {
 
         /**
-         * ID of this peer
-         */
-        private final PeerID peerID;
-
-        /**
          * The connection status of this peer with respect to us (for internal authorization purposes)
          */
         private ConnectionStatus status;
@@ -44,8 +39,7 @@ public class ConnectedPeers {
          */
         private final AvailableElementsByte availableChannels;
 
-        public PeerConnectionData(PeerID peerID, ConnectionStatus status, ChannelConnectionPoint ccp, Byte... occupiedChannels) {
-            this.peerID = peerID;
+        public PeerConnectionData(ConnectionStatus status, ChannelConnectionPoint ccp, Byte... occupiedChannels) {
             this.status = status;
             this.ccp = ccp;
             availableChannels = new AvailableElementsByte(occupiedChannels);
@@ -88,7 +82,7 @@ public class ConnectedPeers {
     public synchronized void setConnectedPeer(PeerID peerID, ChannelConnectionPoint ccp, ConnectionStatus status) {
         // the initially occupied channels are the channel for the RequestDispatcher and the channel for the connection
         // process (the latter will be released shortly)
-        PeerConnectionData pcd = new PeerConnectionData(peerID, status, ccp, occupiedChannels);
+        PeerConnectionData pcd = new PeerConnectionData(status, ccp, occupiedChannels);
         connectedPeers.put(peerID, pcd);
         ccpToPeerID.put(ccp, peerID);
     }

@@ -4,6 +4,7 @@ import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeerServerData;
+import jacz.peerengineservice.client.PeersPersonalData;
 import jacz.util.io.object_serialization.StrCast;
 import jacz.util.io.object_serialization.XMLReader;
 import jacz.util.io.xml.Element;
@@ -18,10 +19,11 @@ import java.io.FileNotFoundException;
  */
 public class PeerClientConfigSerializer {
 
-    public static Triple<PersonalData, PeerClientData, PeerRelations> readPeerClientData(String path) throws FileNotFoundException, XMLStreamException, IllegalArgumentException, NumberFormatException {
+    public static Triple<PeersPersonalData, PeerClientData, PeerRelations> readPeerClientData(String path) throws FileNotFoundException, XMLStreamException, IllegalArgumentException, NumberFormatException {
         XMLReader xmlReader = new XMLReader(path);
 
-        PersonalData personalData = new PersonalData(xmlReader.getFieldValue("nick"), xmlReader.getFieldValue("avatar"));
+//        PersonalData personalData = new PersonalData(xmlReader.getFieldValue("nick"), xmlReader.getFieldValue("avatar"));
+        PeersPersonalData peersPersonalData = new PeersPersonalData("UNNAMED_PEER", xmlReader.getFieldValue("nick"));
 
         xmlReader.getStruct("peer-server-data");
         String ip = xmlReader.getFieldValue("ip");
@@ -36,6 +38,7 @@ public class PeerClientConfigSerializer {
             xmlReader.getNextStruct();
             PeerID peerID = new PeerID(xmlReader.getFieldValue("peer-id"));
             String nick = xmlReader.getFieldValue("nick");
+            peersPersonalData.setPeersNicks(peerID, nick);
             peerRelations.addFriendPeer(peerID);
             xmlReader.gotoParent();
         }
@@ -44,10 +47,11 @@ public class PeerClientConfigSerializer {
             xmlReader.getNextStruct();
             PeerID peerID = new PeerID(xmlReader.getFieldValue("peer-id"));
             String nick = xmlReader.getFieldValue("nick");
+            peersPersonalData.setPeersNicks(peerID, nick);
             peerRelations.addBlockedPeer(peerID);
             xmlReader.gotoParent();
         }
 
-        return new Triple<>(personalData, peerClientData, peerRelations);
+        return new Triple<>(peersPersonalData, peerClientData, peerRelations);
     }
 }

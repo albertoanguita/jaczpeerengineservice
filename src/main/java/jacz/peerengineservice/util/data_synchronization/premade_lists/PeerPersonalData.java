@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Alberto on 18/09/2015.
+ * todo remove
  */
 public class PeerPersonalData implements DataAccessor {
 

@@ -27,7 +27,7 @@ public class SimplePeerClientActionImpl implements PeerClientAction {
     }
 
     protected boolean equalsPeerID(int id) {
-        return client.getPeerClientData().getOwnPeerID().equals(PeerIDGenerator.peerID(id));
+        return client.getPeerClient().getOwnPeerID().equals(PeerIDGenerator.peerID(id));
     }
 
     @Override

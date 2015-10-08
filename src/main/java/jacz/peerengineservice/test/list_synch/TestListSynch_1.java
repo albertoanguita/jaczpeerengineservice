@@ -3,9 +3,10 @@ package jacz.peerengineservice.test.list_synch;
 import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
+import jacz.peerengineservice.client.PeersPersonalData;
 import jacz.peerengineservice.test.Client;
 import jacz.peerengineservice.test.PeerClientConfigSerializer;
-import jacz.peerengineservice.test.PersonalData;
+import jacz.peerengineservice.test.SimplePeerClientActionImpl;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.util.lists.Triple;
 
@@ -23,14 +24,14 @@ public class TestListSynch_1 {
 
     public static void main(String args[]) throws Exception {
         String config = "./src/main/java/jacz/peerengineservice/test/clientConf_1_new.xml";
-        Triple<PersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
-        PersonalData personalData = data.element1;
+        Triple<PeersPersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
+        PeersPersonalData peersPersonalData = data.element1;
         PeerClientData peerClientData = data.element2;
         PeerRelations peerRelations = data.element3;
 
         Triple<Map<String, DataAccessor>, Map<String, DataAccessor>, DataAccessor> lists = readingWritingListsTest0();
 
-        Client client = new Client(personalData, peerClientData, peerRelations, new SimplePeerClientActionSynch(lists.element3), new HashMap<String, PeerFSMFactory>(), lists.element1, lists.element2);
+        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImpl(), new HashMap<String, PeerFSMFactory>());
         client.startClient();
 
     }

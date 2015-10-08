@@ -38,9 +38,19 @@ public class PeerClient {
     public static final String OWN_CUSTOM_PREFIX = "@@@";
 
     /**
+     * Our own peer ID
+     */
+    private final PeerID ownPeerID;
+
+    /**
      * Actions invoked by the PeerClient upon some events (connection of a new peer, new chat message, etc)
      */
     private final PeerClientAction peerClientAction;
+
+    /**
+     * Own and other peers personal data (nick)
+     */
+    private final PeersPersonalData peersPersonalData;
 
     private final PeerClientPrivateInterface peerClientPrivateInterface;
 
@@ -88,12 +98,13 @@ public class PeerClient {
     public PeerClient(
             PeerClientData peerClientData,
             PeerClientAction peerClientAction,
+            PeersPersonalData peersPersonalData,
             GlobalDownloadStatistics globalDownloadStatistics,
             GlobalUploadStatistics globalUploadStatistics,
             PeerStatistics peerStatistics,
             PeerRelations peerRelations,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(peerClientData, peerClientAction, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, null);
+        this(peerClientData, peerClientAction, peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, null);
     }
 
     /**
@@ -109,13 +120,16 @@ public class PeerClient {
     public PeerClient(
             PeerClientData peerClientData,
             PeerClientAction peerClientAction,
+            PeersPersonalData peersPersonalData,
             GlobalDownloadStatistics globalDownloadStatistics,
             GlobalUploadStatistics globalUploadStatistics,
             PeerStatistics peerStatistics,
             PeerRelations peerRelations,
             Map<String, PeerFSMFactory> customFSMs,
             DataAccessorContainer dataAccessorContainer) {
+        this.ownPeerID = peerClientData.getOwnPeerID();
         this.peerClientAction = peerClientAction;
+        this.peersPersonalData = peersPersonalData;
         this.peerRelations = peerRelations;
         this.customFSMs = customFSMs;
 
@@ -145,7 +159,7 @@ public class PeerClient {
 
 
     /**
-     * This method stops all created resources. It should be invoked when the peer engine is no longer going to be used
+     * This method disconnects and stops all created resources. It should be invoked when the peer engine is no longer going to be used
      * <p/>
      * The method is blocking, in the sense that when it concludes, all connections are closed, and there will be no further changes in the engine
      */
@@ -185,6 +199,10 @@ public class PeerClient {
 
     public synchronized void disconnect() {
         peerClientConnectionManager.setWishForConnection(false);
+    }
+
+    public synchronized PeerID getOwnPeerID() {
+        return ownPeerID;
     }
 
     public synchronized PeerServerData getPeerServerData() {
@@ -482,6 +500,8 @@ public class PeerClient {
                 peerClientAction.newPeerConnected(peerID, status);
             }
         });
+        // send the other peer own nick, to ensure he has our latest value
+        sendObjectMessage(peerID, new NewNickMessage(peersPersonalData.getOwnNick()));
     }
 
     /**
@@ -606,6 +626,18 @@ public class PeerClient {
     }
 
     /**
+     * Changes our own nick and broadcasts it to the rest of peers
+     *
+     * @param newNick the new nick
+     */
+    public void setNick(String newNick) {
+        if (peersPersonalData.setOwnNick(newNick)) {
+            // broadcast new nick to connected peers
+            broadcastObjectMessage(new NewNickMessage(newNick));
+        }
+    }
+
+    /**
      * This method allows the PeerRequestDispatcherFSM of a connected peer to report that his peer has sent us a chat
      * message
      *
@@ -622,6 +654,17 @@ public class PeerClient {
                         @Override
                         public void performTask() {
                             peerClientAction.peerValidatedUs(peerID);
+                        }
+                    });
+                }
+            } else if (message instanceof NewNickMessage) {
+                // new nick from other peer received
+                final NewNickMessage newNickMessage = (NewNickMessage) message;
+                if (peersPersonalData.setPeersNicks(peerID, newNickMessage.nick)) {
+                    sequentialTaskExecutor.executeTask(new ParallelTask() {
+                        @Override
+                        public void performTask() {
+                            peerClientAction.newPeerNick(peerID, newNickMessage.nick);
                         }
                     });
                 }

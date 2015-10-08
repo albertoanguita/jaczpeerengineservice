@@ -3,6 +3,7 @@ package jacz.peerengineservice.test.transfer;
 import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
+import jacz.peerengineservice.client.PeersPersonalData;
 import jacz.peerengineservice.test.*;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
@@ -19,12 +20,12 @@ public class TestTransfer_1 {
 
     public static void main(String args[]) throws Exception {
         String config = "./src/main/java/jacz/peerengineservice/test/clientConf_1_new.xml";
-        Triple<PersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
-        PersonalData personalData = data.element1;
+        Triple<PeersPersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
+        PeersPersonalData peersPersonalData = data.element1;
         PeerClientData peerClientData = data.element2;
         PeerRelations peerRelations = data.element3;
 
-        Client client = new Client(personalData, peerClientData, peerRelations, new SimplePeerClientActionImplTransfer(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImpl(), new HashMap<String, PeerFSMFactory>());
         ForeignStoreShare foreignStoreShare = new ForeignStoreShare();
         foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_2", PeerIDGenerator.peerID(2));
@@ -50,7 +51,7 @@ public class TestTransfer_1 {
 
         client.getPeerClient().setVisibleDownloadsTimer(3000);
 //            client.getPeerClient().downloadResource(new PeerID("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f);
-        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "file_6", new BasicFileWriter("./etc/basic_transfer/file.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_6"), "MD5", 1000000L);
+        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "file_6", new BasicFileWriter("./etc/basic_transfer/file.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_6"), "MD5", 1000000L);
 //        client.getPeerClient().downloadResource("files", "file_2", new BasicFileWriter("./etc/basic_transfer/file.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_2"), "MD5", 1000000L);
 
         client.getPeerClient().setMaxDesiredDownloadSpeed(450000f);

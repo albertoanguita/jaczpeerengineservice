@@ -1,10 +1,6 @@
 package jacz.peerengineservice.test;
 
-import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.PeerClient;
-import jacz.peerengineservice.client.PeerClientData;
-import jacz.peerengineservice.client.PeerFSMFactory;
-import jacz.peerengineservice.client.PeerRelations;
+import jacz.peerengineservice.client.*;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.datatransfer.GlobalDownloadStatistics;
 import jacz.peerengineservice.util.datatransfer.GlobalUploadStatistics;
@@ -19,8 +15,6 @@ import java.util.Map;
 public class Client {
 
     private SimplePeerClientActionImpl peerClientActionImpl;
-
-    private PersonalData personalData;
 
     private PeerClientData peerClientData;
 
@@ -38,14 +32,24 @@ public class Client {
 
     private TestListContainer testListContainer;
 
-//    private PeerPersonalData ownData;
 
-    public Client(PersonalData personalData, PeerClientData peerClientData, PeerRelations peerRelations, SimplePeerClientActionImpl peerClientActionImpl, Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(personalData, peerClientData, peerRelations, peerClientActionImpl, customFSMs, null, null);
+    public Client(
+            PeersPersonalData peersPersonalData,
+            PeerClientData peerClientData,
+            PeerRelations peerRelations,
+            SimplePeerClientActionImpl peerClientActionImpl,
+            Map<String, PeerFSMFactory> customFSMs) throws IOException {
+        this(peersPersonalData, peerClientData, peerRelations, peerClientActionImpl, customFSMs, null, null);
     }
 
-    public Client(PersonalData personalData, PeerClientData peerClientData, PeerRelations peerRelations, SimplePeerClientActionImpl peerClientActionImpl, Map<String, PeerFSMFactory> customFSMs, Map<String, DataAccessor> readingLists, Map<String, DataAccessor> writingLists) throws IOException {
-        this.personalData = personalData;
+    public Client(
+            PeersPersonalData peersPersonalData,
+            PeerClientData peerClientData,
+            PeerRelations peerRelations,
+            SimplePeerClientActionImpl peerClientActionImpl,
+            Map<String, PeerFSMFactory> customFSMs,
+            Map<String, DataAccessor> readingLists,
+            Map<String, DataAccessor> writingLists) throws IOException {
         this.peerClientData = peerClientData;
         this.peerRelations = peerRelations;
         this.peerClientActionImpl = peerClientActionImpl;
@@ -64,7 +68,7 @@ public class Client {
         globalDownloadStatistics = new GlobalDownloadStatistics();
         globalUploadStatistics = new GlobalUploadStatistics();
         peerStatistics = new PeerStatistics();
-        peerClient = new PeerClient(peerClientData, peerClientActionImpl, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, testListContainer);
+        peerClient = new PeerClient(peerClientData, peerClientActionImpl, peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, testListContainer);
     }
 
     public void startClient() throws IOException {
@@ -81,14 +85,6 @@ public class Client {
 
     public void disconnect() {
         peerClient.disconnect();
-    }
-
-//    public PeerPersonalData getOwnData() {
-//        return ownData;
-//    }
-
-    public PeerClientData getPeerClientData() {
-        return peerClientData;
     }
 
     @Override
