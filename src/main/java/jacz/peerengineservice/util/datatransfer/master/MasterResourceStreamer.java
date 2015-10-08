@@ -16,7 +16,6 @@ import jacz.util.identifier.UniqueIdentifierFactory;
 import jacz.util.notification.ProgressNotification;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
 
 import java.io.File;
 import java.io.IOException;
@@ -130,11 +129,6 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private final String totalHashAlgorithm;
 
     /**
-     * Preferred size for intermediate hashes. If null, no intermediate hashes required
-     */
-    private final Long preferredIntermediateHashesSize;
-
-    /**
      * Priority for this download
      */
     private float priority;
@@ -167,8 +161,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             PeerStatistics peerStatistics,
             double streamingNeed,
             String totalHash,
-            String totalHashAlgorithm,
-            Long preferredSizeForIntermediateHashes) {
+            String totalHashAlgorithm) {
         id = UniqueIdentifierFactory.getOneStaticIdentifier();
         this.resourceStreamingManager = resourceStreamingManager;
         this.specificPeerDownload = specificPeerDownload;
@@ -208,7 +201,6 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         resourcePartScheduler = new ResourcePartScheduler(this, resourceStreamingManager, resourceSize, availableSegments, streamingNeed);
         this.totalHash = totalHash;
         this.totalHashAlgorithm = totalHashAlgorithm;
-        preferredIntermediateHashesSize = preferredSizeForIntermediateHashes;
         active = true;
         alive = true;
         state = DownloadState.RUNNING;
@@ -313,7 +305,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         // link. A corresponding slave controller is created for the new resource link
         Short subchannel = resourceStreamingManager.requestIncomingSubchannel(this);
         if (subchannel != null) {
-            ResourceLink resourceLink = resourceProvider.requestResource(storeName, resourceID, subchannel, preferredIntermediateHashesSize);
+            ResourceLink resourceLink = resourceProvider.requestResource(storeName, resourceID, subchannel);
             addSlave(resourceLink, resourceProvider, subchannel);
         }
     }

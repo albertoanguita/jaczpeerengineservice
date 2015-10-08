@@ -29,7 +29,7 @@ public class WebServerResourceProvider implements ResourceProvider {
     }
 
     @Override
-    public ResourceLink requestResource(String storeName, String resourceID, short assignedSubchannel, Long preferredIntermediateHashesSize) {
+    public ResourceLink requestResource(String storeName, String resourceID, short assignedSubchannel) {
         return new WebServerResourceLink(resourceStreamingManager, url);
     }
 

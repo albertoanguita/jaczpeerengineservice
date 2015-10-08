@@ -372,7 +372,6 @@ public class PeerClient {
      *                                            of the resource before the last parts. Can hamper total download efficience
      * @param totalHash                           hexadecimal value for the total resource hash (null if not used)
      * @param totalHashAlgorithm                  algorithm for calculating the total hash (null if not used)
-     * @param preferredSizeForIntermediateHashes  preferred size for intermediate hashes (null if not used)
      * @return a DownloadManager object for controlling this download, or null if the download could not be created
      * (due to the resource store name given not corresponding to any existing resource store)
      */
@@ -383,9 +382,8 @@ public class PeerClient {
             DownloadProgressNotificationHandler downloadProgressNotificationHandler,
             double streamingNeed,
             String totalHash,
-            String totalHashAlgorithm,
-            Long preferredSizeForIntermediateHashes) throws NotAliveException {
-        return resourceStreamingManager.downloadResource(resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
+            String totalHashAlgorithm) throws NotAliveException {
+        return resourceStreamingManager.downloadResource(resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, streamingNeed, totalHash, totalHashAlgorithm);
     }
 
     /**
@@ -412,9 +410,8 @@ public class PeerClient {
             DownloadProgressNotificationHandler downloadProgressNotificationHandler,
             double streamingNeed,
             String totalHash,
-            String totalHashAlgorithm,
-            Long preferredSizeForIntermediateHashes) throws NotAliveException {
-        return resourceStreamingManager.downloadResource(serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
+            String totalHashAlgorithm) throws NotAliveException {
+        return resourceStreamingManager.downloadResource(serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, streamingNeed, totalHash, totalHashAlgorithm);
     }
 
     public synchronized Float getMaxDesiredDownloadSpeed() {

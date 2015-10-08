@@ -767,7 +767,6 @@ public class ResourceStreamingManager {
      *                                            of the resource before the last parts. Can hamper total download efficience
      * @param totalHash                           hexadecimal value for the total resource hash (null if not used)
      * @param totalHashAlgorithm                  algorithm for calculating the total hash (null if not used)
-     * @param preferredSizeForIntermediateHashes  preferred size for intermediate hashes (null if not used)
      * @return a DownloadManager object for controlling this download, or null if the download could not be created
      * (due to the resource store name given not corresponding to any existing resource store)
      */
@@ -778,11 +777,10 @@ public class ResourceStreamingManager {
             DownloadProgressNotificationHandler downloadProgressNotificationHandler,
             double streamingNeed,
             String totalHash,
-            String totalHashAlgorithm,
-            Long preferredSizeForIntermediateHashes) throws NotAliveException {
+            String totalHashAlgorithm) throws NotAliveException {
         if (alive) {
             // the download is created even if there is no matching global resource store
-            MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, null, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
+            MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, null, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm);
             activeDownloadSet.addDownload(masterResourceStreamer);
             reportProvidersForOneActiveDownload(resourceStoreName, resourceID);
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
@@ -807,7 +805,6 @@ public class ResourceStreamingManager {
      *                                            of the resource before the last parts. Can hamper total download efficiency
      * @param totalHash                           hexadecimal value for the total resource hash (null if not used)
      * @param totalHashAlgorithm                  algorithm for calculating the total hash (null if not used)
-     * @param preferredSizeForIntermediateHashes  preferred size for intermediate hashes (null if not used)
      * @return a DownloadManager object for controlling this download, or null if the download could not be created
      * (due to the resource store name given not corresponding to any existing resource store)
      */
@@ -819,10 +816,9 @@ public class ResourceStreamingManager {
             DownloadProgressNotificationHandler downloadProgressNotificationHandler,
             double streamingNeed,
             String totalHash,
-            String totalHashAlgorithm,
-            Long preferredSizeForIntermediateHashes) throws NotAliveException {
+            String totalHashAlgorithm) throws NotAliveException {
         if (alive) {
-            MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm, preferredSizeForIntermediateHashes);
+            MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm);
             activeDownloadSet.addDownload(masterResourceStreamer);
             reportResourceProviderForPeerSpecificDownload(serverPeerID, masterResourceStreamer);
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());

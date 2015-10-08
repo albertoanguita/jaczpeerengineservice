@@ -32,9 +32,9 @@ public class PeerResourceProvider implements ResourceProvider {
     }
 
     @Override
-    public ResourceLink requestResource(String storeName, String resourceID, short assignedSubchannel, Long preferredIntermediateHashesSize) {
+    public ResourceLink requestResource(String storeName, String resourceID, short assignedSubchannel) {
         // send the request to the peer and initialize the resource link
-        resourceStreamingManager.write(otherPeerID, ResourceStreamingManager.SLAVE_GRANT_SUBCHANNEL, new ResourceRequest(ownPeerID, storeName, resourceID, assignedSubchannel, preferredIntermediateHashesSize));
+        resourceStreamingManager.write(otherPeerID, ResourceStreamingManager.SLAVE_GRANT_SUBCHANNEL, new ResourceRequest(ownPeerID, storeName, resourceID, assignedSubchannel));
         return new PeerResourceLink(resourceStreamingManager, otherPeerID);
     }
 

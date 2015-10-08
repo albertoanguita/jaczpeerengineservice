@@ -329,8 +329,9 @@ public class PeerServerManager implements DaemonAction, SimpleTimerAction {
     }
 
     private void disconnectFromPeerServer() {
-        // todo got nullpointer after getting here from a timeout
-        peerServerCCP.disconnect();
+        if (peerServerCCP != null) {
+            peerServerCCP.disconnect();
+        }
         peerServerCCP = null;
         if (connectionToServerStatus == State.ConnectionToServerState.CONNECTED) {
             peerClientPrivateInterface.disconnectedFromServer(true, connectionInformation.getPeerServerData(), State.ConnectionToServerState.DISCONNECTED);

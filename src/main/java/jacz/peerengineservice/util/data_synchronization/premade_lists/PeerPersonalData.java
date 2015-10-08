@@ -11,7 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * todo remove
+ * This class was initially designed to change peers nicks. The process is now doen via direct object broadcasting,
+ * so there is no need for this. We maintain it in case it is needed in the future, and as sample of simple DataAccessor
  */
 public class PeerPersonalData implements DataAccessor {
 

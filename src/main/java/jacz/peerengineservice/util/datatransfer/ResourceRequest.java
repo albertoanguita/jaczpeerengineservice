@@ -17,21 +17,17 @@ public class ResourceRequest implements Serializable {
 
     private short subchannel;
 
-    // todo remove
-    private final Long preferredIntermediateHashesSize;
-
     private Float priority;
 
-    public ResourceRequest(PeerID requestingPeer, String storeName, String resourceID, short subchannel, Long preferredIntermediateHashesSize) {
-        this(requestingPeer, storeName, resourceID, subchannel, preferredIntermediateHashesSize, null);
+    public ResourceRequest(PeerID requestingPeer, String storeName, String resourceID, short subchannel) {
+        this(requestingPeer, storeName, resourceID, subchannel, null);
     }
 
-    public ResourceRequest(PeerID requestingPeer, String storeName, String resourceID, short subchannel, Long preferredIntermediateHashesSize, Float priority) {
+    public ResourceRequest(PeerID requestingPeer, String storeName, String resourceID, short subchannel, Float priority) {
         this.requestingPeer = requestingPeer;
         this.storeName = storeName;
         this.resourceID = resourceID;
         this.subchannel = subchannel;
-        this.preferredIntermediateHashesSize = preferredIntermediateHashesSize;
         this.priority = priority;
     }
 

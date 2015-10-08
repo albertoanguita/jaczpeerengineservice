@@ -14,28 +14,23 @@ import java.util.List;
  */
 public final class PeerID implements Comparable<PeerID>, Serializable {
 
-    private static final String STRING_PRE = "pid{";
-
-    private static final String STRING_POST = "}";
-
     private static final int KEY_LENGTH = 32;
 
-    // 32-byte array
+    // 32-byte array (43 characters in six-bit serialization format)
     private final byte[] id;
 
     public PeerID(byte[] id) {
-        this.id = id;
+        if (id.length == KEY_LENGTH) {
+            this.id = id;
+        } else {
+            throw new IllegalArgumentException("Incorrect peer id. Received: " + Arrays.toString(id));
+        }
     }
 
     public PeerID(String id) throws IllegalArgumentException {
-        if (correctFormat(id)) {
-            String idContent = id.substring(STRING_PRE.length(), id.length() - 1);
-            try {
-                this.id = SixBitSerializer.deserialize(idContent, KEY_LENGTH);
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Incorrect peer id: " + id);
-            }
-        } else {
+        try {
+            this.id = SixBitSerializer.deserialize(id, KEY_LENGTH);
+        } catch (Exception e) {
             throw new IllegalArgumentException("Incorrect peer id: " + id);
         }
     }
@@ -47,10 +42,6 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
     public static Duple<PeerID, PeerEncryption> generateIdAndEncryptionKeys(List<Integer> sizes, int posForPeerIDGeneration, byte[] randomBytes) {
         PeerEncryption peerEncryption = PeerEncryption.generatePeerEncryption(sizes, randomBytes);
         return new Duple<>(generateRandomPeerId(peerEncryption.getSizedKeyPairs().get(posForPeerIDGeneration).keyPair.getPublic().getEncoded()), peerEncryption);
-    }
-
-    private static boolean correctFormat(String id) {
-        return id.startsWith(STRING_PRE) && id.endsWith(STRING_POST);
     }
 
     public static boolean isPeerID(String id) {
@@ -85,7 +76,7 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
 
     @Override
     public String toString() {
-        return STRING_PRE + SixBitSerializer.serialize(id) + STRING_POST;
+        return SixBitSerializer.serialize(id);
     }
 
     /**

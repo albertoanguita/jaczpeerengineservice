@@ -48,7 +48,7 @@ public class TestTransfer_1_Temp {
         System.out.println("to download first file...");
         client.getPeerClient().setVisibleDownloadsTimer(5000);
 
-        client.getPeerClient().downloadResource("files", "aaa", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, null, null, null);
+        client.getPeerClient().downloadResource("files", "aaa", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, null, null);
         ThreadUtil.safeSleep(20000);
 
         System.out.println("to download second file...");
@@ -60,7 +60,7 @@ public class TestTransfer_1_Temp {
 
 
 //            client.getPeerClient().downloadResource(new PeerID("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f);
-        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "bbb", tempFileWriter2, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, null, null, null);
+        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "bbb", tempFileWriter2, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, null, null);
 
 //        ThreadUtil.safeSleep(45000);
 //        System.out.println("STOP!!!");

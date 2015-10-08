@@ -32,8 +32,7 @@ public interface ResourceProvider {
      * @param storeName          name of the store holding the resource
      * @param resourceID         the resourceID code of the required resource
      * @param assignedSubchannel subchannel where the corresponding answer (and all subsequent incoming data) must go
-     *                           @param preferredIntermediateHashesSize preferred size for intermediate hashes (null if no hashes required)
      * @return the resource link for the requested resource (the request is still not validated though)
      */
-    public ResourceLink requestResource(String storeName, String resourceID, short assignedSubchannel, Long preferredIntermediateHashesSize);
+    public ResourceLink requestResource(String storeName, String resourceID, short assignedSubchannel);
 }
