@@ -58,7 +58,6 @@ import java.util.*;
  * - They could be set up in groups, dividing their task in sub-tasks. This way if a file access comes, the global
  * optimizing task can be easily interrupted
  * <p/>
- * todo make index file xml or json
  * todo index backup, check errors in index file (hash?)
  */
 public class TempFileManager {
@@ -187,7 +186,6 @@ public class TempFileManager {
      * @throws IOException there was an error generating the files
      */
     public synchronized String createNewTempFile(HashMap<String, Serializable> userDictionary) throws IOException {
-        // todo
         // generate the file names and the actual files
         List<Duple<String, String>> fileNames = FileUtil.createFiles(
                 baseDir,
