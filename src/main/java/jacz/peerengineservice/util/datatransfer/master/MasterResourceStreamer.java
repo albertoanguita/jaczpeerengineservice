@@ -53,9 +53,9 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
 
     private static final String RESOURCE_WRITER_MASTER_GROUP = "@RESOURCE_WRITER_MASTER_RESOURCE_STREAMING_GROUP";
 
-    private static final String RESOURCE_WRITER_STREAMING_NEED_FIELD = "@STREAMING_NEED";
+    private static final String RESOURCE_WRITER_STREAMING_NEED_FIELD = "MASTER_RESOURCE_STREAMER@STREAMING_NEED";
 
-    private static final String RESOURCE_WRITER_PRIORITY_FIELD = "@PRIORITY_NEED";
+    private static final String RESOURCE_WRITER_PRIORITY_FIELD = "MASTER_RESOURCE_STREAMER@PRIORITY_NEED";
 
     private static final int DEFAULT_PRIORITY = 10;
 
@@ -211,6 +211,10 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
 
     public DownloadManager getDownloadManager() {
         return downloadManager;
+    }
+
+    public ResourceWriter getResourceWriter() {
+        return resourceWriter;
     }
 
     public UniqueIdentifier getId() {

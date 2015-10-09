@@ -25,7 +25,7 @@ public class TestTransfer_1 {
         PeerClientData peerClientData = data.element2;
         PeerRelations peerRelations = data.element3;
 
-        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImpl(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImplTransfer(), new HashMap<String, PeerFSMFactory>());
         ForeignStoreShare foreignStoreShare = new ForeignStoreShare();
         foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_2", PeerIDGenerator.peerID(2));

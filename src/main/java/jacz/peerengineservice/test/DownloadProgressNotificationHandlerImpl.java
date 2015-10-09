@@ -8,6 +8,8 @@ import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHand
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 
+import java.io.IOException;
+
 /**
  * Simple download progress notification handler
  */
@@ -92,6 +94,12 @@ public class DownloadProgressNotificationHandlerImpl implements DownloadProgress
     @Override
     public void successTotalHash(String resourceID, String storeName, DownloadManager downloadManager) {
         System.out.println(initMessage + "OK total hash for resource " + resourceID);
+        System.out.println("Resource is available at: " + downloadManager.getResourceWriter().getPath());
+        try {
+            System.out.println("Custom info for download: " + downloadManager.getResourceWriter().getCustomGroup("custom"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

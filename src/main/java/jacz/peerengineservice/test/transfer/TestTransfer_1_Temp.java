@@ -7,6 +7,7 @@ import jacz.peerengineservice.client.PeersPersonalData;
 import jacz.peerengineservice.test.*;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
+import jacz.peerengineservice.util.datatransfer.resource_accession.BasicFileWriter;
 import jacz.peerengineservice.util.datatransfer.resource_accession.TempFileWriter;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 import jacz.util.concurrency.ThreadUtil;
@@ -28,39 +29,51 @@ public class TestTransfer_1_Temp {
         PeerClientData peerClientData = data.element2;
         PeerRelations peerRelations = data.element3;
 
-        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImpl(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImplTransfer(), new HashMap<String, PeerFSMFactory>());
         ForeignStoreShare foreignStoreShare = new ForeignStoreShare();
-        foreignStoreShare.addResourceProvider("aaa", PeerIDGenerator.peerID(2));
-        foreignStoreShare.addResourceProvider("bbb", PeerIDGenerator.peerID(2));
-//            foreignStoreShare.addResourceProvider("aaa", PeerIDGenerator.peerID(3));
+        foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(2));
+        foreignStoreShare.addResourceProvider("file_2", PeerIDGenerator.peerID(2));
+        foreignStoreShare.addResourceProvider("file_3", PeerIDGenerator.peerID(2));
+        foreignStoreShare.addResourceProvider("file_4", PeerIDGenerator.peerID(2));
+        foreignStoreShare.addResourceProvider("file_5", PeerIDGenerator.peerID(2));
+        foreignStoreShare.addResourceProvider("file_6", PeerIDGenerator.peerID(2));
+        foreignStoreShare.addResourceProvider("file_7", PeerIDGenerator.peerID(2));
+        foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(3));
+//        foreignStoreShare.addResourceProvider("file_2", PeerIDGenerator.peerID(3));
+        foreignStoreShare.addResourceProvider("file_3", PeerIDGenerator.peerID(3));
+        foreignStoreShare.addResourceProvider("file_4", PeerIDGenerator.peerID(3));
+//        foreignStoreShare.addResourceProvider("file_5", PeerIDGenerator.peerID(3));
+//        foreignStoreShare.addResourceProvider("file_6", PeerIDGenerator.peerID(3));
+        foreignStoreShare.addResourceProvider("file_7", PeerIDGenerator.peerID(3));
         client.getPeerClient().addForeignResourceStore("files", foreignStoreShare);
         client.startClient();
 
         ThreadUtil.safeSleep(1000);
+        client.getPeerClient().setVisibleDownloadsTimer(3000);
 
         TempFileManager tempFileManager = new TempFileManager("./etc/temp");
         Map<String, Serializable> customDictionary = new HashMap<>();
-        customDictionary.put("hash", "aaa");
+        customDictionary.put("hash", "file_1");
         TempFileWriter tempFileWriter = new TempFileWriter(tempFileManager, "custom", customDictionary);
         String tempFile = tempFileWriter.getTempFile();
         System.out.println(tempFile);
 
         System.out.println("to download first file...");
-        client.getPeerClient().setVisibleDownloadsTimer(5000);
 
-        client.getPeerClient().downloadResource("files", "aaa", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, null, null);
+        client.getPeerClient().downloadResource("files", "file_1", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_1"), "MD5");
         ThreadUtil.safeSleep(20000);
 
         System.out.println("to download second file...");
 
         Map<String, Serializable> customDictionary2 = new HashMap<>();
-        customDictionary2.put("hash", "aaa");
+        customDictionary2.put("hash", "file_2");
         TempFileWriter tempFileWriter2 = new TempFileWriter(tempFileManager, "custom", customDictionary2);
         String tempFile2 = tempFileWriter2.getTempFile();
+        System.out.println(tempFile2);
 
 
 //            client.getPeerClient().downloadResource(new PeerID("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f);
-        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "bbb", tempFileWriter2, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, null, null);
+        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "file_2", tempFileWriter2, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_2"), "MD5");
 
 //        ThreadUtil.safeSleep(45000);
 //        System.out.println("STOP!!!");

@@ -7,7 +7,6 @@ import jacz.util.io.object_serialization.VersionedObjectSerializer;
 import jacz.util.io.object_serialization.VersionedSerializationException;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -24,15 +23,6 @@ import java.util.Map;
  * handled by the index files, which themselves access the data files.
  */
 class TempIndex implements VersionedObject {
-
-//    public static class TempIndexVersionException extends Exception {
-//
-//        public final String illegalVersion;
-//
-//        private TempIndexVersionException(String illegalVersion) {
-//            this.illegalVersion = illegalVersion;
-//        }
-//    }
 
     private final static String VERSION_0_1 = "0.1";
 
@@ -217,14 +207,15 @@ class TempIndex implements VersionedObject {
     }
 
     @Override
-    public void deserialize(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
-        if (version.equals(getCurrentVersion())) {
-            tempDataFilePath = (String) attributes.get("tempDataFilePath");
-            totalResourceSize = (Long) attributes.get("totalResourceSize");
-            customData = (HashMap<String, Map<String, Serializable>>) attributes.get("customData");
-            data = (LongRangeList) attributes.get("data");
-        } else {
-            throw new UnrecognizedVersionException();
-        }
+    public void deserialize(Map<String, Object> attributes) {
+        tempDataFilePath = (String) attributes.get("tempDataFilePath");
+        totalResourceSize = (Long) attributes.get("totalResourceSize");
+        customData = (HashMap<String, Map<String, Serializable>>) attributes.get("customData");
+        data = (LongRangeList) attributes.get("data");
+    }
+
+    @Override
+    public void deserializeOldVersion(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
+        throw new UnrecognizedVersionException();
     }
 }

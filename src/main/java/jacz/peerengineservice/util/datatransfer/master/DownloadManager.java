@@ -1,6 +1,7 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
+import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.util.identifier.UniqueIdentifier;
 
 /**
@@ -82,6 +83,10 @@ public class DownloadManager {
 
     public ResourceDownloadStatistics getStatistics() {
         return masterResourceStreamer.getStatistics();
+    }
+
+    public ResourceWriter getResourceWriter() {
+        return masterResourceStreamer.getResourceWriter();
     }
 
     @Override

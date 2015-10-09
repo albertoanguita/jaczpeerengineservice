@@ -9,7 +9,6 @@ import jacz.util.io.object_serialization.VersionedObjectSerializer;
 import jacz.util.io.object_serialization.VersionedSerializationException;
 import jacz.util.lists.Duple;
 import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -72,6 +71,8 @@ public class TempFileManager {
     private static final String TEMP_FILE_DATA_NAME_END = ".dat";
 
     private static final String TEMP_FILE_INDEX_NAME_END = ".ndx";
+
+    private static final int TEMP_FILE_INDEX_CRC_BYTES = 4;
 
     /**
      * Directory where temp files are stored (ending with the path.separator character)
@@ -427,7 +428,7 @@ public class TempFileManager {
 
     static void writeIndexFile(String indexFilePath, TempIndex index) throws IOException {
 //        FileReaderWriter.writeObject(indexFilePath, index);
-        byte[] data = VersionedObjectSerializer.serialize(index, 4);
+        byte[] data = VersionedObjectSerializer.serialize(index, TEMP_FILE_INDEX_CRC_BYTES);
         jacz.util.files.FileReaderWriter.writeBytes(indexFilePath, data);
     }
 

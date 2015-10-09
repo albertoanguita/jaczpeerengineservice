@@ -16,7 +16,7 @@ public class PeerIDGenerator {
         while (pid.length() < 43) {
             pid = "0" + pid;
         }
-        pid = "pid{" + pid + "}";
+//        pid = "pid{" + pid + "}";
         return new PeerID(pid);
     }
 }
