@@ -4,16 +4,15 @@ import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.util.io.object_serialization.MutableOffset;
 import jacz.util.io.object_serialization.Serializer;
 import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Resource writer implementation for byte-array transmissions in list synchronization
  */
-public class ByteArrayWriter implements ResourceWriter {
+public class ByteArrayWriter extends SingleSessionResourceWriter {
 
     private enum State {
         INIT,
@@ -36,6 +35,11 @@ public class ByteArrayWriter implements ResourceWriter {
     private int size;
 
     public ByteArrayWriter(DataAccessor listAccessor, int level) {
+        this(listAccessor, level, new HashMap<String, Serializable>());
+    }
+
+    public ByteArrayWriter(DataAccessor listAccessor, int level, HashMap<String, Serializable> userDictionary) {
+        super(userDictionary);
         this.listAccessor = listAccessor;
         this.level = level;
         tempArray = new byte[0];
@@ -53,28 +57,6 @@ public class ByteArrayWriter implements ResourceWriter {
     public LongRangeList getAvailableSegments() throws IOException {
         // no ranges owned
         return null;
-    }
-
-    @Override
-    public Map<String, Serializable> getCustomGroup(String group) throws IOException {
-        // ignore
-        return null;
-    }
-
-    @Override
-    public Serializable getCustomGroupField(String group, String key) throws IOException {
-        // ignore
-        return null;
-    }
-
-    @Override
-    public void setCustomGroup(String group, Map<String, Serializable> userGenericData) throws IOException {
-        // ignore
-    }
-
-    @Override
-    public void setCustomGroupField(String group, String key, Serializable value) throws IOException {
-        // ignore
     }
 
     @Override

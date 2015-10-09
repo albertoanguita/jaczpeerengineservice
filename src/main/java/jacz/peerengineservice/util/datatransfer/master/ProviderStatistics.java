@@ -1,9 +1,9 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.util.date_time.SpeedMonitor;
 import jacz.util.numeric.range.LongRange;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
@@ -13,12 +13,13 @@ import java.util.GregorianCalendar;
  * <p/>
  * It stores data about the different sessions in which this provider was active during the download
  */
-public class ProviderStatistics {
+public class ProviderStatistics implements Serializable {
 
     /**
      * The resource provider that generates this statistics
      */
-    private final ResourceProvider resourceProvider;
+//    private final ResourceProvider resourceProvider;
+    private final String resourceProviderID;
 
     /**
      * The time this provider was first added to this download
@@ -28,7 +29,7 @@ public class ProviderStatistics {
     /**
      * The time that the current session (if active) started
      */
-    private Date dateStartedThisSession;
+    private transient Date dateStartedThisSession;
 
     /**
      * Total time that this provider has been active
@@ -44,12 +45,12 @@ public class ProviderStatistics {
     /**
      * Currently shared part by this provider. Empty if not active
      */
-    private ResourcePart sharedPart;
+    private transient ResourcePart sharedPart;
 
     /**
      * Currently assigned part to this provider. Empty if not active
      */
-    private ResourcePart assignedPart;
+    private transient ResourcePart assignedPart;
 
     /**
      * Downloaded part from this provider so far. Wrong parts are removed
@@ -59,12 +60,12 @@ public class ProviderStatistics {
     /**
      * Download speed monitor
      */
-    private SpeedMonitor speed;
+    private transient SpeedMonitor speed;
 
 
-    public ProviderStatistics(ResourceProvider resourceProvider) {
+    public ProviderStatistics(String resourceProviderID) {
         // first time this provider is added to the download
-        this.resourceProvider = resourceProvider;
+        this.resourceProviderID = resourceProviderID;
         creationDate = new GregorianCalendar().getTime();
         sharedPart = new ResourcePart();
         assignedPart = new ResourcePart();
@@ -74,14 +75,22 @@ public class ProviderStatistics {
 
     private void init() {
         dateStartedThisSession = new GregorianCalendar().getTime();
-        sharedPart.clear();
-        assignedPart.clear();
+        if (sharedPart == null) {
+            sharedPart = new ResourcePart();
+        } else {
+            sharedPart.clear();
+        }
+        if (assignedPart == null) {
+            assignedPart = new ResourcePart();
+        } else {
+            assignedPart.clear();
+        }
         speed = new SpeedMonitor(ResourceDownloadStatistics.MILLIS_FOR_SPEED_MEASURE);
     }
 
-    public ResourceProvider getResourceProvider() {
-        return resourceProvider;
-    }
+//    public ResourceProvider getResourceProvider() {
+//        return resourceProvider;
+//    }
 
     public synchronized Date getCreationDate() {
         return creationDate;
@@ -145,7 +154,7 @@ public class ProviderStatistics {
     }
 
     public String getResourceProviderID() {
-        return resourceProvider.getID();
+        return resourceProviderID;
     }
 
     public synchronized ResourcePart getSharedPart() {
@@ -171,13 +180,11 @@ public class ProviderStatistics {
 
         ProviderStatistics that = (ProviderStatistics) o;
 
-        if (!resourceProvider.equals(that.resourceProvider)) return false;
-
-        return true;
+        return resourceProviderID.equals(that.resourceProviderID);
     }
 
     @Override
     public int hashCode() {
-        return resourceProvider.hashCode();
+        return resourceProviderID.hashCode();
     }
 }

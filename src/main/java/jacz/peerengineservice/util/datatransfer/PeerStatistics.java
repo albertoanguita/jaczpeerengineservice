@@ -29,6 +29,8 @@ public class PeerStatistics implements VersionedObject {
 
     private static final String VERSION_0_1 = "0.1";
 
+    private static final String CURRENT_VERSION = VERSION_0_1;
+
     private HashMap<PeerID, OnePeerStatistics> statistics;
 
     public PeerStatistics() {
@@ -98,7 +100,7 @@ public class PeerStatistics implements VersionedObject {
 
     @Override
     public String getCurrentVersion() {
-        return VERSION_0_1;
+        return CURRENT_VERSION;
     }
 
     @Override
@@ -109,7 +111,12 @@ public class PeerStatistics implements VersionedObject {
     }
 
     @Override
-    public void deserialize(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
+    public void deserialize(Map<String, Object> attributes) {
         statistics = (HashMap<PeerID, OnePeerStatistics>) attributes.get("statistics");
+    }
+
+    @Override
+    public void deserializeOldVersion(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
+        throw new UnrecognizedVersionException();
     }
 }

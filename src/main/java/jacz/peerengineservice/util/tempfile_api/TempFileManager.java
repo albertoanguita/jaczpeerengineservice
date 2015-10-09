@@ -156,10 +156,18 @@ public class TempFileManager {
             for (String file : filesInBaseDir) {
                 if (file.endsWith(TEMP_FILE_INDEX_NAME_END) && FileUtil.isFile(baseDir + file)) {
                     // an index file was found -> look for its data file
-                    String tempFile = file.substring(0, file.length() - TEMP_FILE_INDEX_NAME_END.length());
-                    if (FileUtil.isFile(generateIndexFilePath(tempFile))) {
-                        // the data file also exists -> valid temp file
-                        tempFiles.add(tempFile);
+                    String tempFile = generateIndexFilePath(file);
+                    try {
+                        TempIndex tempIndex = readIndexFile(tempFile);
+                        String tempDataFilePath = tempIndex.getTempDataFilePath();
+                        if (FileUtil.isFile(tempDataFilePath)) {
+                            // the data file also exists -> valid temp file
+                            tempFiles.add(file);
+                        }
+                    } catch (IOException | VersionedSerializationException e) {
+                        // error reading the file
+                        // todo use backup, or delete
+                        e.printStackTrace();
                     }
                 }
             }
@@ -178,7 +186,8 @@ public class TempFileManager {
      * this name in order to access to it subsequently
      * @throws IOException there was an error generating the files
      */
-    public synchronized String createNewTempFile() throws IOException {
+    public synchronized String createNewTempFile(HashMap<String, Serializable> userDictionary) throws IOException {
+        // todo
         // generate the file names and the actual files
         List<Duple<String, String>> fileNames = FileUtil.createFiles(
                 baseDir,
@@ -188,7 +197,7 @@ public class TempFileManager {
                 "",
                 false
         );
-        generateInitialIndexFile(fileNames.get(0).element2, fileNames.get(1).element2);
+        generateInitialIndexFile(fileNames.get(0).element2, fileNames.get(1).element2, userDictionary);
         return fileNames.get(0).element2;
     }
 
@@ -199,8 +208,8 @@ public class TempFileManager {
      * @param dataFileName  name of the data file
      * @throws IOException error creating the files
      */
-    private void generateInitialIndexFile(String indexFileName, String dataFileName) throws IOException {
-        TempIndex index = new TempIndex(baseDir + dataFileName);
+    private void generateInitialIndexFile(String indexFileName, String dataFileName, HashMap<String, Serializable> userDictionary) throws IOException {
+        TempIndex index = new TempIndex(baseDir + dataFileName, userDictionary);
 //        FileReaderWriter.writeObject(baseDir + indexFileName, index);
         writeIndexFile(baseDir + indexFileName, index);
     }
@@ -311,56 +320,43 @@ public class TempFileManager {
         }
     }
 
-    public Map<String, Serializable> getCustomGroup(String tempFileName, String group) throws IOException {
+    public HashMap<String, Serializable> getUserDictionary(String tempFileName) throws IOException {
         TaskFinalizationIndicator tfi;
-        GetCustomGroup getCustomGroup = new GetCustomGroup(generateIndexFilePath(tempFileName), group);
+        GetUserDictionary getUserDictionary = new GetUserDictionary(generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
-                    getCustomGroup,
+                    getUserDictionary,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.READ_ACTIVITY);
         }
         tfi.waitForFinalization();
-        return getCustomGroup.getCustomGroup();
+        return getUserDictionary.getUserDictionary();
     }
 
-    public Serializable getCustomGroupField(String tempFileName, String group, String key) throws IOException {
+    public HashMap<String, Serializable> getSystemDictionary(String tempFileName) throws IOException {
         TaskFinalizationIndicator tfi;
-        GetCustomGroup getCustomGroup = new GetCustomGroup(generateIndexFilePath(tempFileName), group, key);
+        GetSystemDictionary getSystemDictionary = new GetSystemDictionary(generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
-                    getCustomGroup,
+                    getSystemDictionary,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.READ_ACTIVITY);
         }
         tfi.waitForFinalization();
-        return getCustomGroup.getValue();
+        return getSystemDictionary.getSystemDictionary();
     }
 
-    public void setCustomGroup(String tempFileName, String group, Map<String, Serializable> customGroup) throws IOException {
+    public void setSystemField(String tempFileName, String key, Serializable value) throws IOException {
         TaskFinalizationIndicator tfi;
-        SetCustomGroup setCustomGroup = new SetCustomGroup(generateIndexFilePath(tempFileName), group, customGroup);
+        SetSystemField setSystemField = new SetSystemField(generateIndexFilePath(tempFileName), key, value);
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
-                    setCustomGroup,
+                    setSystemField,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.WRITE_ACTIVITY);
         }
         tfi.waitForFinalization();
-        setCustomGroup.checkCorrectResult();
-    }
-
-    public void setCustomGroupField(String tempFileName, String group, String key, Serializable value) throws IOException {
-        TaskFinalizationIndicator tfi;
-        SetCustomGroup setCustomGroup = new SetCustomGroup(generateIndexFilePath(tempFileName), group, key, value);
-        synchronized (this) {
-            tfi = ParallelTaskExecutor.executeTask(
-                    setCustomGroup,
-                    accessTempFileConcurrencyController(tempFileName),
-                    ConcurrencyControllerReadWrite.WRITE_ACTIVITY);
-        }
-        tfi.waitForFinalization();
-        setCustomGroup.checkCorrectResult();
+        setSystemField.checkCorrectResult();
     }
 
     /**
@@ -421,13 +417,11 @@ public class TempFileManager {
     }
 
     static TempIndex readIndexFile(String indexFilePath) throws IOException, VersionedSerializationException {
-//        return (TempIndex) FileReaderWriter.readObject(indexFilePath);
         byte[] data = jacz.util.files.FileReaderWriter.readBytes(indexFilePath);
         return new TempIndex(data);
     }
 
     static void writeIndexFile(String indexFilePath, TempIndex index) throws IOException {
-//        FileReaderWriter.writeObject(indexFilePath, index);
         byte[] data = VersionedObjectSerializer.serialize(index, TEMP_FILE_INDEX_CRC_BYTES);
         jacz.util.files.FileReaderWriter.writeBytes(indexFilePath, data);
     }

@@ -54,12 +54,19 @@ public class GlobalDownloadStatistics extends TransferStatistics {
     }
 
     @Override
-    public void deserialize(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
-        // no older versions than 1.0
+    public void deserialize(Map<String, Object> attributes) {
+        super.deserialize(attributes);
+        downloadsCompleted = (long) attributes.get("downloadsCompleted");
+    }
+
+    @Override
+    public void deserializeOldVersion(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
+        // since this object appends version values with parent version, it might happen that we get here with
+        // the current version. We check it before checking older versions
+        super.deserializeOldVersion(extractSuperVersion(version), attributes);
         String ownVersion = extractChildVersion(version);
         if (ownVersion.equals(CURRENT_VERSION)) {
-            downloadsCompleted = (long) attributes.get("downloadsCompleted");
-            super.deserialize(extractSuperVersion(version), attributes);
+            deserialize(attributes);
         } else {
             throw new UnrecognizedVersionException();
         }

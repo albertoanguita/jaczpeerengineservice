@@ -69,7 +69,11 @@ public abstract class TransfersManager<T> implements SimpleTimerAction {
      * @return a shallow copy of the active uploads of a store
      */
     protected synchronized List<T> getTransfers(String store) {
-        return new ArrayList<T>(activeTransfers.get(store).values());
+        if (activeTransfers.containsKey(store)) {
+            return new ArrayList<T>(activeTransfers.get(store).values());
+        } else {
+            return new ArrayList<>();
+        }
     }
 
     /**

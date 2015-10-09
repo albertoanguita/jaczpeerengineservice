@@ -19,9 +19,9 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 /**
- * Simple connection, no actions
+ * Created by Alberto on 10/10/2015.
  */
-public class TestTransfer_1_Temp {
+public class TestTransfer_1_Temp_Recover {
 
     public static void main(String args[]) throws Exception {
         String config = "./src/main/java/jacz/peerengineservice/test/clientConf_1_new.xml";
@@ -53,34 +53,22 @@ public class TestTransfer_1_Temp {
         client.getPeerClient().setVisibleDownloadsTimer(3000);
 
         TempFileManager tempFileManager = new TempFileManager("./etc/temp");
-        HashMap<String, Serializable> customDictionary = new HashMap<>();
-        customDictionary.put("hash", ResourceStoreImpl.getHash("file_1"));
-        TempFileWriter tempFileWriter = new TempFileWriter(tempFileManager, customDictionary);
-        String tempFile = tempFileWriter.getTempFile();
-        System.out.println(tempFile);
 
-        System.out.println("to download first file...");
 
-        DownloadManager downloadManager1 = client.getPeerClient().downloadResource("files", "file_1", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_1"), "MD5");
-        ThreadUtil.safeSleep(10000);
+        for (String tempFile : tempFileManager.getExistingTempFiles()) {
+            TempFileWriter tempFileWriter = new TempFileWriter(tempFileManager, tempFile);
+            System.out.println(tempFile);
+            System.out.println("to download recovered file...");
+            System.out.println(tempFileWriter.getUserDictionary());
+            client.getPeerClient().downloadResource("files", "file_1", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, (String) tempFileWriter.getUserDictionary().get("hash"), "MD5");
+        }
 
-//        System.out.println("to download second file...");
-//
-//        HashMap<String, Serializable> customDictionary2 = new HashMap<>();
-//        customDictionary2.put("hash", "file_2");
-//        TempFileWriter tempFileWriter2 = new TempFileWriter(tempFileManager, customDictionary2);
-//        String tempFile2 = tempFileWriter2.getTempFile();
-//        System.out.println(tempFile2);
-//
-//
-////            client.getPeerClient().downloadResource(new PeerID("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f);
-//        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "file_2", tempFileWriter2, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_2"), "MD5");
 
-        ThreadUtil.safeSleep(15000);
-        System.out.println("STOP!!!");
+//        ThreadUtil.safeSleep(15000);
+//        System.out.println("STOP!!!");
 //        downloadManager1.stop();
 //        downloadManager2.stop();
-        client.getPeerClient().stop();
+//        client.getPeerClient().stop();
 //        ThreadUtil.safeSleep(8000);
 //        System.out.println("RESTART!!!");
 //        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);

@@ -32,107 +32,38 @@ class TempIndex implements VersionedObject {
 
     private Long totalResourceSize;
 
-    private HashMap<String, Map<String, Serializable>> customData;
+    private HashMap<String, Serializable> userDictionary;
+
+    private HashMap<String, Serializable> systemDictionary;
 
     /**
      * Segments of data which the data file already owns. The data outside these segments is undetermined.
      */
     private LongRangeList data;
 
-    TempIndex(String tempDataFilePath) throws IOException {
-        this(tempDataFilePath, null, new HashMap<String, Map<String, Serializable>>(), new LongRangeList());
-        setupDataFile(0);
-    }
-
-    private TempIndex(String tempDataFilePath, Long totalResourceSize, HashMap<String, Map<String, Serializable>> customData, LongRangeList data) {
+    TempIndex(String tempDataFilePath, HashMap<String, Serializable> userDictionary) throws IOException {
         this.tempDataFilePath = tempDataFilePath;
-        this.totalResourceSize = totalResourceSize;
-        this.customData = customData;
-        this.data = data;
+        this.totalResourceSize = null;
+        this.userDictionary = userDictionary;
+        this.systemDictionary = new HashMap<>();
+        this.data = new LongRangeList();
+        setupDataFile(0);
     }
 
     public TempIndex(byte[] data) throws VersionedSerializationException {
         VersionedObjectSerializer.deserialize(this, data);
     }
 
-//    public void saveToXML(String path) throws IOException, XMLStreamException {
-//        XMLWriter xmlWriter = new XMLWriter("index-file");
-//        xmlWriter.addField("VERSION", VERSION_0_1);
-//        xmlWriter.addField("tempDataFilePath", tempDataFilePath);
-//        xmlWriter.addField("totalResourceSize", totalResourceSize);
-//        xmlWriter.beginStruct("customData");
-//        for (Map.Entry<String, Map<String, Serializable>> customGroup : customData.entrySet()) {
-//            xmlWriter.beginStruct(customGroup.getKey());
-//            for (Map.Entry<String, Serializable> entry : customGroup.getValue().entrySet()) {
-//                xmlWriter.addField(entry.getKey(), entry.getValue());
-//            }
-//            xmlWriter.endStruct();
-//        }
-//        xmlWriter.endStruct();
-//        xmlWriter.beginStruct("data");
-//        for (LongRange longRange : data.getRanges()) {
-//            xmlWriter.beginStruct();
-//            xmlWriter.addValue(longRange.getMin());
-//            xmlWriter.addValue(longRange.getMax());
-//            xmlWriter.endStruct();
-//        }
-//        xmlWriter.endStruct();
-//        xmlWriter.write(path);
-//    }
-
-//    public static TempIndex readFromXML(String path) throws FileNotFoundException, XMLStreamException, TempIndexVersionException {
-//        XMLReader xmlReader = new XMLReader(path);
-//        String VERSION = xmlReader.getFieldValue("VERSION");
-//        if (!VERSION.equals(TempIndex.VERSION_0_1)) {
-//            // wrong version detected
-//            throw new TempIndexVersionException(VERSION);
-//        }
-//        String tempDataFilePath = xmlReader.getFieldValue("tempDataFilePath");
-//        Long totalResourceSize = StrCast.asLong(xmlReader.getFieldValue("totalResourceSize"));
-//        Map<String, Map<String, Serializable>> customData = new HashMap<>();
-//        xmlReader.getStruct("customData");
-//        while (xmlReader.hasMoreChildren()) {
-//            String groupName = xmlReader.getNextStructAndName();
-//            Map<String, Serializable> customGroup = new HashMap<>();
-//            while (xmlReader.hasMoreChildren()) {
-//                Duple<String, String> fieldAndValue = xmlReader.getNextFieldAndValue();
-//                customGroup.put(fieldAndValue.element1, fieldAndValue.element2);
-//            }
-//            customData.put(groupName, customGroup);
-//        }
-//        RangeSet<LongRange, Long> data = new RangeSet<>();
-//        xmlReader.getStruct("data");
-//        while (xmlReader.hasMoreChildren()) {
-//            xmlReader.getNextStruct();
-//            Long min = StrCast.asLong(xmlReader.getNextValue());
-//            Long max = StrCast.asLong(xmlReader.getNextValue());
-//            data.add(new LongRange(min, max));
-//            xmlReader.gotoParent();
-//        }
-//        return new TempIndex(tempDataFilePath, totalResourceSize, customData, data);
-//    }
-
-    Map<String, Serializable> getCustomGroup(String groupName) {
-        return customData.get(groupName);
+    HashMap<String, Serializable> getUserDictionary() {
+        return userDictionary;
     }
 
-    Serializable getCustomGroupField(String groupName, String key) {
-        if (customData.containsKey(groupName)) {
-            return customData.get(groupName).get(key);
-        } else {
-            return null;
-        }
+    HashMap<String, Serializable> getSystemDictionary() {
+        return systemDictionary;
     }
 
-    void setCustomGroup(String groupName, Map<String, Serializable> group) {
-        this.customData.put(groupName, group);
-    }
-
-    void setCustomGroupField(String groupName, String key, Serializable value) {
-        if (!customData.containsKey(groupName)) {
-            customData.put(groupName, new HashMap<String, Serializable>());
-        }
-        customData.get(groupName).put(key, value);
+    void setSystemField(String key, Serializable value) {
+        systemDictionary.put(key, value);
     }
 
     String getTempDataFilePath() {
@@ -201,7 +132,8 @@ class TempIndex implements VersionedObject {
         Map<String, Serializable> map = new HashMap<>();
         map.put("tempDataFilePath", tempDataFilePath);
         map.put("totalResourceSize", totalResourceSize);
-        map.put("customData", customData);
+        map.put("userDictionary", userDictionary);
+        map.put("systemDictionary", systemDictionary);
         map.put("data", data);
         return map;
     }
@@ -210,7 +142,8 @@ class TempIndex implements VersionedObject {
     public void deserialize(Map<String, Object> attributes) {
         tempDataFilePath = (String) attributes.get("tempDataFilePath");
         totalResourceSize = (Long) attributes.get("totalResourceSize");
-        customData = (HashMap<String, Map<String, Serializable>>) attributes.get("customData");
+        userDictionary = (HashMap<String, Serializable>) attributes.get("userDictionary");
+        systemDictionary = (HashMap<String, Serializable>) attributes.get("systemDictionary");
         data = (LongRangeList) attributes.get("data");
     }
 

@@ -12,42 +12,25 @@ import java.io.IOException;
 /**
  *
  */
-class OwnedPartsTask implements ParallelTask {
-
-    /**
-     * Temp file to read from
-     */
-    private String indexFilePath;
+class OwnedPartsTask extends TempIndexTask {
 
     private LongRangeList ownedParts;
 
-    private IOException ioException;
-
     public OwnedPartsTask(String indexFilePath) {
-        this.indexFilePath = indexFilePath;
+        super(indexFilePath);
         ownedParts = null;
-        ioException = null;
     }
 
     @Override
     public void performTask() {
-        // obtain the TempIndex from the index file
-        TempIndex index;
-        try {
-            index = TempFileManager.readIndexFile(indexFilePath);
-            ownedParts = index.getOwnedDataParts();
-        } catch (IOException e) {
-            ioException = e;
-        } catch (VersionedSerializationException e) {
-            ioException = new IOException("Problems reading the temp index file");
+        super.performTask();
+        if (tempIndex != null) {
+            ownedParts = tempIndex.getOwnedDataParts();
         }
     }
 
     public LongRangeList getOwnedParts() throws IOException {
-        if (ownedParts != null) {
-            return ownedParts;
-        } else {
-            throw ioException;
-        }
+        checkIOException();
+        return ownedParts;
     }
 }

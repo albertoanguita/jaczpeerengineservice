@@ -1,11 +1,10 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
 import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Map;
+import java.util.HashMap;
 
 /**
  * This interface contains methods for generating a resource from the received byte arrays from other peers. Using
@@ -24,7 +23,7 @@ public interface ResourceWriter {
      * @return a Long object containing the size of the resource in bytes, or null if size is not known yet)
      * @throws IOException problems reading the resource data
      */
-    public Long getSize() throws IOException;
+    Long getSize() throws IOException;
 
     /**
      * This method allows the resource writer informing about what parts of the resource it currently owns
@@ -39,13 +38,11 @@ public interface ResourceWriter {
      */
     LongRangeList getAvailableSegments() throws IOException;
 
-    Map<String, Serializable> getCustomGroup(String group) throws IOException;
+    HashMap<String, Serializable> getUserDictionary();
 
-    Serializable getCustomGroupField(String group, String key) throws IOException;
+    HashMap<String, Serializable> getSystemDictionary() throws IOException;
 
-    void setCustomGroup(String group, Map<String, Serializable> userGenericData) throws IOException;
-
-    void setCustomGroupField(String group, String key, Serializable value) throws IOException;
+    void setSystemField(String key, Serializable value) throws IOException;
 
     /**
      * Initializes the resource writer by providing the size of the resource to write. This method is only invoked at the beginning of a writing

@@ -51,17 +51,25 @@ public class TestTransfer_1 {
 
         client.getPeerClient().setVisibleDownloadsTimer(3000);
 //            client.getPeerClient().downloadResource(new PeerID("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f);
-        DownloadManager downloadManager = client.getPeerClient().downloadResource("files", "file_6", new BasicFileWriter("./etc/basic_transfer/file.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_6"), "MD5");
+        DownloadManager downloadManager1 = client.getPeerClient().downloadResource("files", "file_6", new BasicFileWriter("./etc/basic_transfer/file.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_6"), "MD5");
 //        client.getPeerClient().downloadResource("files", "file_2", new BasicFileWriter("./etc/basic_transfer/file.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_2"), "MD5", 1000000L);
 
         client.getPeerClient().setMaxDesiredDownloadSpeed(450000f);
 
-        ThreadUtil.safeSleep(50000);
-        System.out.println("slow");
-        client.getPeerClient().setMaxDesiredDownloadSpeed(50000f);
-        ThreadUtil.safeSleep(50000);
-        System.out.println("fast");
-        client.getPeerClient().setMaxDesiredDownloadSpeed(1500000f);
+
+        ThreadUtil.safeSleep(15000);
+        System.out.println("STOP!!!");
+//        downloadManager1.stop();
+//        downloadManager2.stop();
+        client.getPeerClient().stop();
+
+
+//        ThreadUtil.safeSleep(50000);
+//        System.out.println("slow");
+//        client.getPeerClient().setMaxDesiredDownloadSpeed(50000f);
+//        ThreadUtil.safeSleep(50000);
+//        System.out.println("fast");
+//        client.getPeerClient().setMaxDesiredDownloadSpeed(1500000f);
 
 //        ThreadUtil.safeSleep(15000);
 //        downloadManager.pause();
@@ -79,6 +87,6 @@ public class TestTransfer_1 {
 //            ThreadUtil.safeSleep(10000);
 //            downloadManager.cancel();
 
-        System.out.println("GO!");
+        System.out.println("END");
     }
 }

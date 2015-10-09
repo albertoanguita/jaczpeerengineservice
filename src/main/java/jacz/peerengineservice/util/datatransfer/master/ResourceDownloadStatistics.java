@@ -10,14 +10,16 @@ import jacz.util.numeric.range.LongRange;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Statistics for a resource download. These statistics cover the different sessions for a download process
  */
 public class ResourceDownloadStatistics {
 
-    private static final String RESOURCE_WRITER_STATISTICS_GROUP = "@RESOURCE_WRITER_DOWNLOAD_STATISTICS_GROUP";
     private static final String RESOURCE_WRITER_CREATION_DATE_FIELD = "RESOURCE_DOWNLOAD_STATISTICS@CREATION_DATE";
     private static final String RESOURCE_WRITER_DOWNLOADED_PART_FIELD = "RESOURCE_DOWNLOAD_STATISTICS@DOWNLOADED_PART";
     private static final String RESOURCE_WRITER_CHECKED_PART_FIELD = "RESOURCE_DOWNLOAD_STATISTICS@CHECKED_PART";
@@ -97,7 +99,7 @@ public class ResourceDownloadStatistics {
 
     ResourceDownloadStatistics(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerStatistics peerStatistics) throws IOException {
         this.resourceWriter = resourceWriter;
-        Map<String, Serializable> storedStatistics = resourceWriter.getCustomGroup(RESOURCE_WRITER_STATISTICS_GROUP);
+        Map<String, Serializable> storedStatistics = resourceWriter.getSystemDictionary();
         if (storedStatistics != null && storedStatistics.containsKey(RESOURCE_WRITER_CREATION_DATE_FIELD)) {
             creationDate = (Date) storedStatistics.get(RESOURCE_WRITER_CREATION_DATE_FIELD);
         } else {
@@ -150,12 +152,18 @@ public class ResourceDownloadStatistics {
             providerStatistics.stopSession();
         }
         accumulatedMillisActive += System.currentTimeMillis() - dateStartedThisSession.getTime();
-        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_CREATION_DATE_FIELD, creationDate);
-        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_DOWNLOADED_PART_FIELD, downloadedPart);
-        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_ACCUMULATED_MILLIS_ACTIVE_FIELD, accumulatedMillisActive);
-        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_DOWNLOADED_SIZE_THIS_RESOURCE_FIELD, downloadedSizeThisResource);
-        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_INCORRECT_SIZE_THIS_RESOURCE_FIELD, incorrectSizeThisResource);
-        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_PROVIDERS_STATISTICS_FIELD, providers);
+//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_CREATION_DATE_FIELD, creationDate);
+//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_DOWNLOADED_PART_FIELD, downloadedPart);
+//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_ACCUMULATED_MILLIS_ACTIVE_FIELD, accumulatedMillisActive);
+//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_DOWNLOADED_SIZE_THIS_RESOURCE_FIELD, downloadedSizeThisResource);
+//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_INCORRECT_SIZE_THIS_RESOURCE_FIELD, incorrectSizeThisResource);
+//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_PROVIDERS_STATISTICS_FIELD, providers);
+        resourceWriter.setSystemField(RESOURCE_WRITER_CREATION_DATE_FIELD, creationDate);
+        resourceWriter.setSystemField(RESOURCE_WRITER_DOWNLOADED_PART_FIELD, downloadedPart);
+        resourceWriter.setSystemField(RESOURCE_WRITER_ACCUMULATED_MILLIS_ACTIVE_FIELD, accumulatedMillisActive);
+        resourceWriter.setSystemField(RESOURCE_WRITER_DOWNLOADED_SIZE_THIS_RESOURCE_FIELD, downloadedSizeThisResource);
+        resourceWriter.setSystemField(RESOURCE_WRITER_INCORRECT_SIZE_THIS_RESOURCE_FIELD, incorrectSizeThisResource);
+        resourceWriter.setSystemField(RESOURCE_WRITER_PROVIDERS_STATISTICS_FIELD, providers);
     }
 
     synchronized void stop() {
@@ -274,7 +282,7 @@ public class ResourceDownloadStatistics {
     }
 
     public synchronized Map<String, ProviderStatistics> getProviders() {
-        return new HashMap<String, ProviderStatistics>(providers);
+        return new HashMap<>(providers);
     }
 
     synchronized ProviderStatistics addProvider(ResourceProvider resourceProvider) {
@@ -283,7 +291,7 @@ public class ResourceDownloadStatistics {
             providerStatistics.resume();
         } else {
             // provider not found, initialize and add in first position
-            providerStatistics = new ProviderStatistics(resourceProvider);
+            providerStatistics = new ProviderStatistics(resourceProvider.getID());
             providers.put(resourceProvider.getID(), providerStatistics);
         }
         if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerStatistics != null) {

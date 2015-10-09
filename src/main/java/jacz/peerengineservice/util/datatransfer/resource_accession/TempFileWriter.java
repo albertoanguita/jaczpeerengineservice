@@ -2,11 +2,10 @@ package jacz.peerengineservice.util.datatransfer.resource_accession;
 
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Map;
+import java.util.HashMap;
 
 /**
  * A resource writer implementation for temporary files
@@ -17,27 +16,27 @@ public class TempFileWriter implements ResourceWriter {
 
     private final String tempFile;
 
-    private final Map<String, Serializable> customDictionary;
+//    private final Map<String, Serializable> customDictionary;
+
+    private final HashMap<String, Serializable> userDictionary;
 
     private String finalPath;
 
-    public TempFileWriter(TempFileManager tempFileManager, String customGroup, Map<String, Serializable> customDictionary) throws IOException {
+    public TempFileWriter(TempFileManager tempFileManager, HashMap<String, Serializable> userDictionary) throws IOException {
         this.tempFileManager = tempFileManager;
-        this.tempFile = tempFileManager.createNewTempFile();
-        this.customDictionary = customDictionary;
-        if (customGroup != null && customDictionary != null) {
-            tempFileManager.setCustomGroup(tempFile, customGroup, customDictionary);
-        }
+        this.tempFile = tempFileManager.createNewTempFile(userDictionary);
+        this.userDictionary = userDictionary;
     }
 
-    public TempFileWriter(TempFileManager tempFileManager, String tempFile, String customGroup) throws IOException {
+    public TempFileWriter(TempFileManager tempFileManager, String tempFile) throws IOException {
         this.tempFileManager = tempFileManager;
         this.tempFile = tempFile;
-        if (customGroup != null) {
-            customDictionary = tempFileManager.getCustomGroup(tempFile, customGroup);
-        } else {
-            customDictionary = null;
-        }
+        userDictionary = tempFileManager.getUserDictionary(tempFile);
+//        if (customGroup != null) {
+//            customDictionary = tempFileManager.getCustomGroup(tempFile, customGroup);
+//        } else {
+//            customDictionary = null;
+//        }
     }
 
     public String getTempFile() {
@@ -55,23 +54,18 @@ public class TempFileWriter implements ResourceWriter {
     }
 
     @Override
-    public Map<String, Serializable> getCustomGroup(String group) throws IOException {
-        return tempFileManager.getCustomGroup(tempFile, group);
+    public HashMap<String, Serializable> getUserDictionary() {
+        return userDictionary;
     }
 
     @Override
-    public Serializable getCustomGroupField(String group, String key) throws IOException {
-        return tempFileManager.getCustomGroupField(tempFile, group, key);
+    public HashMap<String, Serializable> getSystemDictionary() throws IOException {
+        return tempFileManager.getSystemDictionary(tempFile);
     }
 
     @Override
-    public void setCustomGroup(String group, Map<String, Serializable> userGenericData) throws IOException {
-        tempFileManager.setCustomGroup(tempFile, group, userGenericData);
-    }
-
-    @Override
-    public void setCustomGroupField(String group, String key, Serializable value) throws IOException {
-        tempFileManager.setCustomGroupField(tempFile, group, key, value);
+    public void setSystemField(String key, Serializable value) throws IOException {
+        tempFileManager.setSystemField(tempFile, key, value);
     }
 
     @Override
@@ -108,7 +102,7 @@ public class TempFileWriter implements ResourceWriter {
         return finalPath;
     }
 
-    public Map<String, Serializable> getCustomDictionary() {
-        return customDictionary;
-    }
+//    public Map<String, Serializable> getCustomDictionary() {
+//        return customDictionary;
+//    }
 }

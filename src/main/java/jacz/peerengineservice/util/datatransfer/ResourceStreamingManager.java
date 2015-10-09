@@ -863,40 +863,47 @@ public class ResourceStreamingManager {
      * <p/>
      * The method blocks until all resources are properly stopped. Downloads and uploads are stopped.
      */
-    public synchronized void stop() {
-        // subchannel assignments
-        downloadsManager.stop();
-        Collection<TaskFinalizationIndicator> tfiCollection = new HashSet<>();
-        for (final DownloadManager downloadManager : downloadsManager.getAllDownloads()) {
-            // this call is parallelized to avoid triple interlock between the ResourceStreamingManager, the MasterResourceStreamer and the
-            // DownloadManager
-            TaskFinalizationIndicator tfi = ParallelTaskExecutor.executeTask(new ParallelTask() {
-                @Override
-                public void performTask() {
-                    downloadManager.stop();
-                }
-            });
-            tfiCollection.add(tfi);
+    public void stop() {
+        Collection<TaskFinalizationIndicator> tfiCollection;
+        synchronized (this) {
+            // subchannel assignments
+            downloadsManager.stop();
+            tfiCollection = new HashSet<>();
+            for (final DownloadManager downloadManager : downloadsManager.getAllDownloads()) {
+                // this call is parallelized to avoid triple interlock between the ResourceStreamingManager, the MasterResourceStreamer and the
+                // DownloadManager
+                TaskFinalizationIndicator tfi = ParallelTaskExecutor.executeTask(new ParallelTask() {
+                    @Override
+                    public void performTask() {
+                        downloadManager.stop();
+                    }
+                });
+                tfiCollection.add(tfi);
+            }
         }
         TaskFinalizationIndicator.waitForFinalization(tfiCollection);
-        tfiCollection.clear();
-        uploadPriorityManager.stop();
-        downloadPriorityManager.stop();
-        foreignShareManager.stop();
-        activeDownloadSet.stop();
-        subchannelManager.stop();
-        uploadsManager.stop();
-        for (final UploadManager uploadManager : uploadsManager.getAllUploads()) {
-            TaskFinalizationIndicator tfi = ParallelTaskExecutor.executeTask(new ParallelTask() {
-                @Override
-                public void performTask() {
-                    uploadManager.stop();
-                }
-            });
-            tfiCollection.add(tfi);
+        synchronized (this) {
+            tfiCollection.clear();
+            uploadPriorityManager.stop();
+            downloadPriorityManager.stop();
+            foreignShareManager.stop();
+            activeDownloadSet.stop();
+            subchannelManager.stop();
+            uploadsManager.stop();
+            for (final UploadManager uploadManager : uploadsManager.getAllUploads()) {
+                TaskFinalizationIndicator tfi = ParallelTaskExecutor.executeTask(new ParallelTask() {
+                    @Override
+                    public void performTask() {
+                        uploadManager.stop();
+                    }
+                });
+                tfiCollection.add(tfi);
+            }
         }
         TaskFinalizationIndicator.waitForFinalization(tfiCollection);
-        alive = false;
+        synchronized (this) {
+            alive = false;
+        }
     }
 
     public synchronized void removeDownload(MasterResourceStreamer masterResourceStreamer) {

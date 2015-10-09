@@ -1,20 +1,22 @@
 package jacz.peerengineservice.util.tempfile_api;
 
-import jacz.util.concurrency.task_executor.ParallelTask;
-import jacz.util.io.object_serialization.VersionedSerializationException;
-
 import java.io.IOException;
+import java.io.Serializable;
+import java.util.HashMap;
 
 /**
- *
+ * Sets a system field in a temp index file
  */
-class SetSizeTask extends TempIndexTask {
+public class SetSystemField extends TempIndexTask {
 
-    private long size;
+    private final String key;
 
-    public SetSizeTask(String indexFilePath, long size) {
+    private final Serializable value;
+
+    public SetSystemField(String indexFilePath, String key, Serializable value) {
         super(indexFilePath);
-        this.size = size;
+        this.key = key;
+        this.value = value;
     }
 
     @Override
@@ -22,7 +24,7 @@ class SetSizeTask extends TempIndexTask {
         super.performTask();
         if (tempIndex != null) {
             try {
-                tempIndex.setTotalSize(size);
+                tempIndex.setSystemField(key, value);
                 TempFileManager.writeIndexFile(indexFilePath, tempIndex);
             } catch (IOException e) {
                 ioException = e;
@@ -31,6 +33,6 @@ class SetSizeTask extends TempIndexTask {
     }
 
     public void checkCorrectResult() throws IOException {
-        super.checkIOException();
+        checkIOException();
     }
 }

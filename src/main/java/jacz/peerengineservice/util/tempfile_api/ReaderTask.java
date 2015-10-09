@@ -1,19 +1,11 @@
 package jacz.peerengineservice.util.tempfile_api;
 
-import jacz.util.concurrency.task_executor.ParallelTask;
-import jacz.util.io.object_serialization.VersionedSerializationException;
-
 import java.io.IOException;
 
 /**
  *
  */
-class ReaderTask implements ParallelTask {
-
-    /**
-     * Temp file to read from
-     */
-    private String indexFilePath;
+class ReaderTask extends TempIndexTask {
 
     private long offset;
 
@@ -24,43 +16,31 @@ class ReaderTask implements ParallelTask {
      */
     private byte[] data;
 
-    private IOException ioException;
-
-    private IndexOutOfBoundsException indexOutOfBoundsException;
-
     public ReaderTask(String indexFilePath, long offset, int length) {
-        this.indexFilePath = indexFilePath;
+        super(indexFilePath);
         this.offset = offset;
         this.length = length;
         data = null;
-        ioException = null;
-        indexOutOfBoundsException = null;
     }
 
     @Override
     public void performTask() {
-        // obtain the TempIndex from the index file
-        TempIndex index;
-        try {
-            index = TempFileManager.readIndexFile(indexFilePath);
-            data = index.read(offset, length);
-        } catch (IOException e) {
-            ioException = e;
-        } catch (VersionedSerializationException e) {
-            ioException = new IOException("Problems reading the temp index file");
-        } catch (IndexOutOfBoundsException e) {
-            data = null;
-            indexOutOfBoundsException = e;
+        super.performTask();
+        if (tempIndex != null) {
+            try {
+                data = tempIndex.read(offset, length);
+            } catch (IOException e) {
+                ioException = e;
+            } catch (IndexOutOfBoundsException e) {
+                data = null;
+                indexOutOfBoundsException = e;
+            }
         }
     }
 
     public byte[] getData() throws IOException, IndexOutOfBoundsException {
-        if (data != null) {
-            return data;
-        } else if (ioException != null) {
-            throw ioException;
-        } else {
-            throw indexOutOfBoundsException;
-        }
+        checkIOException();
+        checkIndexOutOfBoundsException();
+        return data;
     }
 }

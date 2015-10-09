@@ -3,19 +3,17 @@ package jacz.peerengineservice.util.datatransfer.resource_accession;
 import jacz.util.files.FileUtil;
 import jacz.util.files.RandomAccess;
 import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  *
  */
-public class BasicFileWriter implements ResourceWriter {
+public class BasicFileWriter extends SingleSessionResourceWriter {
 
     private final String finalPath;
 
@@ -23,13 +21,20 @@ public class BasicFileWriter implements ResourceWriter {
 
     private boolean hasFailed;
 
-    private Map<String, Map<String, Serializable>> userGenericData;
-
     public BasicFileWriter(String expectedFilePath) throws IOException {
         this(FileUtil.getFileDirectory(expectedFilePath), FileUtil.getFileName(expectedFilePath));
     }
 
+    public BasicFileWriter(String expectedFilePath, HashMap<String, Serializable> userDictionary) throws IOException {
+        this(FileUtil.getFileDirectory(expectedFilePath), FileUtil.getFileName(expectedFilePath), userDictionary);
+    }
+
     public BasicFileWriter(String downloadDir, String expectedFileName) throws IOException {
+        this(downloadDir, expectedFileName, new HashMap<String, Serializable>());
+    }
+
+    public BasicFileWriter(String downloadDir, String expectedFileName, HashMap<String, Serializable> userDictionary) throws IOException {
+        super(userDictionary);
         hasFailed = false;
         String fileWithoutExtension = FileUtil.getFileNameWithoutExtension(expectedFileName);
         String extension = FileUtil.getFileExtension(expectedFileName);
@@ -42,7 +47,6 @@ public class BasicFileWriter implements ResourceWriter {
                 hasFailed = true;
             }
         }
-        userGenericData = new HashMap<>();
     }
 
     @Override
@@ -58,37 +62,11 @@ public class BasicFileWriter implements ResourceWriter {
     }
 
     @Override
-    public void setCustomGroup(String group, Map<String, Serializable> userGenericData) {
-        this.userGenericData.put(group, userGenericData);
-    }
-
-    @Override
-    public Map<String, Serializable> getCustomGroup(String group) {
-        return userGenericData.get(group);
-    }
-
-    @Override
-    public Serializable getCustomGroupField(String group, String key) {
-        if (!userGenericData.containsKey(group)) {
-            setCustomGroup(group, new HashMap<String, Serializable>());
-        }
-        return userGenericData.get(group).get(key);
-    }
-
-    @Override
     public void init(long size) throws IOException {
         checkHasFailed();
         RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rws");
         randomAccessFile.setLength(size);
         randomAccessFile.close();
-    }
-
-    @Override
-    public void setCustomGroupField(String group, String key, Serializable value) {
-        if (!userGenericData.containsKey(group)) {
-            setCustomGroup(group, new HashMap<String, Serializable>());
-        }
-        userGenericData.get(group).put(key, value);
     }
 
     @Override

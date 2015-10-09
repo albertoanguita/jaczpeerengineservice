@@ -123,16 +123,23 @@ public class TransferStatistics implements VersionedObject {
     }
 
     @Override
-    public void deserialize(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
+    public void deserialize(Map<String, Object> attributes) {
+        creationDate = (Date) attributes.get("creationDate");
+        transferredSize = (long) attributes.get("transferredSize");
+        transferTime = (long) attributes.get("transferTime");
+        transferSessions = (long) attributes.get("transferSessions");
+        if (creationDate == null) {
+            // no field can be null -> error
+            throw new RuntimeException();
+        }
+    }
+
+    @Override
+    public void deserializeOldVersion(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
+        // since this object appends version values with children versions, it might happen that we get here with
+        // the current version. We check it before checking older versions
         if (version.equals(CURRENT_VERSION)) {
-            creationDate = (Date) attributes.get("creationDate");
-            transferredSize = (long) attributes.get("transferredSize");
-            transferTime = (long) attributes.get("transferTime");
-            transferSessions = (long) attributes.get("transferSessions");
-            if (creationDate == null) {
-                // no field can be null -> error
-                throw new RuntimeException();
-            }
+            deserialize(attributes);
         } else {
             throw new UnrecognizedVersionException();
         }

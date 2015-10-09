@@ -95,11 +95,7 @@ public class DownloadProgressNotificationHandlerImpl implements DownloadProgress
     public void successTotalHash(String resourceID, String storeName, DownloadManager downloadManager) {
         System.out.println(initMessage + "OK total hash for resource " + resourceID);
         System.out.println("Resource is available at: " + downloadManager.getResourceWriter().getPath());
-        try {
-            System.out.println("Custom info for download: " + downloadManager.getResourceWriter().getCustomGroup("custom"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        System.out.println("Custom info for download: " + downloadManager.getResourceWriter().getUserDictionary());
     }
 
     @Override

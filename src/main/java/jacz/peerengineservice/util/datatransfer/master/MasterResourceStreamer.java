@@ -51,13 +51,11 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         }
     }
 
-    private static final String RESOURCE_WRITER_MASTER_GROUP = "@RESOURCE_WRITER_MASTER_RESOURCE_STREAMING_GROUP";
-
     private static final String RESOURCE_WRITER_STREAMING_NEED_FIELD = "MASTER_RESOURCE_STREAMER@STREAMING_NEED";
 
     private static final String RESOURCE_WRITER_PRIORITY_FIELD = "MASTER_RESOURCE_STREAMER@PRIORITY_NEED";
 
-    private static final int DEFAULT_PRIORITY = 10;
+    private static final float DEFAULT_PRIORITY = 10f;
 
     /**
      * private ID for proper hashing of objects
@@ -177,16 +175,16 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         try {
             resourceSize = resourceWriter.getSize();
             availableSegments = resourceWriter.getAvailableSegments();
-            Map<String, Serializable> downloadParameters = resourceWriter.getCustomGroup(RESOURCE_WRITER_MASTER_GROUP);
+            Map<String, Serializable> downloadParameters = resourceWriter.getSystemDictionary();
             if (downloadParameters != null && downloadParameters.containsKey(RESOURCE_WRITER_STREAMING_NEED_FIELD) && downloadParameters.containsKey(RESOURCE_WRITER_PRIORITY_FIELD)) {
                 // the resource writer had download parameters stored (from previous uses) -> ignore the given ones and use this
                 streamingNeed = (Double) downloadParameters.get(RESOURCE_WRITER_STREAMING_NEED_FIELD);
-                priority = (Integer) downloadParameters.get(RESOURCE_WRITER_PRIORITY_FIELD);
+                priority = (float) downloadParameters.get(RESOURCE_WRITER_PRIORITY_FIELD);
             } else {
                 // the resource writer had no download parameters stored, so this is the first time this resource writer is used
                 // use the given streaming need and, additionally, store it in the resource writer
-                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
-                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_PRIORITY_FIELD, priority);
+                resourceWriter.setSystemField(RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
+                resourceWriter.setSystemField(RESOURCE_WRITER_PRIORITY_FIELD, priority);
             }
         } catch (IOException e) {
             error = true;
@@ -259,12 +257,13 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @param resourceProviders collection of resource providers offering the desired resource
      */
     public void reportAvailableResourceProviders(final Collection<? extends ResourceProvider> resourceProviders) {
-        ParallelTaskExecutor.executeTask(new ParallelTask() {
+        ParallelTask parallelTask = new ParallelTask() {
             @Override
             public void performTask() {
                 reportAvailableResourceProvidersSynch(resourceProviders);
             }
-        });
+        };
+        ParallelTaskExecutor.executeTask(parallelTask);
     }
 
     /**
@@ -621,7 +620,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         if (alive) {
             this.priority = priority;
             try {
-                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_PRIORITY_FIELD, priority);
+//                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_PRIORITY_FIELD, priority);
+                resourceWriter.setSystemField(RESOURCE_WRITER_PRIORITY_FIELD, priority);
             } catch (IOException e) {
                 // error writing the streaming need in the resource writer -> cancel download and report error
                 reportErrorWriting();
@@ -647,7 +647,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         if (alive) {
             resourcePartScheduler.setStreamingNeed(streamingNeed);
             try {
-                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
+//                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
+                resourceWriter.setSystemField(RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
             } catch (IOException e) {
                 // error writing the streaming need in the resource writer -> cancel download and report error
                 reportErrorWriting();
