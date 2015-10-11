@@ -208,7 +208,6 @@ public class TempFileManager {
      */
     private void generateInitialIndexFile(String indexFileName, String dataFileName, HashMap<String, Serializable> userDictionary) throws IOException {
         TempIndex index = new TempIndex(baseDir + dataFileName, userDictionary);
-//        FileReaderWriter.writeObject(baseDir + indexFileName, index);
         writeIndexFile(baseDir + indexFileName, index);
     }
 
@@ -425,6 +424,7 @@ public class TempFileManager {
     }
 
     public String tempFileToDataPath(String tempFileName) {
+        // todo use in check existing temp files method
         String dataFileName = tempFileName.replace(TEMP_FILE_INDEX_NAME_END, TEMP_FILE_DATA_NAME_END);
         return baseDir + dataFileName;
     }

@@ -1,6 +1,5 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.numeric.oldrange.RangeToRangeComparison;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.numeric.range.Range;
 

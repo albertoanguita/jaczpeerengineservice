@@ -26,7 +26,7 @@ public interface PeerFSMAction<T> extends ChannelFSMAction<T> {
      *
      * @param channel channel assigned for outgoing communications
      */
-    public void setOutgoingChannel(byte channel);
+    void setOutgoingChannel(byte channel);
 
     /**
      * This method is invoked when the RequestDispatcher at the other end denied our request of setting up a custom
@@ -36,6 +36,6 @@ public interface PeerFSMAction<T> extends ChannelFSMAction<T> {
      *
      * @param serverResponse cause of the error in the request
      */
-    public void errorRequestingFSM(PeerFSMServerResponse serverResponse);
+    void errorRequestingFSM(PeerFSMServerResponse serverResponse);
 
 }

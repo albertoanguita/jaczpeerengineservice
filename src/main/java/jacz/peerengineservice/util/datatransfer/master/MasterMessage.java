@@ -79,6 +79,7 @@ public class MasterMessage {
     public static byte[] generateAddNewSegmentsMessage(LongRange segment) {
         byte[] order = Serializer.serialize(Order.ADD_NEW_SEGMENT);
         return Serializer.addArrays(order, Serializer.serialize(segment.getMin()), Serializer.serialize(segment.getMax()));
+//        return FragmentedByteArray.addArraysFinal(order, Serializer.serialize(segment.getMin()), Serializer.serialize(segment.getMax()));
     }
 
     public static byte[] generateHardThrottleMessage(float variation) {

@@ -17,6 +17,7 @@ public class DataSynchServerFSMFactory implements PeerFSMFactory {
 
     @Override
     public PeerFSMAction buildPeerFSMAction(ConnectionStatus requestingPeerStatus) {
+        // todo check peer status here, not after returning the FSM!!!
         return new DataSynchServerFSM(requestingPeerStatus, dataAccessorContainer);
     }
 

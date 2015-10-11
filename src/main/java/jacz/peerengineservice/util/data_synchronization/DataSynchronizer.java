@@ -46,6 +46,8 @@ public class DataSynchronizer {
     public void synchronizeData(PeerID serverPeerID, final String dataAccessorName, long timeout, final ProgressNotificationWithError<Integer, SynchError> progress) {
         try {
             DataAccessor dataAccessor = dataAccessorContainer.getAccessorForReceiving(serverPeerID, dataAccessorName);
+            // todo get an id for the FSM, so we can log and track it properly. Give that id to the client FSM so it also logs it
+            // same for server FSM
             boolean correctSetup = peerClient.registerTimedCustomFSM(
                     serverPeerID,
                     new DataSynchClientFSM(dataAccessor, dataAccessorName, ownPeerID, progress),

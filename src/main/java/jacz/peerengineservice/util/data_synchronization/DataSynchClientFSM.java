@@ -35,44 +35,6 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
         // error during the communication
         // FINAL STATE
         ERROR,
-
-        // if the request answer was OK, we start the index and hash synch process, so the server can calculate what elements we need
-        // we are expecting hash queries from the server to determine which hashes the server must send us. We reply according to the
-        // hashes that we have, and wait for the server to say that he is done with this process
-        // we leave this state when the server says we are done. We will then check if we must request elements, or we are done
-        // TYPE: BYTE_ARRAY
-//        INDEX_AND_HASH_SYNCH_PROCESS,
-
-        // the index and hash synch process just finished
-        // waiting for server to send the number of hashes that we need. After we get it, we will wait for the hashes themselves
-        // TYPE: BYTE_ARRAY
-//        WAITING_FOR_INDEX_AND_HASHES_SIZE_TO_REQUEST,
-
-        // the index and hash synch process just finished
-        // waiting for server to send the list of hashes that we need. With these data, we initialize the elementTransferSynchClient
-        // with it, and execute its initiateDataTransferProcess, and start requesting elements
-        // TYPE: BYTE_ARRAY
-//        WAITING_FOR_INDEX_AND_HASHES_TO_REQUEST,
-
-        // the requested elements are objects
-        // waiting for server to send the last requested element by the elementTransferSynchClient
-        // received data is passed to the elementTransferSynchClient
-        // TYPE: OBJECT
-//        DATA_TRANSMISSION_PROCESS_OBJECT,
-
-        // the requested elements are byte arrays
-        // the server must send us the name of the resource store for requesting the data
-        // TYPE: BYTE_ARRAY
-//        WAITING_FOR_BYTE_ARRAY_RESOURCE_STORE_NAME,
-
-        // process complete (final state). In addition, notify the completion to the progress element
-//        SUCCESS_NOTIFY_COMPLETE,
-
-        // process complete (final state). Do not notify the completion of the progress
-//        SUCCESS_NOT_NOTIFY_COMPLETE,
-
-        // error due to element modified in server during synchronization
-//        ERROR_ELEMENT_CHANGED_IN_SERVER
     }
 
     /**

@@ -1,10 +1,11 @@
 package jacz.peerengineservice;
 
-import jacz.util.date_time.DateTime;
 import jacz.util.files.FileReaderWriter;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * This class handles internal errors (errors in the code of the peer engine) so that these are dumped into a log file, or console, or somewhere
@@ -16,14 +17,7 @@ public final class ErrorControl {
 
     public static void reportError(Class c, String s, Object... data) {
         // dump error to a log file
-        String baseLogName = "peer_engine_error_" +
-                DateTime.getFormattedCurrentDateTime(
-                        DateTime.DateTimeElement.YYYY, "-",
-                        DateTime.DateTimeElement.MM, "-",
-                        DateTime.DateTimeElement.DD, "--",
-                        DateTime.DateTimeElement.hh, ":",
-                        DateTime.DateTimeElement.mm, ":",
-                        DateTime.DateTimeElement.ss);
+        String baseLogName = "peer_engine_error_" + new SimpleDateFormat("YYY/MM/dd-HH:mm:ss:SSS").format(new Date());
         StringBuilder content = new StringBuilder("ERROR LOG\n---------\n\n");
         content.append(c.toString()).append(": ").append(s);
         int i = 0;

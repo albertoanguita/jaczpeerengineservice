@@ -571,7 +571,6 @@ public class PeerClient {
             PeerFSMAction<?> peerFSMAction = customFSMs.get(serverFSMName).buildPeerFSMAction(connectedPeers.getPeerConnectionStatus(peerID));
             if (peerFSMAction != null) {
                 Byte assignedChannel = connectedPeers.requestChannel(peerID);
-                //System.out.println("RequestDispatcher sends " + assignedChannel + " to " + outgoingChannel);
                 if (assignedChannel != null) {
                     // set up custom FSM
                     // non-timed

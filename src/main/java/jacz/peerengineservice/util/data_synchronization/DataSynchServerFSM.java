@@ -45,7 +45,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
         ERROR,
     }
 
-    enum SynchRequestAnswer {
+    public enum SynchRequestAnswer {
         INVALID_REQUEST_FORMAT,
         UNKNOWN_DATA_ACCESSOR,
         REQUEST_DENIED,
