@@ -14,6 +14,8 @@ public interface DataSynchEvents {
 
     void clientSynchRequestFailedToInitiate(PeerID serverPeer, String dataAccessorName, long timeout, SynchError synchError);
 
+    void clientSynchRequestDenied(PeerID serverPeer, String dataAccessorName, long timeout, SynchError synchError);
+
     void clientSynchSuccess(PeerID serverPeer, String dataAccessorName, UniqueIdentifier fsmID);
 
     void clientSynchError(PeerID serverPeer, String dataAccessorName, UniqueIdentifier fsmID, SynchError synchError);
