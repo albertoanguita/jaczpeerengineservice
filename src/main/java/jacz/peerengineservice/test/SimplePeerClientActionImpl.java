@@ -96,7 +96,7 @@ public class SimplePeerClientActionImpl implements PeerClientAction {
     }
 
     @Override
-    public void serverTookToMuchTimeToAnswerConnectionRequest(jacz.peerengineservice.client.PeerServerData peerServerData, State state) {
+    public void serverTookTooMuchTimeToAnswerConnectionRequest(jacz.peerengineservice.client.PeerServerData peerServerData, State state) {
         System.out.println(initMessage + "Server took too much time to answer. State: " + state);
     }
 
@@ -148,6 +148,11 @@ public class SimplePeerClientActionImpl implements PeerClientAction {
     @Override
     public void periodicUploadsNotification(UploadsManager uploadsManager) {
         // do nothing
+    }
+
+    @Override
+    public void stop() {
+        System.out.println(initMessage + "Stop");
     }
 
     private String formatPeer(PeerID peerID) {

@@ -10,11 +10,14 @@ import jacz.peerengineservice.util.datatransfer.UploadsManager;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
 import jacz.util.network.IP4Port;
+import org.apache.log4j.Logger;
 
 /**
- * Created by Alberto on 11/10/2015.
+ * Bridge class for logging and handling threads in PeerClientAction calls
  */
 public class PeerClientActionBridge implements PeerClientAction {
+
+    final static Logger logger = Logger.getLogger(PeerClientAction.class);
 
     private final PeerClientAction peerClientAction;
 
@@ -27,7 +30,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void peerAddedAsFriend(final PeerID peerID, final PeerRelations peerRelations) {
-        // todo log
+        logger.info("PEER ADDED AS FRIEND. Peer: " + peerID);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -38,7 +41,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void peerRemovedAsFriend(final PeerID peerID, final PeerRelations peerRelations) {
-        // todo log
+        logger.info("PEER REMOVED AS FRIEND. Peer: " + peerID);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -49,7 +52,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void peerAddedAsBlocked(final PeerID peerID, final PeerRelations peerRelations) {
-        // todo log
+        logger.info("PEER ADDED AS BLOCKED. Peer: " + peerID);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -60,7 +63,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void peerRemovedAsBlocked(final PeerID peerID, final PeerRelations peerRelations) {
-        // todo log
+        logger.info("PEER REMOVED AS BLOCKED. Peer: " + peerID);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -71,7 +74,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void newPeerConnected(final PeerID peerID, final ConnectionStatus status) {
-        // todo log
+        logger.info("NEW PEER CONNECTED. Peer: " + peerID + ". Status: " + status);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -82,7 +85,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void newObjectMessage(final PeerID peerID, final Object message) {
-        // todo log
+        logger.info("NEW OBJECT MESSAGE. Peer: " + peerID + ". Message: " + message.toString());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -93,7 +96,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void newPeerNick(final PeerID peerID, final String nick) {
-        // todo log
+        logger.info("NEW PEER NICK. Peer: " + peerID + ". Nick: " + nick);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -104,7 +107,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void peerValidatedUs(final PeerID peerID) {
-        // todo log
+        logger.info("PEER VALIDATED US. Peer: " + peerID);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -115,7 +118,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void peerDisconnected(final PeerID peerID, final CommError error) {
-        // todo log
+        logger.info("PEER DISCONNECTED. Peer: " + peerID + ". Error: " + error);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -126,7 +129,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void listeningPortModified(final int port) {
-        // todo log
+        logger.info("LISTENING PORT MODIFIED. Port: " + port);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -137,7 +140,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void tryingToConnectToServer(final PeerServerData peerServerData, final State state) {
-        // todo log
+        logger.info("TRYING TO CONNECT TO SERVER. Server: " + peerServerData + ". State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -148,7 +151,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void connectionToServerEstablished(final PeerServerData peerServerData, final State state) {
-        // todo log
+        logger.info("CONNECTION TO SERVER ESTABLISHED. Server: \" + peerServerData + \". State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -159,7 +162,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void unableToConnectToServer(final PeerServerData peerServerData, final State state) {
-        // todo log
+        logger.info("UNABLE TO CONNECT TO SERVER. Server: \" + peerServerData + \". State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -169,19 +172,19 @@ public class PeerClientActionBridge implements PeerClientAction {
     }
 
     @Override
-    public void serverTookToMuchTimeToAnswerConnectionRequest(final PeerServerData peerServerData, final State state) {
-        // todo log
+    public void serverTookTooMuchTimeToAnswerConnectionRequest(final PeerServerData peerServerData, final State state) {
+        logger.info("SERVER TOOK TOO MUCH TIME TO ANSWER CONNECTION REQUEST. Server: \" + peerServerData + \". State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                peerClientAction.serverTookToMuchTimeToAnswerConnectionRequest(peerServerData, state);
+                peerClientAction.serverTookTooMuchTimeToAnswerConnectionRequest(peerServerData, state);
             }
         });
     }
 
     @Override
     public void connectionToServerDenied(final PeerServerData peerServerData, final ClientConnectionToServerFSM.ConnectionFailureReason reason, final State state) {
-        // todo log
+        logger.info("CONNECTION TO SERVER DENIED. Reason: " + reason + ". Server: \" + peerServerData + \". State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -192,7 +195,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void connectionToServerTimedOut(final PeerServerData peerServerData, final State state) {
-        // todo log
+        logger.info("CONNECTION TO SERVER TIMED OUT. Server: \" + peerServerData + \". State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -203,7 +206,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void localServerOpen(final int port, final State state) {
-        // todo log
+        logger.info("LOCAL SERVER OPEN. Port: " + port + ". State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -214,7 +217,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void localServerClosed(final int port, final State state) {
-        // todo log
+        logger.info("LOCAL SERVER CLOSED. Port: " + port + ". State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -225,7 +228,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void disconnectedFromServer(final boolean expected, final PeerServerData peerServerData, final State state) {
-        // todo log
+        logger.info("DISCONNECTED FROM SERVER. State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -236,7 +239,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void undefinedOwnInetAddress() {
-        // todo log
+        logger.info("UNDEFINED OWN INET ADDRESS");
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -247,7 +250,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void peerCouldNotConnectToUs(final Exception e, final IP4Port ip4Port) {
-        // todo log
+        logger.info("PEER COULD NOT CONNECT TO US. Exception: " + e.getMessage() + ". ip4Port: " + ip4Port);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -258,7 +261,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void localServerError(final Exception e) {
-        // todo log
+        logger.info("LOCAL SERVER ERROR. Exception: " + e.getMessage());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -269,7 +272,7 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void periodicDownloadsNotification(final DownloadsManager downloadsManager) {
-        // todo log
+        // no log of active downloads
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -280,12 +283,24 @@ public class PeerClientActionBridge implements PeerClientAction {
 
     @Override
     public void periodicUploadsNotification(final UploadsManager uploadsManager) {
-        // todo log
+        // no log of active uploads
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
                 peerClientAction.periodicUploadsNotification(uploadsManager);
             }
         });
+    }
+
+    @Override
+    public void stop() {
+        logger.info("STOP");
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.stop();
+            }
+        });
+        sequentialTaskExecutor.stopAndWaitForFinalization();
     }
 }

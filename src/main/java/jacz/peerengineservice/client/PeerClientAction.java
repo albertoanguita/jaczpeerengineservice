@@ -40,7 +40,7 @@ public interface PeerClientAction {
 
     void unableToConnectToServer(PeerServerData peerServerData, State state);
 
-    void serverTookToMuchTimeToAnswerConnectionRequest(PeerServerData peerServerData, State state);
+    void serverTookTooMuchTimeToAnswerConnectionRequest(PeerServerData peerServerData, State state);
 
     void connectionToServerDenied(PeerServerData peerServerData, ClientConnectionToServerFSM.ConnectionFailureReason reason, State state);
 
@@ -61,4 +61,6 @@ public interface PeerClientAction {
     void periodicDownloadsNotification(DownloadsManager downloadsManager);
 
     void periodicUploadsNotification(UploadsManager uploadsManager);
+
+    void stop();
 }

@@ -18,8 +18,6 @@ import jacz.peerengineservice.util.datatransfer.*;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
-import jacz.util.concurrency.task_executor.ParallelTask;
-import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
 import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.util.network.IP4Port;
 
@@ -83,8 +81,6 @@ public class PeerClient {
      */
     private DataSynchronizer dataSynchronizer;
 
-    private final SequentialTaskExecutor sequentialTaskExecutor;
-
     /**
      * Class constructor
      *
@@ -128,7 +124,7 @@ public class PeerClient {
             Map<String, PeerFSMFactory> customFSMs,
             DataAccessorContainer dataAccessorContainer) {
         this.ownPeerID = peerClientData.getOwnPeerID();
-        this.peerClientAction = peerClientAction;
+        this.peerClientAction = new PeerClientActionBridge(peerClientAction);
         this.peersPersonalData = peersPersonalData;
         this.peerRelations = peerRelations;
         this.customFSMs = customFSMs;
@@ -153,8 +149,6 @@ public class PeerClient {
         }
         // add custom FSMs for list synchronizing service, in case the client uses it
         addOwnCustomFSMs(this.customFSMs);
-
-        sequentialTaskExecutor = new SequentialTaskExecutor();
     }
 
 
@@ -166,7 +160,8 @@ public class PeerClient {
     public void stop() {
         resourceStreamingManager.stop();
         peerClientConnectionManager.stop();
-        sequentialTaskExecutor.stopAndWaitForFinalization();
+        peerClientAction.stop();
+        // todo what happens with current data synchs???
     }
 
     private void addOwnCustomFSMs(Map<String, PeerFSMFactory> customFSMs) {
@@ -249,23 +244,13 @@ public class PeerClient {
             connectedPeers.setPeerConnectionStatus(peerID, ConnectionStatus.CORRECT);
             sendObjectMessage(peerID, new ValidationMessage());
         }
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.peerAddedAsFriend(peerID, peerRelations);
-            }
-        });
+        peerClientAction.peerAddedAsFriend(peerID, peerRelations);
     }
 
     public synchronized void removeFriendPeer(final PeerID peerID) {
         peerRelations.removeFriendPeer(peerID);
         searchFriends();
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.peerRemovedAsFriend(peerID, peerRelations);
-            }
-        });
+        peerClientAction.peerRemovedAsFriend(peerID, peerRelations);
     }
 
     public synchronized Set<PeerID> getBlockedPeers() {
@@ -275,22 +260,12 @@ public class PeerClient {
     public synchronized void addBlockedPeer(final PeerID peerID) {
         peerRelations.addBlockedPeer(peerID);
         searchFriends();
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.peerAddedAsBlocked(peerID, peerRelations);
-            }
-        });
+        peerClientAction.peerAddedAsBlocked(peerID, peerRelations);
     }
 
     public synchronized void removeBlockedPeer(final PeerID peerID) {
         peerRelations.removeBlockedPeer(peerID);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.peerRemovedAsBlocked(peerID, peerRelations);
-            }
-        });
+        peerClientAction.peerRemovedAsBlocked(peerID, peerRelations);
     }
 
     /**
@@ -491,12 +466,7 @@ public class PeerClient {
     void newPeerConnected(final PeerID peerID, final ChannelConnectionPoint ccp, final ConnectionStatus status) {
         // first notify the resource streaming manager, so it sets up the necessary FSMs for receiving resource data. Then, notify the client
         resourceStreamingManager.newPeerConnected(ccp);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.newPeerConnected(peerID, status);
-            }
-        });
+        peerClientAction.newPeerConnected(peerID, status);
         // send the other peer own nick, to ensure he has our latest value
         sendObjectMessage(peerID, new NewNickMessage(peersPersonalData.getOwnNick()));
     }
@@ -646,31 +616,16 @@ public class PeerClient {
                 // validation messages are handled here
                 if (connectedPeers.getPeerConnectionStatus(peerID) == ConnectionStatus.WAITING_FOR_REMOTE_VALIDATION) {
                     connectedPeers.setPeerConnectionStatus(peerID, ConnectionStatus.CORRECT);
-                    sequentialTaskExecutor.executeTask(new ParallelTask() {
-                        @Override
-                        public void performTask() {
-                            peerClientAction.peerValidatedUs(peerID);
-                        }
-                    });
+                    peerClientAction.peerValidatedUs(peerID);
                 }
             } else if (message instanceof NewNickMessage) {
                 // new nick from other peer received
                 final NewNickMessage newNickMessage = (NewNickMessage) message;
                 if (peersPersonalData.setPeersNicks(peerID, newNickMessage.nick)) {
-                    sequentialTaskExecutor.executeTask(new ParallelTask() {
-                        @Override
-                        public void performTask() {
-                            peerClientAction.newPeerNick(peerID, newNickMessage.nick);
-                        }
-                    });
+                    peerClientAction.newPeerNick(peerID, newNickMessage.nick);
                 }
             } else {
-                sequentialTaskExecutor.executeTask(new ParallelTask() {
-                    @Override
-                    public void performTask() {
-                        peerClientAction.newObjectMessage(peerID, message);
-                    }
-                });
+                peerClientAction.newObjectMessage(peerID, message);
             }
         }
     }
@@ -694,12 +649,7 @@ public class PeerClient {
      * @param error  error that provoked the disconnection (null if no error)
      */
     synchronized void peerDisconnected(final PeerID peerID, final CommError error) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.peerDisconnected(peerID, error);
-            }
-        });
+        peerClientAction.peerDisconnected(peerID, error);
     }
 
 
@@ -708,144 +658,69 @@ public class PeerClient {
      */
 
     void listeningPortModified(final int port) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.listeningPortModified(port);
-            }
-        });
+        peerClientAction.listeningPortModified(port);
     }
 
     /**
      * @param peerServerData peer server details
      */
     void tryingToConnectToServer(final PeerServerData peerServerData, final State state) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.tryingToConnectToServer(peerServerData, state);
-            }
-        });
+        peerClientAction.tryingToConnectToServer(peerServerData, state);
     }
 
     /**
      * @param peerServerData peer server details
      */
     void connectionToServerEstablished(final PeerServerData peerServerData, final State state) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.connectionToServerEstablished(peerServerData, state);
-            }
-        });
+        peerClientAction.connectionToServerEstablished(peerServerData, state);
     }
 
     void unableToConnectToServer(final PeerServerData peerServerData, final State state) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.unableToConnectToServer(peerServerData, state);
-            }
-        });
+        peerClientAction.unableToConnectToServer(peerServerData, state);
     }
 
     void serverTookToMuchTimeToAnswerConnectionRequest(final PeerServerData peerServerData, final State state) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.serverTookToMuchTimeToAnswerConnectionRequest(peerServerData, state);
-            }
-        });
+        peerClientAction.serverTookTooMuchTimeToAnswerConnectionRequest(peerServerData, state);
     }
 
     void connectionToServerDenied(final PeerServerData peerServerData, final ClientConnectionToServerFSM.ConnectionFailureReason reason, final State state) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.connectionToServerDenied(peerServerData, reason, state);
-            }
-        });
+        peerClientAction.connectionToServerDenied(peerServerData, reason, state);
     }
 
     void disconnectedFromServer(final boolean expected, final PeerServerData peerServerData, final State state) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.disconnectedFromServer(expected, peerServerData, state);
-            }
-        });
+        peerClientAction.disconnectedFromServer(expected, peerServerData, state);
     }
 
     void connectionToServerTimedOut(final PeerServerData peerServerData, final State state) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.connectionToServerTimedOut(peerServerData, state);
-            }
-        });
+        peerClientAction.connectionToServerTimedOut(peerServerData, state);
     }
 
     void localServerOpen(final int port, final State state) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.localServerOpen(port, state);
-            }
-        });
+        peerClientAction.localServerOpen(port, state);
     }
 
     void localServerClosed(final int port, final State state) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.localServerClosed(port, state);
-            }
-        });
+        peerClientAction.localServerClosed(port, state);
     }
 
     void undefinedOwnInetAddress() {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.undefinedOwnInetAddress();
-            }
-        });
+        peerClientAction.undefinedOwnInetAddress();
     }
 
     void peerCouldNotConnectToUs(final Exception e, final IP4Port ip4Port) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.peerCouldNotConnectToUs(e, ip4Port);
-            }
-        });
+        peerClientAction.peerCouldNotConnectToUs(e, ip4Port);
     }
 
     void localServerError(final Exception e) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.localServerError(e);
-            }
-        });
+        peerClientAction.localServerError(e);
         peerClientConnectionManager.setWishForConnection(false);
     }
 
     void periodicDownloadsNotification(final DownloadsManager downloadsManager) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.periodicDownloadsNotification(downloadsManager);
-            }
-        });
+        peerClientAction.periodicDownloadsNotification(downloadsManager);
     }
 
     void periodicUploadsNotification(final UploadsManager uploadsManager) {
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.periodicUploadsNotification(uploadsManager);
-            }
-        });
+        peerClientAction.periodicUploadsNotification(uploadsManager);
     }
 }
