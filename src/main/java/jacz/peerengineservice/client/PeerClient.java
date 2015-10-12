@@ -94,13 +94,14 @@ public class PeerClient {
     public PeerClient(
             PeerClientData peerClientData,
             PeerClientAction peerClientAction,
+            ResourceTransferEvents resourceTransferEvents,
             PeersPersonalData peersPersonalData,
             GlobalDownloadStatistics globalDownloadStatistics,
             GlobalUploadStatistics globalUploadStatistics,
             PeerStatistics peerStatistics,
             PeerRelations peerRelations,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(peerClientData, peerClientAction, peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, null);
+        this(peerClientData, peerClientAction, resourceTransferEvents, peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, null);
     }
 
     /**
@@ -116,6 +117,7 @@ public class PeerClient {
     public PeerClient(
             PeerClientData peerClientData,
             PeerClientAction peerClientAction,
+            ResourceTransferEvents resourceTransferEvents,
             PeersPersonalData peersPersonalData,
             GlobalDownloadStatistics globalDownloadStatistics,
             GlobalUploadStatistics globalUploadStatistics,
@@ -140,7 +142,7 @@ public class PeerClient {
                 peerClientData.getPort(),
                 peerClientData.getPeerServerData(),
                 peerRelations);
-        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), connectedPeersMessenger, peerClientPrivateInterface, globalDownloadStatistics, globalUploadStatistics, peerStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
+        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, peerClientPrivateInterface, globalDownloadStatistics, globalUploadStatistics, peerStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
         if (dataAccessorContainer != null) {
             dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer, peerClientData.getOwnPeerID());

@@ -498,8 +498,8 @@ public class ResourceStreamingManager {
         @Override
         public void processMessage(short subchannel, Object message) {
             // new request for a slave
-            if (message instanceof jacz.peerengineservice.util.datatransfer.ResourceRequest) {
-                jacz.peerengineservice.util.datatransfer.ResourceRequest resourceRequest = (jacz.peerengineservice.util.datatransfer.ResourceRequest) message;
+            if (message instanceof ResourceRequest) {
+                ResourceRequest resourceRequest = (ResourceRequest) message;
                 resourceStreamingManager.requestNewResource(resourceRequest);
             }
         }
@@ -509,6 +509,8 @@ public class ResourceStreamingManager {
             // ignore these messages, as all requests are object messages
         }
     }
+
+//    final static Logger logger = Logger.getLogger(ResourceStreamingManager.class);
 
     /**
      * Subchannel for both requesting slaves to other peers and for receiving requests for slaves from other peers
@@ -520,6 +522,8 @@ public class ResourceStreamingManager {
     private static final long MILLIS_FOR_GENERAL_PROVIDER_UPDATE = 15000;
 
     private final PeerID ownPeerID;
+
+    private final ResourceTransferEventsBridge resourceTransferEventsBridge;
 
     private final ConnectedPeersMessenger connectedPeersMessenger;
 
@@ -552,17 +556,16 @@ public class ResourceStreamingManager {
     /**
      * Manager for the currently existing downloads (downloads can be made visible, so we get periodic notifications on their progress).
      */
-    private final jacz.peerengineservice.util.datatransfer.DownloadsManager downloadsManager;
+    private final DownloadsManager downloadsManager;
 
     /**
      * Manager of the currently existing uploads
      */
-    private final jacz.peerengineservice.util.datatransfer.UploadsManager uploadsManager;
+    private final UploadsManager uploadsManager;
 
     /**
      * Manager for controlling upload speeds of resource transfers
      */
-//    private final jacz.peerengineservice.util.datatransfer.GenericPriorityManager uploadPriorityManager;
     private final GenericPriorityManager uploadPriorityManager;
 
     /**
@@ -599,6 +602,7 @@ public class ResourceStreamingManager {
 
     public ResourceStreamingManager(
             PeerID ownPeerID,
+            ResourceTransferEvents resourceTransferEvents,
             ConnectedPeersMessenger connectedPeersMessenger,
             PeerClientPrivateInterface peerClientPrivateInterface,
             GlobalDownloadStatistics globalDownloadStatistics,
@@ -606,6 +610,7 @@ public class ResourceStreamingManager {
             PeerStatistics peerStatistics,
             double accuracy) {
         this.ownPeerID = ownPeerID;
+        this.resourceTransferEventsBridge = new ResourceTransferEventsBridge(resourceTransferEvents);
         this.connectedPeersMessenger = connectedPeersMessenger;
         DoubleElementArrayList<Short, SubchannelOwner> occupiedSubchannels = new DoubleElementArrayList<>(1);
         occupiedSubchannels.add(SLAVE_GRANT_SUBCHANNEL, new SlaveRequestsManager(this));
@@ -613,8 +618,8 @@ public class ResourceStreamingManager {
         localShareManager = new LocalShareManager();
         foreignShareManager = new ForeignShareManager(this);
         activeDownloadSet = new ActiveDownloadSet(this);
-        downloadsManager = new jacz.peerengineservice.util.datatransfer.DownloadsManager(peerClientPrivateInterface);
-        uploadsManager = new jacz.peerengineservice.util.datatransfer.UploadsManager(peerClientPrivateInterface);
+        downloadsManager = new DownloadsManager(peerClientPrivateInterface);
+        uploadsManager = new UploadsManager(peerClientPrivateInterface);
         //badRequestsManager = new BadRequestsManager(FAILED_REQUEST_RESUBMIT_DELAY, FAILED_REQUEST_RESUBMIT_FACTOR, this);
         uploadPriorityManager = new GenericPriorityManager(true);
         downloadPriorityManager = new GenericPriorityManager(true);
@@ -685,7 +690,7 @@ public class ResourceStreamingManager {
      *
      * @return the manager of visible downloads
      */
-    public jacz.peerengineservice.util.datatransfer.DownloadsManager getDownloadsManager() {
+    public DownloadsManager getDownloadsManager() {
         return downloadsManager;
     }
 
@@ -694,7 +699,7 @@ public class ResourceStreamingManager {
      *
      * @return the manager of visible uploads
      */
-    public jacz.peerengineservice.util.datatransfer.UploadsManager getUploadsManager() {
+    public UploadsManager getUploadsManager() {
         return uploadsManager;
     }
 
@@ -705,7 +710,8 @@ public class ResourceStreamingManager {
      * @param name  name of the resource store
      * @param store implementation of the resource store, for requesting resources to our client
      */
-    public synchronized void addLocalResourceStore(String name, jacz.peerengineservice.util.datatransfer.ResourceStore store) {
+    public synchronized void addLocalResourceStore(String name, ResourceStore store) {
+        resourceTransferEventsBridge.addLocalResourceStore(name);
         localShareManager.addStore(name, store);
     }
 
@@ -714,7 +720,8 @@ public class ResourceStreamingManager {
      *
      * @param generalResourceStore general resource store
      */
-    public synchronized void setLocalGeneralResourceStore(jacz.peerengineservice.util.datatransfer.GeneralResourceStore generalResourceStore) {
+    public synchronized void setLocalGeneralResourceStore(GeneralResourceStore generalResourceStore) {
+        resourceTransferEventsBridge.setLocalGeneralResourceStore();
         localShareManager.setGeneralStore(generalResourceStore);
     }
 
@@ -725,6 +732,7 @@ public class ResourceStreamingManager {
      * @param foreignStoreShare peers share for letting us know the share of resources of each peer
      */
     public synchronized void addForeignResourceStore(String name, ForeignStoreShare foreignStoreShare) {
+        resourceTransferEventsBridge.addForeignResourceStore(name);
         foreignShareManager.addStore(name, foreignStoreShare);
     }
 
@@ -734,6 +742,7 @@ public class ResourceStreamingManager {
      * @param name name of the store to remove
      */
     public synchronized void removeLocalResourceStore(String name) {
+        resourceTransferEventsBridge.removeLocalResourceStore(name);
         localShareManager.removeStore(name);
     }
 
@@ -741,6 +750,7 @@ public class ResourceStreamingManager {
      * Removes the local general resource store, so only the registered stores will be used
      */
     public synchronized void removeLocalGeneralResourceStore() {
+        resourceTransferEventsBridge.removeLocalGeneralResourceStore();
         localShareManager.setGeneralStore(null);
     }
 
@@ -750,6 +760,7 @@ public class ResourceStreamingManager {
      * @param name name of the store to remove
      */
     public synchronized void removeForeignResourceStore(String name) {
+        resourceTransferEventsBridge.removeForeignResourceStore(name);
         foreignShareManager.removeStore(name);
     }
 
@@ -764,7 +775,7 @@ public class ResourceStreamingManager {
      * @param downloadProgressNotificationHandler handler for receiving notifications concerning this download
      * @param streamingNeed                       the need for streaming this file (0: no need, 1: max need). The higher the need,
      *                                            the greater efforts that the scheduler will do for downloading the first parts
-     *                                            of the resource before the last parts. Can hamper total download efficience
+     *                                            of the resource before the last parts. Can hamper total download efficiency
      * @param totalHash                           hexadecimal value for the total resource hash (null if not used)
      * @param totalHashAlgorithm                  algorithm for calculating the total hash (null if not used)
      * @return a DownloadManager object for controlling this download, or null if the download could not be created
@@ -780,12 +791,14 @@ public class ResourceStreamingManager {
             String totalHashAlgorithm) throws NotAliveException {
         if (alive) {
             // the download is created even if there is no matching global resource store
+            resourceTransferEventsBridge.globalDownloadInitiated();
             MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, null, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm);
             activeDownloadSet.addDownload(masterResourceStreamer);
             reportProvidersForOneActiveDownload(resourceStoreName, resourceID);
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
             return masterResourceStreamer.getDownloadManager();
         } else {
+            resourceTransferEventsBridge.globalDownloadDenied();
             throw new NotAliveException();
         }
     }
@@ -818,12 +831,14 @@ public class ResourceStreamingManager {
             String totalHash,
             String totalHashAlgorithm) throws NotAliveException {
         if (alive) {
+            resourceTransferEventsBridge.peerDownloadInitiated();
             MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm);
             activeDownloadSet.addDownload(masterResourceStreamer);
             reportResourceProviderForPeerSpecificDownload(serverPeerID, masterResourceStreamer);
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
             return masterResourceStreamer.getDownloadManager();
         } else {
+            resourceTransferEventsBridge.peerDownloadDenied();
             throw new NotAliveException();
         }
     }
@@ -833,6 +848,7 @@ public class ResourceStreamingManager {
     }
 
     public synchronized void setMaxDesiredDownloadSpeed(Float totalMaxDesiredSpeed) {
+        resourceTransferEventsBridge.setMaxDesiredDownloadSpeed(totalMaxDesiredSpeed);
         downloadPriorityManager.setTotalMaxDesiredSpeed(totalMaxDesiredSpeed);
     }
 
@@ -841,6 +857,7 @@ public class ResourceStreamingManager {
     }
 
     public synchronized void setMaxDesiredUploadSpeed(Float totalMaxDesiredSpeed) {
+        resourceTransferEventsBridge.setMaxDesiredUploadSpeed(totalMaxDesiredSpeed);
         uploadPriorityManager.setTotalMaxDesiredSpeed(totalMaxDesiredSpeed);
     }
 
@@ -851,6 +868,7 @@ public class ResourceStreamingManager {
     }
 
     public void setAccuracy(double accuracy) {
+        resourceTransferEventsBridge.setAccuracy(accuracy);
         synchronized (this.accuracy) {
             this.accuracy.setDegree(accuracy);
         }
@@ -864,6 +882,7 @@ public class ResourceStreamingManager {
      * The method blocks until all resources are properly stopped. Downloads and uploads are stopped.
      */
     public void stop() {
+        resourceTransferEventsBridge.stop();
         Collection<TaskFinalizationIndicator> tfiCollection;
         synchronized (this) {
             // subchannel assignments
@@ -961,17 +980,17 @@ public class ResourceStreamingManager {
         return new PeerResourceProvider(ownPeerID, peerID, this);
     }
 
-    private void requestNewResource(jacz.peerengineservice.util.datatransfer.ResourceRequest request) {
-        jacz.peerengineservice.util.datatransfer.ResourceStoreResponse response = getResourceRequestResponse(request);
+    private void requestNewResource(ResourceRequest request) {
+        ResourceStoreResponse response = getResourceRequestResponse(request);
         processResourceRequestResponse(request, response);
     }
 
-    private jacz.peerengineservice.util.datatransfer.ResourceStoreResponse getResourceRequestResponse(jacz.peerengineservice.util.datatransfer.ResourceRequest request) {
-        jacz.peerengineservice.util.datatransfer.ResourceStore resourceStore = localShareManager.getStore(request.getStoreName());
+    private ResourceStoreResponse getResourceRequestResponse(ResourceRequest request) {
+        ResourceStore resourceStore = localShareManager.getStore(request.getStoreName());
         if (resourceStore != null) {
             return resourceStore.requestResource(request.getRequestingPeer(), request.getResourceID());
         } else {
-            jacz.peerengineservice.util.datatransfer.GeneralResourceStore generalResourceStore = localShareManager.getGeneralResourceStore();
+            GeneralResourceStore generalResourceStore = localShareManager.getGeneralResourceStore();
             if (generalResourceStore != null) {
                 // try with the general resource store
                 return generalResourceStore.requestResource(request.getStoreName(), request.getRequestingPeer(), request.getResourceID());
@@ -980,27 +999,30 @@ public class ResourceStreamingManager {
         return null;
     }
 
-    private void processResourceRequestResponse(final jacz.peerengineservice.util.datatransfer.ResourceRequest request, jacz.peerengineservice.util.datatransfer.ResourceStoreResponse response) {
-        if (response != null && response.getResponse() == jacz.peerengineservice.util.datatransfer.ResourceStoreResponse.Response.REQUEST_APPROVED) {
+    private void processResourceRequestResponse(final ResourceRequest request, ResourceStoreResponse response) {
+        if (response != null && response.getResponse() == ResourceStoreResponse.Response.REQUEST_APPROVED) {
             SlaveResourceStreamer slave = new SlaveResourceStreamer(this, request);
             UploadManager uploadManager = new UploadManager(slave, globalUploadStatistics, peerStatistics);
             Short incomingSubchannel = subchannelManager.requestSubchannel(slave);
             if (incomingSubchannel != null) {
+                resourceTransferEventsBridge.approveResourceRequest(request, response);
                 slave.initialize(response.getResourceReader(), request.getRequestingPeer(), incomingSubchannel, request.getSubchannel(), uploadManager);
                 uploadPriorityManager.addRegulatedResource(new RemotePeerStakeholder(request.getRequestingPeer()), slave);
                 uploadsManager.addUpload(request.getStoreName(), uploadManager);
             } else {
                 // no subchannels available for this slave (the slave will eventually timeout and die,no need to notify him)
+                resourceTransferEventsBridge.denyUnavailableSubchannelResourceRequest(request, response);
                 denyRequest(request);
             }
         } else {
             // request was not approved by the user, or incorrect store
+            resourceTransferEventsBridge.deniedResourceRequest(request, response);
             denyRequest(request);
         }
 
     }
 
-    private void denyRequest(jacz.peerengineservice.util.datatransfer.ResourceRequest resourceRequest) {
+    private void denyRequest(ResourceRequest resourceRequest) {
         ObjectListWrapper denial = new ObjectListWrapper(false);
         connectedPeersMessenger.sendObjectMessage(resourceRequest.getRequestingPeer(), ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, new SubchannelObjectMessage(resourceRequest.getSubchannel(), denial), true);
     }
