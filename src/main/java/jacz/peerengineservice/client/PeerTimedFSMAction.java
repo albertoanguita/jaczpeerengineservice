@@ -9,5 +9,5 @@ package jacz.peerengineservice.client;
  */
 public interface PeerTimedFSMAction<T> extends PeerFSMAction<T> {
 
-    public void timedOut(T state);
+    void timedOut(T state);
 }

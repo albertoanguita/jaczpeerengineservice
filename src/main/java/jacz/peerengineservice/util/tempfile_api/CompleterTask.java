@@ -12,8 +12,8 @@ class CompleterTask extends TempIndexTask {
 
     private String finalPath;
 
-    public CompleterTask(String indexFilePath) {
-        super(indexFilePath);
+    public CompleterTask(TempFileManager tempFileManager, String indexFilePath) {
+        super(tempFileManager, indexFilePath);
         finalPath = null;
     }
 

@@ -16,8 +16,8 @@ class ReaderTask extends TempIndexTask {
      */
     private byte[] data;
 
-    public ReaderTask(String indexFilePath, long offset, int length) {
-        super(indexFilePath);
+    public ReaderTask(TempFileManager tempFileManager, String indexFilePath, long offset, int length) {
+        super(tempFileManager, indexFilePath);
         this.offset = offset;
         this.length = length;
         data = null;

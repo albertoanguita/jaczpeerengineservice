@@ -1,5 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
+import jacz.peerengineservice.PeerID;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
 import org.apache.log4j.Logger;
@@ -24,7 +25,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void addLocalResourceStore(final String name) {
-        logger.debug("ADD LOCAL RESOURCE STORE. Name: " + name);
+        logger.info("ADD LOCAL RESOURCE STORE. Name: " + name);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -35,7 +36,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void setLocalGeneralResourceStore() {
-        logger.debug("SET LOCAL GENERAL RESOURCE STORE");
+        logger.info("SET LOCAL GENERAL RESOURCE STORE");
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -46,7 +47,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void addForeignResourceStore(final String name) {
-        logger.debug("ADD FOREIGN RESOURCE STORE. Name: " + name);
+        logger.info("ADD FOREIGN RESOURCE STORE. Name: " + name);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -57,7 +58,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void removeLocalResourceStore(final String name) {
-        logger.debug("REMOVE LOCAL RESOURCE STORE. Name: " + name);
+        logger.info("REMOVE LOCAL RESOURCE STORE. Name: " + name);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -68,7 +69,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void removeLocalGeneralResourceStore() {
-        logger.debug("REMOVE LOCAL GENERAL RESOURCE STORE");
+        logger.info("REMOVE LOCAL GENERAL RESOURCE STORE");
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -79,7 +80,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void removeForeignResourceStore(final String name) {
-        logger.debug("REMOVE FOREIGN RESOURCE STORE. Name: " + name);
+        logger.info("REMOVE FOREIGN RESOURCE STORE. Name: " + name);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -89,30 +90,52 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
     }
 
     @Override
-    public void globalDownloadInitiated() {
-
-        // todo
-
+    public void globalDownloadInitiated(final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
+        logger.info("GLOBAL DOWNLOAD INITIATED: " + "resourceStoreName: " + resourceStoreName + ". resourceID: " + resourceID + ". streamingNeed: " + streamingNeed + ". totalHash: " + totalHash + ". totalHashAlgorithm: " + totalHashAlgorithm);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                resourceTransferEvents.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
+            }
+        });
     }
 
     @Override
-    public void globalDownloadDenied() {
-
+    public void globalDownloadDenied(final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
+        logger.info("GLOBAL DOWNLOAD DENIED: " + "resourceStoreName: " + resourceStoreName + ". resourceID: " + resourceID + ". streamingNeed: " + streamingNeed + ". totalHash: " + totalHash + ". totalHashAlgorithm: " + totalHashAlgorithm);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                resourceTransferEvents.globalDownloadDenied(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
+            }
+        });
     }
 
     @Override
-    public void peerDownloadInitiated() {
-
+    public void peerDownloadInitiated(final PeerID serverPeerID, final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
+        logger.info("PEER DOWNLOAD INITIATED: " + "serverPeerID: " + serverPeerID + ". resourceStoreName: " + resourceStoreName + ". resourceID: " + resourceID + ". streamingNeed: " + streamingNeed + ". totalHash: " + totalHash + ". totalHashAlgorithm: " + totalHashAlgorithm);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                resourceTransferEvents.peerDownloadInitiated(serverPeerID, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
+            }
+        });
     }
 
     @Override
-    public void peerDownloadDenied() {
-
+    public void peerDownloadDenied(final PeerID serverPeerID, final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
+        logger.info("PEER DOWNLOAD DENIED: " + "serverPeerID: " + serverPeerID + ". resourceStoreName: " + resourceStoreName + ". resourceID: " + resourceID + ". streamingNeed: " + streamingNeed + ". totalHash: " + totalHash + ". totalHashAlgorithm: " + totalHashAlgorithm);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                resourceTransferEvents.peerDownloadDenied(serverPeerID, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
+            }
+        });
     }
 
     @Override
     public void setMaxDesiredDownloadSpeed(final Float totalMaxDesiredSpeed) {
-        logger.debug("SET MAX DESIRED DOWNLOAD SPEED. totalMaxDesiredSpeed: " + totalMaxDesiredSpeed);
+        logger.info("SET MAX DESIRED DOWNLOAD SPEED. totalMaxDesiredSpeed: " + totalMaxDesiredSpeed);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -123,7 +146,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void setMaxDesiredUploadSpeed(final Float totalMaxDesiredSpeed) {
-        logger.debug("SET MAX DESIRED UPLOAD SPEED. totalMaxDesiredSpeed: " + totalMaxDesiredSpeed);
+        logger.info("SET MAX DESIRED UPLOAD SPEED. totalMaxDesiredSpeed: " + totalMaxDesiredSpeed);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -134,7 +157,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void setAccuracy(final double accuracy) {
-        logger.debug("SET ACCURACY. Accuracy: " + accuracy);
+        logger.info("SET ACCURACY. Accuracy: " + accuracy);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -145,7 +168,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void approveResourceRequest(final ResourceRequest request, final ResourceStoreResponse response) {
-        logger.debug("APPROVE RESOURCE REQUEST. Request: " + request + ". Response: " + response);
+        logger.info("APPROVE RESOURCE REQUEST. Request: " + request + ". Response: " + response);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -156,7 +179,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void denyUnavailableSubchannelResourceRequest(final ResourceRequest request, final ResourceStoreResponse response) {
-        logger.debug("DENY TO UNAVAILABLE SUBCHANNEL RESOURCE REQUEST. Request: " + request + ". Response: " + response);
+        logger.info("DENY TO UNAVAILABLE SUBCHANNEL RESOURCE REQUEST. Request: " + request + ". Response: " + response);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -167,7 +190,7 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
     @Override
     public void deniedResourceRequest(final ResourceRequest request, final ResourceStoreResponse response) {
-        logger.debug("DENIED RESOURCE REQUEST. Request: " + request + ". Response: " + response);
+        logger.info("DENIED RESOURCE REQUEST. Request: " + request + ". Response: " + response);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
@@ -176,15 +199,8 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
         });
     }
 
-    @Override
     public void stop() {
         logger.info("STOP");
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                resourceTransferEvents.stop();
-            }
-        });
         sequentialTaskExecutor.stopAndWaitForFinalization();
     }
 }

@@ -13,8 +13,8 @@ public class SetSystemField extends TempIndexTask {
 
     private final Serializable value;
 
-    public SetSystemField(String indexFilePath, String key, Serializable value) {
-        super(indexFilePath);
+    public SetSystemField(TempFileManager tempFileManager, String indexFilePath, String key, Serializable value) {
+        super(tempFileManager, indexFilePath);
         this.key = key;
         this.value = value;
     }

@@ -12,8 +12,8 @@ class SetSizeTask extends TempIndexTask {
 
     private long size;
 
-    public SetSizeTask(String indexFilePath, long size) {
-        super(indexFilePath);
+    public SetSizeTask(TempFileManager tempFileManager, String indexFilePath, long size) {
+        super(tempFileManager, indexFilePath);
         this.size = size;
     }
 

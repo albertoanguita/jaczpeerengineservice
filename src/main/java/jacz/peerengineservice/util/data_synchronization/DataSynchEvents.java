@@ -8,13 +8,11 @@ import jacz.util.identifier.UniqueIdentifier;
  */
 public interface DataSynchEvents {
 
-    // todo
-
     void clientSynchRequestInitiated(PeerID serverPeer, String dataAccessorName, long timeout, UniqueIdentifier fsmID);
 
     void clientSynchRequestFailedToInitiate(PeerID serverPeer, String dataAccessorName, long timeout, SynchError synchError);
 
-    void clientSynchRequestDenied(PeerID serverPeer, String dataAccessorName, long timeout, SynchError synchError);
+    void clientSynchRequestDenied(PeerID serverPeer, String dataAccessorName, UniqueIdentifier fsmID, SynchError synchError);
 
     void clientSynchSuccess(PeerID serverPeer, String dataAccessorName, UniqueIdentifier fsmID);
 
@@ -22,9 +20,9 @@ public interface DataSynchEvents {
 
     void clientSynchTimeout(PeerID serverPeer, String dataAccessorName, UniqueIdentifier fsmID);
 
-    void serverSynchRequestAccepted(PeerID clientPeer, String dataAccessorName, Integer lastTimestamp, UniqueIdentifier fsmID);
+    void serverSynchRequestAccepted(PeerID clientPeer, String dataAccessorName, UniqueIdentifier fsmID);
 
-    void serverSynchRequestDenied(PeerID clientPeer, String dataAccessorName, Integer lastTimestamp, UniqueIdentifier fsmID, DataSynchServerFSM.SynchRequestAnswer synchRequestAnswer);
+    void serverSynchRequestDenied(PeerID clientPeer, String dataAccessorName, UniqueIdentifier fsmID, SynchError synchError);
 
     void serverSynchSuccess(PeerID clientPeer, String dataAccessorName, UniqueIdentifier fsmID);
 

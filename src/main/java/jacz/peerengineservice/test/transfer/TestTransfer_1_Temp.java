@@ -4,10 +4,7 @@ import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
-import jacz.peerengineservice.test.Client;
-import jacz.peerengineservice.test.DownloadProgressNotificationHandlerImpl;
-import jacz.peerengineservice.test.PeerClientConfigSerializer;
-import jacz.peerengineservice.test.PeerIDGenerator;
+import jacz.peerengineservice.test.*;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.TempFileWriter;
@@ -52,7 +49,7 @@ public class TestTransfer_1_Temp {
         ThreadUtil.safeSleep(1000);
         client.getPeerClient().setVisibleDownloadsTimer(3000);
 
-        TempFileManager tempFileManager = new TempFileManager("./etc/temp");
+        TempFileManager tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
         HashMap<String, Serializable> customDictionary = new HashMap<>();
         customDictionary.put("hash", ResourceStoreImpl.getHash("file_1"));
         TempFileWriter tempFileWriter = new TempFileWriter(tempFileManager, customDictionary);

@@ -61,7 +61,7 @@ public class TestTransfer_1 {
         System.out.println("STOP!!!");
 //        downloadManager1.stop();
 //        downloadManager2.stop();
-        client.getPeerClient().stop();
+//        client.getPeerClient().stop();
 
 
 //        ThreadUtil.safeSleep(50000);

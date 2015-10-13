@@ -11,8 +11,8 @@ public class GetSystemDictionary extends TempIndexTask {
 
     private HashMap<String, Serializable> systemDictionary;
 
-    public GetSystemDictionary(String indexFilePath) {
-        super(indexFilePath);
+    public GetSystemDictionary(TempFileManager tempFileManager, String indexFilePath) {
+        super(tempFileManager, indexFilePath);
         systemDictionary = null;
     }
 

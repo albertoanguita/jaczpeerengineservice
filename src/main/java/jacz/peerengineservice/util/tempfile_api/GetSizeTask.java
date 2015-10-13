@@ -12,8 +12,8 @@ class GetSizeTask extends TempIndexTask {
 
     private Long size;
 
-    public GetSizeTask(String indexFilePath) {
-        super(indexFilePath);
+    public GetSizeTask(TempFileManager tempFileManager, String indexFilePath) {
+        super(tempFileManager, indexFilePath);
         size = null;
     }
 

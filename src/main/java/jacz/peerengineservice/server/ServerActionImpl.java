@@ -6,8 +6,6 @@ import jacz.commengine.communication.CommError;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.network.IP4Port;
 
-import java.util.Set;
-
 /**
  * ServerAction employed by a PeerServer to listen to messages from connected clients. No messages are actually
  * expected at this level, since all communications are handled with FSMs at this level.

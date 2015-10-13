@@ -68,7 +68,7 @@ public class Client {
         globalDownloadStatistics = new GlobalDownloadStatistics();
         globalUploadStatistics = new GlobalUploadStatistics();
         peerStatistics = new PeerStatistics();
-        peerClient = new PeerClient(peerClientData, peerClientActionImpl, peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, testListContainer);
+        peerClient = new PeerClient(peerClientData, peerClientActionImpl, new ResourceTransferEventsImpl(), peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, new DataSynchEventsImpl(), testListContainer);
     }
 
     public void startClient() throws IOException {

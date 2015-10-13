@@ -2,7 +2,6 @@ package jacz.peerengineservice.client;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
-import jacz.peerengineservice.ErrorControl;
 import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.UnavailablePeerException;
@@ -10,15 +9,14 @@ import jacz.peerengineservice.client.connection.*;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.peerengineservice.util.ForeignStoreShare;
-import jacz.peerengineservice.util.data_synchronization.DataAccessorContainer;
-import jacz.peerengineservice.util.data_synchronization.DataSynchServerFSM;
-import jacz.peerengineservice.util.data_synchronization.DataSynchServerFSMFactory;
-import jacz.peerengineservice.util.data_synchronization.DataSynchronizer;
+import jacz.peerengineservice.util.data_synchronization.*;
 import jacz.peerengineservice.util.datatransfer.*;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
+import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.io.object_serialization.ObjectListWrapper;
+import jacz.util.log.ErrorLog;
 import jacz.util.network.IP4Port;
 
 import java.io.IOException;
@@ -34,6 +32,10 @@ import java.util.Set;
 public class PeerClient {
 
     public static final String OWN_CUSTOM_PREFIX = "@@@";
+
+    public static final String ERROR_LOG = "PEER_CLIENT_ERROR_LOG";
+
+    public static final String MANUAL_REMOVE_BAG = "PEER_CLIENT_MANUAL_REMOVE_BAG";
 
     /**
      * Our own peer ID
@@ -91,18 +93,18 @@ public class PeerClient {
      * @param customFSMs       list of factories for building custom FSMs, each with a different name
      * @throws IOException could not connect to any of the provided peer servers
      */
-    public PeerClient(
-            PeerClientData peerClientData,
-            PeerClientAction peerClientAction,
-            ResourceTransferEvents resourceTransferEvents,
-            PeersPersonalData peersPersonalData,
-            GlobalDownloadStatistics globalDownloadStatistics,
-            GlobalUploadStatistics globalUploadStatistics,
-            PeerStatistics peerStatistics,
-            PeerRelations peerRelations,
-            Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(peerClientData, peerClientAction, resourceTransferEvents, peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, null);
-    }
+//    public PeerClient(
+//            PeerClientData peerClientData,
+//            PeerClientAction peerClientAction,
+//            ResourceTransferEvents resourceTransferEvents,
+//            PeersPersonalData peersPersonalData,
+//            GlobalDownloadStatistics globalDownloadStatistics,
+//            GlobalUploadStatistics globalUploadStatistics,
+//            PeerStatistics peerStatistics,
+//            PeerRelations peerRelations,
+//            Map<String, PeerFSMFactory> customFSMs) throws IOException {
+//        this(peerClientData, peerClientAction, resourceTransferEvents, peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, null);
+//    }
 
     /**
      * Class constructor
@@ -124,6 +126,7 @@ public class PeerClient {
             PeerStatistics peerStatistics,
             PeerRelations peerRelations,
             Map<String, PeerFSMFactory> customFSMs,
+            DataSynchEvents dataSynchEvents,
             DataAccessorContainer dataAccessorContainer) {
         this.ownPeerID = peerClientData.getOwnPeerID();
         this.peerClientAction = new PeerClientActionBridge(peerClientAction);
@@ -144,11 +147,7 @@ public class PeerClient {
                 peerRelations);
         resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, peerClientPrivateInterface, globalDownloadStatistics, globalUploadStatistics, peerStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
-        if (dataAccessorContainer != null) {
-            dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer, peerClientData.getOwnPeerID());
-        } else {
-            dataSynchronizer = null;
-        }
+        dataSynchronizer = new DataSynchronizer(this, dataSynchEvents, dataAccessorContainer, peerClientData.getOwnPeerID());
         // add custom FSMs for list synchronizing service, in case the client uses it
         addOwnCustomFSMs(this.customFSMs);
     }
@@ -161,9 +160,9 @@ public class PeerClient {
      */
     public void stop() {
         resourceStreamingManager.stop();
+        dataSynchronizer.stop();
         peerClientConnectionManager.stop();
         peerClientAction.stop();
-        // todo what happens with current data synchs???
     }
 
     private void addOwnCustomFSMs(Map<String, PeerFSMFactory> customFSMs) {
@@ -485,21 +484,20 @@ public class PeerClient {
      * @return true if the FSM was correctly set up, false otherwise (due to no available channels, client can try later)
      * @throws UnavailablePeerException the given PeerID does not correspond to a connected peer
      */
-    public synchronized <T> boolean registerCustomFSM(PeerID peerID, PeerFSMAction<T> peerFSMAction, String serverFSMName) throws UnavailablePeerException {
+    public synchronized <T> UniqueIdentifier registerCustomFSM(PeerID peerID, PeerFSMAction<T> peerFSMAction, String serverFSMName) throws UnavailablePeerException {
         // do not allow to register FSM for peers who are not ready yet
         if (connectedPeers.isConnectedPeer(peerID)) {
             Byte assignedChannel = connectedPeers.requestChannel(peerID);
             if (assignedChannel == null) {
-                return false;
+                return null;
             }
             ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerID);
             CustomPeerFSM<T> customPeerFSM = new CustomPeerFSM<>(peerFSMAction, serverFSMName, assignedChannel);
-            try {
-                ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
-            } catch (Exception e) {
-                return false;
+            UniqueIdentifier id = ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
+            if (id != null) {
+                peerFSMAction.setID(id);
             }
-            return true;
+            return id;
         } else {
             throw new UnavailablePeerException();
         }
@@ -517,20 +515,19 @@ public class PeerClient {
      * @return true if the FSM was correctly set up, false otherwise (due to no available channels, client can try later)
      * @throws UnavailablePeerException the given PeerID does not correspond to a connected peer
      */
-    public synchronized <T> boolean registerTimedCustomFSM(PeerID peerID, PeerTimedFSMAction<T> peerTimedFSMAction, String serverFSMName, long timeoutMillis) throws UnavailablePeerException {
+    public synchronized <T> UniqueIdentifier registerTimedCustomFSM(PeerID peerID, PeerTimedFSMAction<T> peerTimedFSMAction, String serverFSMName, long timeoutMillis) throws UnavailablePeerException {
         if (connectedPeers.isConnectedPeer(peerID)) {
             Byte assignedChannel = connectedPeers.requestChannel(peerID);
             if (assignedChannel == null) {
-                return false;
+                return null;
             }
             ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerID);
             CustomTimedPeerFSM<T> customTimedPeerFSM = new CustomTimedPeerFSM<>(peerTimedFSMAction, serverFSMName, assignedChannel);
-            try {
-                ccp.registerTimedFSM(customTimedPeerFSM, timeoutMillis, "UnnamedCustomTimedPeerFSM", assignedChannel);
-            } catch (IllegalArgumentException e) {
-                return false;
+            UniqueIdentifier id = ccp.registerTimedFSM(customTimedPeerFSM, timeoutMillis, "UnnamedCustomTimedPeerFSM", assignedChannel);
+            if (id != null) {
+                peerTimedFSMAction.setID(id);
             }
-            return true;
+            return id;
         } else {
             throw new UnavailablePeerException();
         }
@@ -540,7 +537,7 @@ public class PeerClient {
         if (customFSMs.containsKey(serverFSMName)) {
             // requestFromPeerToPeer a channel for the new required custom FSM
             // the channel should be sent in the init method of the custom FSM, not our responsibility
-            PeerFSMAction<?> peerFSMAction = customFSMs.get(serverFSMName).buildPeerFSMAction(connectedPeers.getPeerConnectionStatus(peerID));
+            PeerFSMAction<?> peerFSMAction = customFSMs.get(serverFSMName).buildPeerFSMAction(peerID, connectedPeers.getPeerConnectionStatus(peerID));
             if (peerFSMAction != null) {
                 Byte assignedChannel = connectedPeers.requestChannel(peerID);
                 if (assignedChannel != null) {
@@ -550,9 +547,10 @@ public class PeerClient {
                         @SuppressWarnings({"unchecked"})
                         CustomPeerFSM customPeerFSM = new CustomPeerFSM(peerFSMAction, assignedChannel, outgoingChannel);
                         try {
-                            ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
+                            UniqueIdentifier id = ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
+                            peerFSMAction.setID(id);
                         } catch (Exception e) {
-                            ErrorControl.reportError(PeerRequestDispatcherFSM.class, "Could not register FSM due to exception", requestFromPeerToPeer, assignedChannel, customFSMs, ccp);
+                            ErrorLog.reportError(PeerClient.ERROR_LOG, "Could not register FSM due to exception", requestFromPeerToPeer, assignedChannel, customFSMs, ccp);
                             ccp.write(outgoingChannel, new ObjectListWrapper(PeerFSMServerResponse.REQUEST_DENIED, null));
                         }
                     }

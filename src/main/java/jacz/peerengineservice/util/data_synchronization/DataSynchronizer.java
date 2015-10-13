@@ -5,10 +5,11 @@ import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
+import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.notification.ProgressNotificationWithError;
 
 /**
- * Created by Alberto on 17/09/2015.
+ * Data Synchronizer
  */
 public class DataSynchronizer {
 
@@ -22,6 +23,8 @@ public class DataSynchronizer {
      */
     private final PeerClient peerClient;
 
+    private final DataSynchEventsBridge dataSynchEventsBridge;
+
     /**
      * List container provided by the client, with the lists that can be synched
      */
@@ -33,29 +36,32 @@ public class DataSynchronizer {
     private PeerID ownPeerID;
 
 
-    public DataSynchronizer(PeerClient peerClient, DataAccessorContainer dataAccessorContainer, PeerID ownPeerID) {
+    public DataSynchronizer(PeerClient peerClient, DataSynchEvents dataSynchEvents, DataAccessorContainer dataAccessorContainer, PeerID ownPeerID) {
         this.peerClient = peerClient;
+        this.dataSynchEventsBridge = new DataSynchEventsBridge(dataSynchEvents);
         this.dataAccessorContainer = dataAccessorContainer;
         this.ownPeerID = ownPeerID;
     }
 
-    public void synchronizeData(PeerID serverPeerID, String dataAccessorName, long timeout) {
+    public synchronized void synchronizeData(PeerID serverPeerID, String dataAccessorName, long timeout) {
         synchronizeData(serverPeerID, dataAccessorName, timeout, null);
     }
 
-    public void synchronizeData(PeerID serverPeerID, final String dataAccessorName, long timeout, final ProgressNotificationWithError<Integer, SynchError> progress) {
+    public synchronized void synchronizeData(PeerID serverPeerID, final String dataAccessorName, long timeout, final ProgressNotificationWithError<Integer, SynchError> progress) {
         try {
             DataAccessor dataAccessor = dataAccessorContainer.getAccessorForReceiving(serverPeerID, dataAccessorName);
-            // todo get an id for the FSM, so we can log and track it properly. Give that id to the client FSM so it also logs it
             // same for server FSM
-            boolean correctSetup = peerClient.registerTimedCustomFSM(
+            DataSynchClientFSM dataSynchClientFSM = new DataSynchClientFSM(dataSynchEventsBridge, dataAccessor, dataAccessorName, ownPeerID, serverPeerID, progress);
+            UniqueIdentifier fsmID = peerClient.registerTimedCustomFSM(
                     serverPeerID,
-                    new DataSynchClientFSM(dataAccessor, dataAccessorName, ownPeerID, progress),
+                    dataSynchClientFSM,
                     DataSynchServerFSM.CUSTOM_FSM_NAME,
                     timeout
             );
-
-            if (!correctSetup) {
+            if (fsmID != null) {
+                dataSynchEventsBridge.clientSynchRequestInitiated(serverPeerID, dataAccessorName, timeout, fsmID);
+            } else {
+                dataSynchEventsBridge.clientSynchRequestFailedToInitiate(serverPeerID, dataAccessorName, timeout, new SynchError(SynchError.Type.PEER_CLIENT_BUSY, null));
                 ParallelTaskExecutor.executeTask(new ParallelTask() {
                     @Override
                     public void performTask() {
@@ -66,6 +72,7 @@ public class DataSynchronizer {
                 });
             }
         } catch (UnavailablePeerException e) {
+            dataSynchEventsBridge.clientSynchRequestFailedToInitiate(serverPeerID, dataAccessorName, timeout, new SynchError(SynchError.Type.DISCONNECTED, null));
             ParallelTaskExecutor.executeTask(new ParallelTask() {
                 @Override
                 public void performTask() {
@@ -75,6 +82,7 @@ public class DataSynchronizer {
                 }
             });
         } catch (AccessorNotFoundException e) {
+            dataSynchEventsBridge.clientSynchRequestFailedToInitiate(serverPeerID, dataAccessorName, timeout, new SynchError(SynchError.Type.UNKNOWN_ACCESSOR, "Unknown accessor name: " + dataAccessorName));
             ParallelTaskExecutor.executeTask(new ParallelTask() {
                 @Override
                 public void performTask() {
@@ -86,12 +94,15 @@ public class DataSynchronizer {
         }
     }
 
-
-    PeerClient getPeerClient() {
-        return peerClient;
+    DataAccessorContainer getDataAccessorContainer() {
+        return dataAccessorContainer;
     }
 
-    public DataAccessorContainer getDataAccessorContainer() {
-        return dataAccessorContainer;
+    DataSynchEventsBridge getDataSynchEventsBridge() {
+        return dataSynchEventsBridge;
+    }
+
+    public synchronized void stop() {
+        dataSynchEventsBridge.stop();
     }
 }

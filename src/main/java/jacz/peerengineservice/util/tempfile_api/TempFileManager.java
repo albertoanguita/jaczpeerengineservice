@@ -4,6 +4,7 @@ import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWri
 import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWriteBasic;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
+import jacz.util.files.FileReaderWriter;
 import jacz.util.files.FileUtil;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
 import jacz.util.io.object_serialization.VersionedSerializationException;
@@ -67,9 +68,11 @@ public class TempFileManager {
      */
     private static final String TEMP_FILE_NAME_INIT = "temp";
 
-    private static final String TEMP_FILE_DATA_NAME_END = ".dat";
-
     private static final String TEMP_FILE_INDEX_NAME_END = ".ndx";
+
+    private static final String TEMP_FILE_INDEX_BACKUP_NAME_END = ".bak";
+
+    private static final String TEMP_FILE_DATA_NAME_END = ".dat";
 
     private static final int TEMP_FILE_INDEX_CRC_BYTES = 4;
 
@@ -77,6 +80,8 @@ public class TempFileManager {
      * Directory where temp files are stored (ending with the path.separator character)
      */
     private final String baseDir;
+
+    private final TempFileManagerEventsBridge tempFileManagerEventsBridge;
 
     /**
      * This map stores concurrency controller objects for each temporary file. These objects are not created at
@@ -96,8 +101,9 @@ public class TempFileManager {
      *
      * @param baseDir the path to the directory where all files will be placed
      */
-    public TempFileManager(String baseDir) {
+    public TempFileManager(String baseDir, TempFileManagerEvents tempFileManagerEvents) {
         this.baseDir = buildBaseDir(baseDir);
+        this.tempFileManagerEventsBridge = new TempFileManagerEventsBridge(tempFileManagerEvents);
         concurrencyControllers = new HashMap<>();
     }
 
@@ -121,6 +127,7 @@ public class TempFileManager {
         List<String> baseFileNameList = new ArrayList<>();
         baseFileNameList.add(TEMP_FILE_NAME_INIT);
         baseFileNameList.add(TEMP_FILE_NAME_INIT);
+        baseFileNameList.add(TEMP_FILE_NAME_INIT);
         return baseFileNameList;
     }
 
@@ -130,6 +137,7 @@ public class TempFileManager {
     private static List<String> buildExtensionList() {
         List<String> extensionList = new ArrayList<>();
         extensionList.add(TEMP_FILE_INDEX_NAME_END);
+        extensionList.add(TEMP_FILE_INDEX_BACKUP_NAME_END);
         extensionList.add(TEMP_FILE_DATA_NAME_END);
         return extensionList;
     }
@@ -164,9 +172,7 @@ public class TempFileManager {
                             tempFiles.add(file);
                         }
                     } catch (IOException | VersionedSerializationException e) {
-                        // error reading the file
-                        // todo use backup, or delete
-                        e.printStackTrace();
+                        // error reading the file, ignore
                     }
                 }
             }
@@ -220,7 +226,7 @@ public class TempFileManager {
      */
     public Long getTemporaryResourceSize(String tempFileName) throws IOException {
         TaskFinalizationIndicator tfi;
-        GetSizeTask getSizeTask = new GetSizeTask(generateIndexFilePath(tempFileName));
+        GetSizeTask getSizeTask = new GetSizeTask(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
                     getSizeTask,
@@ -240,7 +246,7 @@ public class TempFileManager {
      */
     public void setTemporaryResourceSize(String tempFileName, long size) throws IOException {
         TaskFinalizationIndicator tfi;
-        SetSizeTask setSizeTask = new SetSizeTask(generateIndexFilePath(tempFileName), size);
+        SetSizeTask setSizeTask = new SetSizeTask(this, generateIndexFilePath(tempFileName), size);
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
                     setSizeTask,
@@ -260,7 +266,7 @@ public class TempFileManager {
      */
     public LongRangeList getTemporaryOwnedParts(String tempFileName) throws IOException {
         TaskFinalizationIndicator tfi;
-        OwnedPartsTask ownedPartsTask = new OwnedPartsTask(generateIndexFilePath(tempFileName));
+        OwnedPartsTask ownedPartsTask = new OwnedPartsTask(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
                     ownedPartsTask,
@@ -286,7 +292,7 @@ public class TempFileManager {
      */
     public String completeTempFile(String tempFileName) throws IOException {
         TaskFinalizationIndicator tfi;
-        CompleterTask completerTask = new CompleterTask(generateIndexFilePath(tempFileName));
+        CompleterTask completerTask = new CompleterTask(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
                     completerTask,
@@ -319,7 +325,7 @@ public class TempFileManager {
 
     public HashMap<String, Serializable> getUserDictionary(String tempFileName) throws IOException {
         TaskFinalizationIndicator tfi;
-        GetUserDictionary getUserDictionary = new GetUserDictionary(generateIndexFilePath(tempFileName));
+        GetUserDictionary getUserDictionary = new GetUserDictionary(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
                     getUserDictionary,
@@ -332,7 +338,7 @@ public class TempFileManager {
 
     public HashMap<String, Serializable> getSystemDictionary(String tempFileName) throws IOException {
         TaskFinalizationIndicator tfi;
-        GetSystemDictionary getSystemDictionary = new GetSystemDictionary(generateIndexFilePath(tempFileName));
+        GetSystemDictionary getSystemDictionary = new GetSystemDictionary(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
                     getSystemDictionary,
@@ -345,7 +351,7 @@ public class TempFileManager {
 
     public void setSystemField(String tempFileName, String key, Serializable value) throws IOException {
         TaskFinalizationIndicator tfi;
-        SetSystemField setSystemField = new SetSystemField(generateIndexFilePath(tempFileName), key, value);
+        SetSystemField setSystemField = new SetSystemField(this, generateIndexFilePath(tempFileName), key, value);
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
                     setSystemField,
@@ -368,7 +374,7 @@ public class TempFileManager {
      */
     public byte[] read(String tempFileName, long offset, int length) throws IOException, IndexOutOfBoundsException {
         TaskFinalizationIndicator tfi;
-        ReaderTask readerTask = new ReaderTask(generateIndexFilePath(tempFileName), offset, length);
+        ReaderTask readerTask = new ReaderTask(this, generateIndexFilePath(tempFileName), offset, length);
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
                     readerTask,
@@ -390,7 +396,7 @@ public class TempFileManager {
      */
     public void write(String tempFileName, long offset, byte[] data) throws IOException, IndexOutOfBoundsException {
         TaskFinalizationIndicator tfi;
-        WriterTask writerTask = new WriterTask(generateIndexFilePath(tempFileName), offset, data);
+        WriterTask writerTask = new WriterTask(this, generateIndexFilePath(tempFileName), offset, data);
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
                     writerTask,
@@ -413,24 +419,34 @@ public class TempFileManager {
         return baseDir + tempFileName;
     }
 
-    static TempIndex readIndexFile(String indexFilePath) throws IOException, VersionedSerializationException {
-        byte[] data = jacz.util.files.FileReaderWriter.readBytes(indexFilePath);
-        return new TempIndex(data);
+    TempIndex readIndexFile(String indexFilePath) throws IOException, VersionedSerializationException {
+        try {
+            byte[] data = FileReaderWriter.readBytes(indexFilePath);
+            return new TempIndex(data);
+        } catch (IOException | VersionedSerializationException e) {
+            // try to use the backup file
+            try {
+                byte[] data = FileReaderWriter.readBytes(generateBackupPath(indexFilePath));
+                TempIndex tempIndex = new TempIndex(data);
+                // backup successfully read -> copy backup to original file and notify client
+                tempFileManagerEventsBridge.indexFileErrorRestoredWithBackup(indexFilePath);
+                FileUtil.copy(generateBackupPath(indexFilePath), indexFilePath);
+                return tempIndex;
+            } catch (IOException | VersionedSerializationException e1) {
+                // could not restore data from backup
+                tempFileManagerEventsBridge.indexFileError(indexFilePath);
+                throw e1;
+            }
+        }
     }
 
     static void writeIndexFile(String indexFilePath, TempIndex index) throws IOException {
         byte[] data = VersionedObjectSerializer.serialize(index, TEMP_FILE_INDEX_CRC_BYTES);
-        jacz.util.files.FileReaderWriter.writeBytes(indexFilePath, data);
+        FileReaderWriter.writeBytes(indexFilePath, data);
+        FileUtil.copy(indexFilePath, generateBackupPath(indexFilePath));
     }
 
-    public String tempFileToDataPath(String tempFileName) {
-        // todo use in check existing temp files method
-        String dataFileName = tempFileName.replace(TEMP_FILE_INDEX_NAME_END, TEMP_FILE_DATA_NAME_END);
-        return baseDir + dataFileName;
-    }
-
-    public static String dataPathToTempFile(String dataFilePath) {
-        String dataFileName = FileUtil.getFileName(dataFilePath);
-        return dataFileName.substring(0, dataFileName.length() - TEMP_FILE_DATA_NAME_END.length()).concat(TEMP_FILE_INDEX_NAME_END);
+    private static String generateBackupPath(String indexFilePath) {
+        return indexFilePath.replace(TEMP_FILE_INDEX_NAME_END, TEMP_FILE_INDEX_BACKUP_NAME_END);
     }
 }

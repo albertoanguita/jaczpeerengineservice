@@ -11,8 +11,8 @@ public class GetUserDictionary extends TempIndexTask {
 
     private HashMap<String, Serializable> userDictionary;
 
-    public GetUserDictionary(String indexFilePath) {
-        super(indexFilePath);
+    public GetUserDictionary(TempFileManager tempFileManager, String indexFilePath) {
+        super(tempFileManager, indexFilePath);
         userDictionary = null;
     }
 

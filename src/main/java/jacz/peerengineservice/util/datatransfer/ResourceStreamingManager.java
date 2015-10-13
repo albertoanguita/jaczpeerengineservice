@@ -3,6 +3,7 @@ package jacz.peerengineservice.util.datatransfer;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.connection.ConnectedPeersMessenger;
 import jacz.peerengineservice.util.ChannelConstants;
@@ -13,6 +14,7 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.PeerResourceP
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.peerengineservice.util.datatransfer.slave.SlaveResourceStreamer;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
+import jacz.util.concurrency.ManuallyRemovedElementBag;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
@@ -629,6 +631,7 @@ public class ResourceStreamingManager {
         this.accuracy = new ContinuousDegree(accuracy);
         writeDataLock = new ReentrantLock(true);
         alive = true;
+        ManuallyRemovedElementBag.getInstance(PeerClient.MANUAL_REMOVE_BAG).createElement(this.getClass().getName());
     }
 
 
@@ -791,14 +794,14 @@ public class ResourceStreamingManager {
             String totalHashAlgorithm) throws NotAliveException {
         if (alive) {
             // the download is created even if there is no matching global resource store
-            resourceTransferEventsBridge.globalDownloadInitiated();
+            resourceTransferEventsBridge.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
             MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, null, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm);
             activeDownloadSet.addDownload(masterResourceStreamer);
             reportProvidersForOneActiveDownload(resourceStoreName, resourceID);
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
             return masterResourceStreamer.getDownloadManager();
         } else {
-            resourceTransferEventsBridge.globalDownloadDenied();
+            resourceTransferEventsBridge.globalDownloadDenied(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
             throw new NotAliveException();
         }
     }
@@ -831,14 +834,14 @@ public class ResourceStreamingManager {
             String totalHash,
             String totalHashAlgorithm) throws NotAliveException {
         if (alive) {
-            resourceTransferEventsBridge.peerDownloadInitiated();
+            resourceTransferEventsBridge.peerDownloadInitiated(serverPeerID, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
             MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm);
             activeDownloadSet.addDownload(masterResourceStreamer);
             reportResourceProviderForPeerSpecificDownload(serverPeerID, masterResourceStreamer);
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
             return masterResourceStreamer.getDownloadManager();
         } else {
-            resourceTransferEventsBridge.peerDownloadDenied();
+            resourceTransferEventsBridge.peerDownloadDenied(serverPeerID, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
             throw new NotAliveException();
         }
     }
@@ -923,6 +926,7 @@ public class ResourceStreamingManager {
         synchronized (this) {
             alive = false;
         }
+        ManuallyRemovedElementBag.getInstance(PeerClient.MANUAL_REMOVE_BAG).destroyElement(this.getClass().getName());
     }
 
     public synchronized void removeDownload(MasterResourceStreamer masterResourceStreamer) {

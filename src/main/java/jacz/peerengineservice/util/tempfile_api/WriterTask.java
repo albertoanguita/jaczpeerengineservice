@@ -14,8 +14,8 @@ class WriterTask extends TempIndexTask {
      */
     private byte[] data;
 
-    public WriterTask(String indexFilePath, long offset, byte[] data) {
-        super(indexFilePath);
+    public WriterTask(TempFileManager tempFileManager, String indexFilePath, long offset, byte[] data) {
+        super(tempFileManager, indexFilePath);
         this.offset = offset;
         this.data = data;
     }

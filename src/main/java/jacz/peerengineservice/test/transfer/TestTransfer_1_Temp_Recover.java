@@ -4,18 +4,13 @@ import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
-import jacz.peerengineservice.test.Client;
-import jacz.peerengineservice.test.DownloadProgressNotificationHandlerImpl;
-import jacz.peerengineservice.test.PeerClientConfigSerializer;
-import jacz.peerengineservice.test.PeerIDGenerator;
+import jacz.peerengineservice.test.*;
 import jacz.peerengineservice.util.ForeignStoreShare;
-import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.TempFileWriter;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 import jacz.util.concurrency.ThreadUtil;
 import jacz.util.lists.Triple;
 
-import java.io.Serializable;
 import java.util.HashMap;
 
 /**
@@ -52,7 +47,7 @@ public class TestTransfer_1_Temp_Recover {
         ThreadUtil.safeSleep(1000);
         client.getPeerClient().setVisibleDownloadsTimer(3000);
 
-        TempFileManager tempFileManager = new TempFileManager("./etc/temp");
+        TempFileManager tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
 
 
         for (String tempFile : tempFileManager.getExistingTempFiles()) {

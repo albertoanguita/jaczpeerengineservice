@@ -1,15 +1,11 @@
 package jacz.peerengineservice.test.customfsm;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.util.io.object_serialization.MutableOffset;
-import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
-import jacz.util.io.object_serialization.Serializer;
+import jacz.util.identifier.UniqueIdentifier;
 
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Simple peer timed action example
@@ -109,6 +105,11 @@ public class AskFilesFSM implements PeerTimedFSMAction<AskFilesFSM.State> {
     @Override
     public void timedOut(State state) {
         System.out.println("Ask files FSM timed out!!!");
+    }
+
+    @Override
+    public void setID(UniqueIdentifier id) {
+        System.out.println("Ask file FSM id: " + id);
     }
 
     @Override

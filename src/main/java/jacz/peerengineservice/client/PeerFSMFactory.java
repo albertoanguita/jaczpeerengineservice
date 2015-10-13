@@ -1,5 +1,6 @@
 package jacz.peerengineservice.client;
 
+import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.ConnectionStatus;
 
 /**
@@ -14,7 +15,7 @@ public interface PeerFSMFactory {
      * @param requestingPeerStatus the connection status of the peer requesting this CustomFSM
      * @return the PeerFSMAction implementation for the required custom FSM, or null if the request is denied
      */
-    PeerFSMAction<?> buildPeerFSMAction(ConnectionStatus requestingPeerStatus);
+    PeerFSMAction<?> buildPeerFSMAction(PeerID clientPeer, ConnectionStatus requestingPeerStatus);
 
     // if this is null, then a non-timed FSM must be returned
     Long getTimeoutMillis();

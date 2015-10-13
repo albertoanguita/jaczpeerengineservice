@@ -1,28 +1,18 @@
-package jacz.peerengineservice.util.data_synchronization;
+package jacz.peerengineservice.test;
 
 import jacz.peerengineservice.PeerID;
-import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
+import jacz.peerengineservice.util.data_synchronization.DataSynchEvents;
+import jacz.peerengineservice.util.data_synchronization.SynchError;
 import jacz.util.identifier.UniqueIdentifier;
 
 /**
- * This class acts as a bypass of the client's provided DataSynchEvents implementation, logging all activity
- *
- * In addition, it takes care of generating a thread for each method call, so invoker does not have to worry about it
+ * Created by Alberto on 13/10/2015.
  */
-public class DataSynchEventsBridge implements DataSynchEvents {
-
-    private final DataSynchEvents dataSynchEvents;
-
-    private final SequentialTaskExecutor sequentialTaskExecutor;
-
-    public DataSynchEventsBridge(DataSynchEvents dataSynchEvents) {
-        this.dataSynchEvents = dataSynchEvents;
-        sequentialTaskExecutor = new SequentialTaskExecutor();
-    }
+public class DataSynchEventsImpl implements DataSynchEvents {
 
     @Override
     public void clientSynchRequestInitiated(PeerID serverPeer, String dataAccessorName, long timeout, UniqueIdentifier fsmID) {
-        // todo
+
     }
 
     @Override
@@ -73,9 +63,5 @@ public class DataSynchEventsBridge implements DataSynchEvents {
     @Override
     public void serverSynchTimeout(PeerID clientPeer, String dataAccessorName, UniqueIdentifier fsmID) {
 
-    }
-
-    void stop() {
-        sequentialTaskExecutor.stopAndWaitForFinalization();
     }
 }

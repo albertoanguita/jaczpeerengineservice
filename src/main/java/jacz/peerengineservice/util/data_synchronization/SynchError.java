@@ -12,6 +12,7 @@ public class SynchError {
         ERROR_IN_PROTOCOL,
         UNKNOWN_ACCESSOR,
         REQUEST_DENIED,
+        NO_PERMISSION,
         SERVER_ERROR,
         TRANSMISSION_ERROR,
         DATA_ACCESS_ERROR,

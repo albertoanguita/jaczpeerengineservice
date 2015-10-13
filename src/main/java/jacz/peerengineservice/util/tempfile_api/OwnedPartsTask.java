@@ -11,8 +11,8 @@ class OwnedPartsTask extends TempIndexTask {
 
     private LongRangeList ownedParts;
 
-    public OwnedPartsTask(String indexFilePath) {
-        super(indexFilePath);
+    public OwnedPartsTask(TempFileManager tempFileManager, String indexFilePath) {
+        super(tempFileManager, indexFilePath);
         ownedParts = null;
     }
 
