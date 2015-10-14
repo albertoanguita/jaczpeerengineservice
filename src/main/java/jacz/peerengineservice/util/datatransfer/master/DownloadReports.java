@@ -136,30 +136,6 @@ class DownloadReports {
         }
     }
 
-    void reportCorrectIntermediateHash(final LongRange segment) {
-        resourceDownloadStatistics.reportCorrectIntermediateHash(segment);
-        if (downloadProgressNotificationHandler != null) {
-            sequentialTaskExecutor.executeTask(new ParallelTask() {
-                @Override
-                public void performTask() {
-                    downloadProgressNotificationHandler.successIntermediateHash(resourceID, storeName, segment, downloadManager);
-                }
-            });
-        }
-    }
-
-    void reportFailedIntermediateHash(final LongRange segment) {
-        resourceDownloadStatistics.reportFailedIntermediateHash(segment);
-        if (downloadProgressNotificationHandler != null) {
-            sequentialTaskExecutor.executeTask(new ParallelTask() {
-                @Override
-                public void performTask() {
-                    downloadProgressNotificationHandler.failedIntermediateHash(resourceID, storeName, segment, downloadManager);
-                }
-            });
-        }
-    }
-
     void reportInvalidIntermediateHashAlgorithm(final LongRange segment, final String hashAlgorithm) {
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -215,7 +191,7 @@ class DownloadReports {
         }
     }
 
-    void reportCompleted(final ResourceWriter resourceWriter) {
+    void reportCompleted(final ResourceWriter resourceWriter, final long resourceSize) {
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -224,7 +200,7 @@ class DownloadReports {
                 }
             });
         }
-        resourceDownloadStatistics.downloadComplete();
+        resourceDownloadStatistics.downloadComplete(resourceSize);
         resourceDownloadStatistics.stop();
     }
 

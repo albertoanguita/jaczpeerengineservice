@@ -4,8 +4,6 @@ import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.ResourceRequest;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 
-import java.io.Serializable;
-
 /**
  * Peer resource provider, represents a peer in the network which offers resources to us
  */

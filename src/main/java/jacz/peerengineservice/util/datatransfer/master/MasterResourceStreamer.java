@@ -468,7 +468,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 flushWriteData();
                 resourceWriter.complete();
                 checkTotalHash();
-                downloadReports.reportCompleted(resourceWriter);
+                downloadReports.reportCompleted(resourceWriter, getResourceSize());
                 state = DownloadState.COMPLETED;
             } catch (IOException e) {
                 reportErrorWriting();

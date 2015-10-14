@@ -581,6 +581,8 @@ public class ResourceStreamingManager {
 
     private final PeerBasedStatistics peerBasedStatistics;
 
+    private final TransferStatistics2 transferStatistics2;
+
     /**
      * The accuracy employed in downloads for selecting the parts to assign to each resource provider
      * <p/>
@@ -610,6 +612,7 @@ public class ResourceStreamingManager {
             GlobalDownloadStatistics globalDownloadStatistics,
             GlobalUploadStatistics globalUploadStatistics,
             PeerBasedStatistics peerBasedStatistics,
+            TransferStatistics2 transferStatistics2,
             double accuracy) {
         this.ownPeerID = ownPeerID;
         this.resourceTransferEventsBridge = new ResourceTransferEventsBridge(resourceTransferEvents);
@@ -628,6 +631,7 @@ public class ResourceStreamingManager {
         this.globalDownloadStatistics = globalDownloadStatistics;
         this.globalUploadStatistics = globalUploadStatistics;
         this.peerBasedStatistics = peerBasedStatistics;
+        this.transferStatistics2 = transferStatistics2;
         this.accuracy = new ContinuousDegree(accuracy);
         writeDataLock = new ReentrantLock(true);
         alive = true;
@@ -901,6 +905,10 @@ public class ResourceStreamingManager {
         }
     }
 
+    public void reportDownloadedSize(PeerID peerID, long bytes) {
+        // todo use
+        transferStatistics2.addDownloadedBytes(peerID, bytes);
+    }
 
     /**
      * This method tells the resource streaming manager to invoke the stop() method on all active downloads. It does

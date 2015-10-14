@@ -2,7 +2,6 @@ package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.util.datatransfer.GlobalDownloadStatistics;
 import jacz.peerengineservice.util.datatransfer.PeerBasedStatistics;
-import jacz.peerengineservice.util.datatransfer.resource_accession.PeerResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.util.date_time.SpeedMonitor;
@@ -22,11 +21,6 @@ public class ResourceDownloadStatistics {
 
     private static final String RESOURCE_WRITER_CREATION_DATE_FIELD = "RESOURCE_DOWNLOAD_STATISTICS@CREATION_DATE";
     private static final String RESOURCE_WRITER_DOWNLOADED_PART_FIELD = "RESOURCE_DOWNLOAD_STATISTICS@DOWNLOADED_PART";
-    private static final String RESOURCE_WRITER_CHECKED_PART_FIELD = "RESOURCE_DOWNLOAD_STATISTICS@CHECKED_PART";
-    private static final String RESOURCE_WRITER_ACCUMULATED_MILLIS_ACTIVE_FIELD = "RESOURCE_DOWNLOAD_STATISTICS@ACCUMULATED_MILLIS_ACTIVE";
-    private static final String RESOURCE_WRITER_DOWNLOADED_SIZE_THIS_RESOURCE_FIELD = "RESOURCE_DOWNLOAD_STATISTICS@DOWNLOADED_SIZE_THIS_RESOURCE";
-    private static final String RESOURCE_WRITER_INCORRECT_SIZE_THIS_RESOURCE_FIELD = "RESOURCE_DOWNLOAD_STATISTICS@INCORRECT_SIZE_THIS_RESOURCE";
-    private static final String RESOURCE_WRITER_PROVIDERS_STATISTICS_FIELD = "RESOURCE_DOWNLOAD_STATISTICS@PROVIDERS_STATISTICS";
 
     static final long MILLIS_FOR_SPEED_MEASURE = 5000;
 
@@ -52,39 +46,9 @@ public class ResourceDownloadStatistics {
     private final ResourcePart downloadedPart;
 
     /**
-     * Parts confirmed by intermediate hashes
-     */
-    private final ResourcePart checkedPart;
-
-    /**
-     * The date at which the current session started
-     */
-    private final Date dateStartedThisSession;
-
-    /**
-     * The amount of resource downloaded during the current session
-     */
-    private long downloadedSizeThisSession;
-
-    /**
-     * The amount of resource downloaded but discarded due to incorrect hash
-     */
-    private long incorrectSizeThisSession;
-
-    /**
-     * The time this download (all sessions) has been active
-     */
-    private long accumulatedMillisActive;
-
-    /**
      * The total amount of resource downloaded
      */
     private long downloadedSizeThisResource;
-
-    /**
-     * The total amount of resource downloaded but discarded due to incorrect hash
-     */
-    private long incorrectSizeThisResource;
 
     /**
      * Download speed monitor
@@ -92,10 +56,6 @@ public class ResourceDownloadStatistics {
     private final SpeedMonitor speed;
 
     private final HashMap<String, ProviderStatistics> providers;
-
-    private final GlobalDownloadStatistics globalDownloadStatistics;
-
-    private final PeerBasedStatistics peerBasedStatistics;
 
     ResourceDownloadStatistics(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerBasedStatistics peerBasedStatistics) throws IOException {
         this.resourceWriter = resourceWriter;
@@ -111,59 +71,17 @@ public class ResourceDownloadStatistics {
         } else {
             downloadedPart = new ResourcePart();
         }
-        if (storedStatistics != null && storedStatistics.containsKey(RESOURCE_WRITER_CHECKED_PART_FIELD)) {
-            checkedPart = (ResourcePart) storedStatistics.get(RESOURCE_WRITER_CHECKED_PART_FIELD);
-        } else {
-            checkedPart = new ResourcePart();
-        }
-        dateStartedThisSession = new GregorianCalendar().getTime();
-        downloadedSizeThisSession = 0L;
-        incorrectSizeThisSession = 0L;
-        if (storedStatistics != null && storedStatistics.containsKey(RESOURCE_WRITER_ACCUMULATED_MILLIS_ACTIVE_FIELD)) {
-            accumulatedMillisActive = (Long) storedStatistics.get(RESOURCE_WRITER_ACCUMULATED_MILLIS_ACTIVE_FIELD);
-        } else {
-            accumulatedMillisActive = 0L;
-        }
-        if (storedStatistics != null && storedStatistics.containsKey(RESOURCE_WRITER_DOWNLOADED_SIZE_THIS_RESOURCE_FIELD)) {
-            downloadedSizeThisResource = (Long) storedStatistics.get(RESOURCE_WRITER_DOWNLOADED_SIZE_THIS_RESOURCE_FIELD);
-        } else {
-            downloadedSizeThisResource = 0L;
-        }
-        if (storedStatistics != null && storedStatistics.containsKey(RESOURCE_WRITER_INCORRECT_SIZE_THIS_RESOURCE_FIELD)) {
-            incorrectSizeThisResource = (Long) storedStatistics.get(RESOURCE_WRITER_INCORRECT_SIZE_THIS_RESOURCE_FIELD);
-        } else {
-            incorrectSizeThisResource = 0L;
-        }
-        if (storedStatistics != null && storedStatistics.containsKey(RESOURCE_WRITER_PROVIDERS_STATISTICS_FIELD)) {
-            providers = (HashMap<String, ProviderStatistics>) storedStatistics.get(RESOURCE_WRITER_PROVIDERS_STATISTICS_FIELD);
-        } else {
-            providers = new HashMap<>();
-        }
+        downloadedSizeThisResource = downloadedPart.size();
+        providers = new HashMap<>();
         speed = new SpeedMonitor(MILLIS_FOR_SPEED_MEASURE);
-        this.globalDownloadStatistics = globalDownloadStatistics;
-        if (globalDownloadStatistics != null) {
-            globalDownloadStatistics.startTransferSession();
-        }
-        this.peerBasedStatistics = peerBasedStatistics;
     }
 
     synchronized void stopSession() throws IOException {
         for (ProviderStatistics providerStatistics : providers.values()) {
-            providerStatistics.stopSession();
+            providerStatistics.stop();
         }
-        accumulatedMillisActive += System.currentTimeMillis() - dateStartedThisSession.getTime();
-//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_CREATION_DATE_FIELD, creationDate);
-//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_DOWNLOADED_PART_FIELD, downloadedPart);
-//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_ACCUMULATED_MILLIS_ACTIVE_FIELD, accumulatedMillisActive);
-//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_DOWNLOADED_SIZE_THIS_RESOURCE_FIELD, downloadedSizeThisResource);
-//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_INCORRECT_SIZE_THIS_RESOURCE_FIELD, incorrectSizeThisResource);
-//        resourceWriter.setCustomGroupField(RESOURCE_WRITER_STATISTICS_GROUP, RESOURCE_WRITER_PROVIDERS_STATISTICS_FIELD, providers);
         resourceWriter.setSystemField(RESOURCE_WRITER_CREATION_DATE_FIELD, creationDate);
         resourceWriter.setSystemField(RESOURCE_WRITER_DOWNLOADED_PART_FIELD, downloadedPart);
-        resourceWriter.setSystemField(RESOURCE_WRITER_ACCUMULATED_MILLIS_ACTIVE_FIELD, accumulatedMillisActive);
-        resourceWriter.setSystemField(RESOURCE_WRITER_DOWNLOADED_SIZE_THIS_RESOURCE_FIELD, downloadedSizeThisResource);
-        resourceWriter.setSystemField(RESOURCE_WRITER_INCORRECT_SIZE_THIS_RESOURCE_FIELD, incorrectSizeThisResource);
-        resourceWriter.setSystemField(RESOURCE_WRITER_PROVIDERS_STATISTICS_FIELD, providers);
     }
 
     synchronized void stop() {
@@ -171,15 +89,13 @@ public class ResourceDownloadStatistics {
             providerStatistics.stop();
         }
         speed.stop();
-        if (globalDownloadStatistics != null) {
-            globalDownloadStatistics.endTransferSession(accumulatedMillisActive);
-        }
     }
 
-    synchronized void downloadComplete() {
-        if (globalDownloadStatistics != null) {
-            globalDownloadStatistics.downloadComplete();
-        }
+    synchronized void downloadComplete(long resourceSize) {
+        assignedPart.clear();
+        downloadedPart.clear();
+        downloadedPart.add(new LongRange(0L, resourceSize - 1L));
+        downloadedSizeThisResource = resourceSize;
     }
 
     synchronized ProviderStatistics reportSharedPart(ResourceProvider resourceProvider, ResourcePart resourcePart) {
@@ -209,36 +125,14 @@ public class ResourceDownloadStatistics {
 
     synchronized ProviderStatistics reportDownloadedPart(ResourceProvider resourceProvider, LongRange segment) {
         speed.addProgress(segment.size());
-        if (globalDownloadStatistics != null) {
-            globalDownloadStatistics.addTransferSize(segment.size());
-        }
         assignedPart.remove(segment);
         downloadedPart.add(segment);
-        downloadedSizeThisSession += segment.size();
         downloadedSizeThisResource += segment.size();
         ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
         if (providerStatistics != null) {
             providerStatistics.reportDownloadedSegment(segment);
-            if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerBasedStatistics != null) {
-                peerBasedStatistics.addDownloadedSize(((PeerResourceProvider) resourceProvider).getPeerID(), segment.size());
-            }
         }
         return providerStatistics;
-    }
-
-    synchronized void reportCorrectIntermediateHash(LongRange segment) {
-        checkedPart.add(segment);
-    }
-
-    synchronized void reportFailedIntermediateHash(LongRange segment) {
-        downloadedPart.remove(segment);
-        downloadedSizeThisSession -= segment.size();
-        downloadedSizeThisResource -= segment.size();
-        incorrectSizeThisSession += segment.size();
-        incorrectSizeThisResource += segment.size();
-        for (ProviderStatistics providerStatistics : providers.values()) {
-            providerStatistics.reportFailedSegment(segment);
-        }
     }
 
     public Date getCreationDate() {
@@ -253,28 +147,8 @@ public class ResourceDownloadStatistics {
         return new ResourcePart(downloadedPart);
     }
 
-    public synchronized long millisThisSession() {
-        return System.currentTimeMillis() - dateStartedThisSession.getTime();
-    }
-
-    public synchronized long getDownloadedSizeThisSession() {
-        return downloadedSizeThisSession;
-    }
-
-    public synchronized long getIncorrectSizeThisSession() {
-        return incorrectSizeThisSession;
-    }
-
-    public synchronized long totalMillis() {
-        return accumulatedMillisActive + millisThisSession();
-    }
-
     public synchronized long getDownloadedSizeThisResource() {
         return downloadedSizeThisResource;
-    }
-
-    public synchronized long getIncorrectSizeThisResource() {
-        return incorrectSizeThisResource;
     }
 
     public synchronized Double getSpeed() {
@@ -286,27 +160,30 @@ public class ResourceDownloadStatistics {
     }
 
     synchronized ProviderStatistics addProvider(ResourceProvider resourceProvider) {
-        ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
-        if (providerStatistics != null) {
-            providerStatistics.resume();
-        } else {
-            // provider not found, initialize and add in first position
-            providerStatistics = new ProviderStatistics(resourceProvider.getID());
-            providers.put(resourceProvider.getID(), providerStatistics);
-        }
-        if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerBasedStatistics != null) {
-            peerBasedStatistics.startDownloadSession(((PeerResourceProvider) resourceProvider).getPeerID());
-        }
-        return providerStatistics;
+        providers.put(resourceProvider.getID(), new ProviderStatistics(resourceProvider.getID()));
+//        ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
+//        if (providerStatistics != null) {
+//            providerStatistics.resume();
+//        } else {
+//            // provider not found, initialize and add in first position
+//            providerStatistics = new ProviderStatistics(resourceProvider.getID());
+//            providers.put(resourceProvider.getID(), providerStatistics);
+//        }
+//        if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerBasedStatistics != null) {
+//            peerBasedStatistics.startDownloadSession(((PeerResourceProvider) resourceProvider).getPeerID());
+//        }
+        return providers.get(resourceProvider.getID());
     }
 
     synchronized ProviderStatistics removeProvider(ResourceProvider resourceProvider) {
-        ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
+//        ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
+//        if (providerStatistics != null) {
+//            long sessionMillis = providerStatistics.stopSession();
+//        }
+//        return providerStatistics;
+        ProviderStatistics providerStatistics = providers.remove(resourceProvider.getID());
         if (providerStatistics != null) {
-            long sessionMillis = providerStatistics.stopSession();
-            if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerBasedStatistics != null) {
-                peerBasedStatistics.endDownloadSession(((PeerResourceProvider) resourceProvider).getPeerID(), sessionMillis);
-            }
+            providerStatistics.stop();
         }
         return providerStatistics;
     }
