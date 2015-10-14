@@ -10,7 +10,7 @@ import java.util.Map;
 public class GlobalUploadStatistics extends TransferStatistics {
 
     public GlobalUploadStatistics() {
-        reset();
+        super();
     }
 
     public GlobalUploadStatistics(byte[] data) throws VersionedSerializationException {

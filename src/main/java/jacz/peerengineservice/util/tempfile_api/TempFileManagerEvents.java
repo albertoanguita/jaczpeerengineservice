@@ -5,6 +5,10 @@ package jacz.peerengineservice.util.tempfile_api;
  */
 public interface TempFileManagerEvents {
 
+    void indexFileGenerated(String indexFilePath);
+
+    void indexFileRecovered(String indexFilePath);
+
     void indexFileErrorRestoredWithBackup(String indexFilePath);
 
     void indexFileError(String indexFilePath);

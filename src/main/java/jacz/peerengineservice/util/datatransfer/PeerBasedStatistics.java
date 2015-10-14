@@ -11,9 +11,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Statistics referring to the transfers with other peers
+ * Statistics referring to the transfers with other peers, divided by peer
  */
-public class PeerStatistics implements VersionedObject {
+public class PeerBasedStatistics implements VersionedObject {
 
     public static class OnePeerStatistics implements Serializable {
 
@@ -33,11 +33,11 @@ public class PeerStatistics implements VersionedObject {
 
     private HashMap<PeerID, OnePeerStatistics> statistics;
 
-    public PeerStatistics() {
+    public PeerBasedStatistics() {
         reset();
     }
 
-    public PeerStatistics(byte[] data) throws VersionedSerializationException {
+    public PeerBasedStatistics(byte[] data) throws VersionedSerializationException {
         VersionedObjectSerializer.deserialize(this, data);
     }
 

@@ -19,7 +19,6 @@ import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.util.log.ErrorLog;
 import jacz.util.network.IP4Port;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -86,29 +85,6 @@ public class PeerClient {
     /**
      * Class constructor
      *
-     * @param peerClientData   data about our own peer. Contains our ID, list of our friend IDs, our personal data, etc
-     * @param peerClientAction actions invoked upon some events, like the connection with a peer, or receiving a chat
-     *                         message
-     * @param peerRelations    relations with other peers. This object will be updated during the execution, as we add or reject peers
-     * @param customFSMs       list of factories for building custom FSMs, each with a different name
-     * @throws IOException could not connect to any of the provided peer servers
-     */
-//    public PeerClient(
-//            PeerClientData peerClientData,
-//            PeerClientAction peerClientAction,
-//            ResourceTransferEvents resourceTransferEvents,
-//            PeersPersonalData peersPersonalData,
-//            GlobalDownloadStatistics globalDownloadStatistics,
-//            GlobalUploadStatistics globalUploadStatistics,
-//            PeerStatistics peerStatistics,
-//            PeerRelations peerRelations,
-//            Map<String, PeerFSMFactory> customFSMs) throws IOException {
-//        this(peerClientData, peerClientAction, resourceTransferEvents, peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, null);
-//    }
-
-    /**
-     * Class constructor
-     *
      * @param peerClientData        data about our own peer. Contains our ID, list of our friend IDs, our personal data, etc
      * @param peerClientAction      actions invoked upon some events, like the connection with a peer, or receiving a chat
      *                              message
@@ -123,7 +99,7 @@ public class PeerClient {
             PeersPersonalData peersPersonalData,
             GlobalDownloadStatistics globalDownloadStatistics,
             GlobalUploadStatistics globalUploadStatistics,
-            PeerStatistics peerStatistics,
+            PeerBasedStatistics peerBasedStatistics,
             PeerRelations peerRelations,
             Map<String, PeerFSMFactory> customFSMs,
             DataSynchEvents dataSynchEvents,
@@ -145,11 +121,12 @@ public class PeerClient {
                 peerClientData.getPort(),
                 peerClientData.getPeerServerData(),
                 peerRelations);
-        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, peerClientPrivateInterface, globalDownloadStatistics, globalUploadStatistics, peerStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
+        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, peerClientPrivateInterface, globalDownloadStatistics, globalUploadStatistics, peerBasedStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
         dataSynchronizer = new DataSynchronizer(this, dataSynchEvents, dataAccessorContainer, peerClientData.getOwnPeerID());
         // add custom FSMs for list synchronizing service, in case the client uses it
         addOwnCustomFSMs(this.customFSMs);
+        registerErrorLog();
     }
 
 
@@ -183,6 +160,10 @@ public class PeerClient {
 //    public ListSynchronizer getListSynchronizer() {
 //        return listSynchronizer;
 //    }
+
+    private void registerErrorLog() {
+        ErrorLog.registerErrorLog(ERROR_LOG, System.err);
+    }
 
     public DataSynchronizer getDataSynchronizer() {
         return dataSynchronizer;

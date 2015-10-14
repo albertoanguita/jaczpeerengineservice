@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.util.datatransfer.GlobalDownloadStatistics;
-import jacz.peerengineservice.util.datatransfer.PeerStatistics;
+import jacz.peerengineservice.util.datatransfer.PeerBasedStatistics;
 import jacz.peerengineservice.util.datatransfer.resource_accession.PeerResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
@@ -95,9 +95,9 @@ public class ResourceDownloadStatistics {
 
     private final GlobalDownloadStatistics globalDownloadStatistics;
 
-    private final PeerStatistics peerStatistics;
+    private final PeerBasedStatistics peerBasedStatistics;
 
-    ResourceDownloadStatistics(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerStatistics peerStatistics) throws IOException {
+    ResourceDownloadStatistics(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerBasedStatistics peerBasedStatistics) throws IOException {
         this.resourceWriter = resourceWriter;
         Map<String, Serializable> storedStatistics = resourceWriter.getSystemDictionary();
         if (storedStatistics != null && storedStatistics.containsKey(RESOURCE_WRITER_CREATION_DATE_FIELD)) {
@@ -144,7 +144,7 @@ public class ResourceDownloadStatistics {
         if (globalDownloadStatistics != null) {
             globalDownloadStatistics.startTransferSession();
         }
-        this.peerStatistics = peerStatistics;
+        this.peerBasedStatistics = peerBasedStatistics;
     }
 
     synchronized void stopSession() throws IOException {
@@ -219,8 +219,8 @@ public class ResourceDownloadStatistics {
         ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
         if (providerStatistics != null) {
             providerStatistics.reportDownloadedSegment(segment);
-            if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerStatistics != null) {
-                peerStatistics.addDownloadedSize(((PeerResourceProvider) resourceProvider).getPeerID(), segment.size());
+            if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerBasedStatistics != null) {
+                peerBasedStatistics.addDownloadedSize(((PeerResourceProvider) resourceProvider).getPeerID(), segment.size());
             }
         }
         return providerStatistics;
@@ -294,8 +294,8 @@ public class ResourceDownloadStatistics {
             providerStatistics = new ProviderStatistics(resourceProvider.getID());
             providers.put(resourceProvider.getID(), providerStatistics);
         }
-        if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerStatistics != null) {
-            peerStatistics.startDownloadSession(((PeerResourceProvider) resourceProvider).getPeerID());
+        if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerBasedStatistics != null) {
+            peerBasedStatistics.startDownloadSession(((PeerResourceProvider) resourceProvider).getPeerID());
         }
         return providerStatistics;
     }
@@ -304,8 +304,8 @@ public class ResourceDownloadStatistics {
         ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
         if (providerStatistics != null) {
             long sessionMillis = providerStatistics.stopSession();
-            if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerStatistics != null) {
-                peerStatistics.endDownloadSession(((PeerResourceProvider) resourceProvider).getPeerID(), sessionMillis);
+            if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerBasedStatistics != null) {
+                peerBasedStatistics.endDownloadSession(((PeerResourceProvider) resourceProvider).getPeerID(), sessionMillis);
             }
         }
         return providerStatistics;

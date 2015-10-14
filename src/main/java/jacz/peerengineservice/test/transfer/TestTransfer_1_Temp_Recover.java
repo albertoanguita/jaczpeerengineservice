@@ -63,7 +63,7 @@ public class TestTransfer_1_Temp_Recover {
 //        System.out.println("STOP!!!");
 //        downloadManager1.stop();
 //        downloadManager2.stop();
-//        client.getPeerClient().stop();
+//        client.stopClient();
 //        ThreadUtil.safeSleep(8000);
 //        System.out.println("RESTART!!!");
 //        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);

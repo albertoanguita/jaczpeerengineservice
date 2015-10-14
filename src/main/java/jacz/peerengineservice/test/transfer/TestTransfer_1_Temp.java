@@ -49,10 +49,9 @@ public class TestTransfer_1_Temp {
         ThreadUtil.safeSleep(1000);
         client.getPeerClient().setVisibleDownloadsTimer(3000);
 
-        TempFileManager tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
         HashMap<String, Serializable> customDictionary = new HashMap<>();
         customDictionary.put("hash", ResourceStoreImpl.getHash("file_1"));
-        TempFileWriter tempFileWriter = new TempFileWriter(tempFileManager, customDictionary);
+        TempFileWriter tempFileWriter = new TempFileWriter(client.getTempFileManager(), customDictionary);
         String tempFile = tempFileWriter.getTempFile();
         System.out.println(tempFile);
 
@@ -77,7 +76,7 @@ public class TestTransfer_1_Temp {
         System.out.println("STOP!!!");
 //        downloadManager1.stop();
 //        downloadManager2.stop();
-        client.getPeerClient().stop();
+        client.stopClient();
 //        ThreadUtil.safeSleep(8000);
 //        System.out.println("RESTART!!!");
 //        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);

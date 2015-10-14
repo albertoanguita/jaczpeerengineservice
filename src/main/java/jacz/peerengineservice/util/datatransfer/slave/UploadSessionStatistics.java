@@ -2,7 +2,7 @@ package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.GlobalUploadStatistics;
-import jacz.peerengineservice.util.datatransfer.PeerStatistics;
+import jacz.peerengineservice.util.datatransfer.PeerBasedStatistics;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.util.date_time.SpeedMonitor;
 import jacz.util.numeric.range.LongRange;
@@ -49,9 +49,9 @@ public class UploadSessionStatistics {
 
     private final GlobalUploadStatistics globalUploadStatistics;
 
-    private final PeerStatistics peerStatistics;
+    private final PeerBasedStatistics peerBasedStatistics;
 
-    public UploadSessionStatistics(PeerID requestingPeer, GlobalUploadStatistics globalUploadStatistics, PeerStatistics peerStatistics) {
+    public UploadSessionStatistics(PeerID requestingPeer, GlobalUploadStatistics globalUploadStatistics, PeerBasedStatistics peerBasedStatistics) {
         this.requestingPeer = requestingPeer;
         creationDate = new GregorianCalendar().getTime();
         assignedPart = new ResourcePart();
@@ -61,9 +61,9 @@ public class UploadSessionStatistics {
         if (globalUploadStatistics != null) {
             globalUploadStatistics.startTransferSession();
         }
-        this.peerStatistics = peerStatistics;
-        if (peerStatistics != null) {
-            peerStatistics.startUploadSession(requestingPeer);
+        this.peerBasedStatistics = peerBasedStatistics;
+        if (peerBasedStatistics != null) {
+            peerBasedStatistics.startUploadSession(requestingPeer);
         }
     }
 
@@ -79,8 +79,8 @@ public class UploadSessionStatistics {
         if (globalUploadStatistics != null) {
             globalUploadStatistics.addTransferSize(segment.size());
         }
-        if (peerStatistics != null) {
-            peerStatistics.addUploadedSize(requestingPeer, segment.size());
+        if (peerBasedStatistics != null) {
+            peerBasedStatistics.addUploadedSize(requestingPeer, segment.size());
         }
     }
 
@@ -114,8 +114,8 @@ public class UploadSessionStatistics {
         if (globalUploadStatistics != null) {
             globalUploadStatistics.endTransferSession(sessionTime);
         }
-        if (peerStatistics != null) {
-            peerStatistics.endUploadSession(requestingPeer, sessionTime);
+        if (peerBasedStatistics != null) {
+            peerBasedStatistics.endUploadSession(requestingPeer, sessionTime);
         }
     }
 }

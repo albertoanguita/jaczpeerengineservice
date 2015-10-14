@@ -21,7 +21,7 @@ public class GlobalDownloadStatistics extends TransferStatistics {
     public long downloadsCompleted;
 
     public GlobalDownloadStatistics() {
-        reset();
+        super();
     }
 
     public GlobalDownloadStatistics(byte[] data) throws VersionedSerializationException {

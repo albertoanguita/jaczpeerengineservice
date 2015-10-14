@@ -4,7 +4,8 @@ import jacz.peerengineservice.client.*;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.datatransfer.GlobalDownloadStatistics;
 import jacz.peerengineservice.util.datatransfer.GlobalUploadStatistics;
-import jacz.peerengineservice.util.datatransfer.PeerStatistics;
+import jacz.peerengineservice.util.datatransfer.PeerBasedStatistics;
+import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 
 import java.io.IOException;
 import java.util.Map;
@@ -26,11 +27,13 @@ public class Client {
 
     private GlobalUploadStatistics globalUploadStatistics;
 
-    private PeerStatistics peerStatistics;
+    private PeerBasedStatistics peerBasedStatistics;
 
     private PeerClient peerClient;
 
     private TestListContainer testListContainer;
+
+    TempFileManager tempFileManager;
 
 
     public Client(
@@ -67,8 +70,10 @@ public class Client {
 //        }
         globalDownloadStatistics = new GlobalDownloadStatistics();
         globalUploadStatistics = new GlobalUploadStatistics();
-        peerStatistics = new PeerStatistics();
-        peerClient = new PeerClient(peerClientData, peerClientActionImpl, new ResourceTransferEventsImpl(), peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerStatistics, peerRelations, customFSMs, new DataSynchEventsImpl(), testListContainer);
+        peerBasedStatistics = new PeerBasedStatistics();
+        peerClient = new PeerClient(peerClientData, peerClientActionImpl, new ResourceTransferEventsImpl(), peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerBasedStatistics, peerRelations, customFSMs, new DataSynchEventsImpl(), testListContainer);
+
+        tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
     }
 
     public void startClient() throws IOException {
@@ -77,6 +82,7 @@ public class Client {
 
     public void stopClient() {
         peerClient.stop();
+        tempFileManager.stop();
     }
 
     public PeerClient getPeerClient() {
@@ -85,6 +91,10 @@ public class Client {
 
     public void disconnect() {
         peerClient.disconnect();
+    }
+
+    public TempFileManager getTempFileManager() {
+        return tempFileManager;
     }
 
     @Override

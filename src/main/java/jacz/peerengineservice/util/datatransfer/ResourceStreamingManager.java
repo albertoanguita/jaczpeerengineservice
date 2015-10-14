@@ -579,7 +579,7 @@ public class ResourceStreamingManager {
 
     private final GlobalUploadStatistics globalUploadStatistics;
 
-    private final PeerStatistics peerStatistics;
+    private final PeerBasedStatistics peerBasedStatistics;
 
     /**
      * The accuracy employed in downloads for selecting the parts to assign to each resource provider
@@ -609,7 +609,7 @@ public class ResourceStreamingManager {
             PeerClientPrivateInterface peerClientPrivateInterface,
             GlobalDownloadStatistics globalDownloadStatistics,
             GlobalUploadStatistics globalUploadStatistics,
-            PeerStatistics peerStatistics,
+            PeerBasedStatistics peerBasedStatistics,
             double accuracy) {
         this.ownPeerID = ownPeerID;
         this.resourceTransferEventsBridge = new ResourceTransferEventsBridge(resourceTransferEvents);
@@ -627,7 +627,7 @@ public class ResourceStreamingManager {
         downloadPriorityManager = new GenericPriorityManager(true);
         this.globalDownloadStatistics = globalDownloadStatistics;
         this.globalUploadStatistics = globalUploadStatistics;
-        this.peerStatistics = peerStatistics;
+        this.peerBasedStatistics = peerBasedStatistics;
         this.accuracy = new ContinuousDegree(accuracy);
         writeDataLock = new ReentrantLock(true);
         alive = true;
@@ -795,7 +795,19 @@ public class ResourceStreamingManager {
         if (alive) {
             // the download is created even if there is no matching global resource store
             resourceTransferEventsBridge.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
-            MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, null, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm);
+            MasterResourceStreamer masterResourceStreamer =
+                    new MasterResourceStreamer(
+                            this,
+                            null,
+                            resourceStoreName,
+                            resourceID,
+                            resourceWriter,
+                            downloadProgressNotificationHandler,
+                            globalDownloadStatistics,
+                            peerBasedStatistics,
+                            streamingNeed,
+                            totalHash,
+                            totalHashAlgorithm);
             activeDownloadSet.addDownload(masterResourceStreamer);
             reportProvidersForOneActiveDownload(resourceStoreName, resourceID);
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
@@ -835,7 +847,19 @@ public class ResourceStreamingManager {
             String totalHashAlgorithm) throws NotAliveException {
         if (alive) {
             resourceTransferEventsBridge.peerDownloadInitiated(serverPeerID, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
-            MasterResourceStreamer masterResourceStreamer = new MasterResourceStreamer(this, serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, globalDownloadStatistics, peerStatistics, streamingNeed, totalHash, totalHashAlgorithm);
+            MasterResourceStreamer masterResourceStreamer =
+                    new MasterResourceStreamer(
+                            this,
+                            serverPeerID,
+                            resourceStoreName,
+                            resourceID,
+                            resourceWriter,
+                            downloadProgressNotificationHandler,
+                            globalDownloadStatistics,
+                            peerBasedStatistics,
+                            streamingNeed,
+                            totalHash,
+                            totalHashAlgorithm);
             activeDownloadSet.addDownload(masterResourceStreamer);
             reportResourceProviderForPeerSpecificDownload(serverPeerID, masterResourceStreamer);
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
@@ -1006,7 +1030,7 @@ public class ResourceStreamingManager {
     private void processResourceRequestResponse(final ResourceRequest request, ResourceStoreResponse response) {
         if (response != null && response.getResponse() == ResourceStoreResponse.Response.REQUEST_APPROVED) {
             SlaveResourceStreamer slave = new SlaveResourceStreamer(this, request);
-            UploadManager uploadManager = new UploadManager(slave, globalUploadStatistics, peerStatistics);
+            UploadManager uploadManager = new UploadManager(slave, globalUploadStatistics, peerBasedStatistics);
             Short incomingSubchannel = subchannelManager.requestSubchannel(slave);
             if (incomingSubchannel != null) {
                 resourceTransferEventsBridge.approveResourceRequest(request, response);

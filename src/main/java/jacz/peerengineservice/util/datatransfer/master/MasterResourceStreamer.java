@@ -156,7 +156,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             ResourceWriter resourceWriter,
             DownloadProgressNotificationHandler downloadProgressNotificationHandler,
             GlobalDownloadStatistics globalDownloadStatistics,
-            PeerStatistics peerStatistics,
+            PeerBasedStatistics peerBasedStatistics,
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm) {
@@ -192,7 +192,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         downloadManager = new DownloadManager(this);
         downloadReports = new DownloadReports(downloadManager, resourceID, storeName, downloadProgressNotificationHandler);
         try {
-            downloadReports.initializeWriting(resourceWriter, globalDownloadStatistics, peerStatistics);
+            downloadReports.initializeWriting(resourceWriter, globalDownloadStatistics, peerBasedStatistics);
         } catch (IOException e) {
             error = true;
         }

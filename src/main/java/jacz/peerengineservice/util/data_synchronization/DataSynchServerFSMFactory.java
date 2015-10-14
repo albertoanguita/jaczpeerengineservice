@@ -21,7 +21,7 @@ public class DataSynchServerFSMFactory implements PeerFSMFactory {
 
     @Override
     public PeerFSMAction buildPeerFSMAction(PeerID clientPeerID, ConnectionStatus requestingPeerStatus) {
-        if (!requestingPeerStatus.isFriend()) {
+        if (requestingPeerStatus.isFriend()) {
             return new DataSynchServerFSM(dataSynchEventsBridge, clientPeerID, dataAccessorContainer);
         } else {
             dataSynchEventsBridge.serverSynchRequestDenied(clientPeerID, null, null, new SynchError(SynchError.Type.NO_PERMISSION, null));

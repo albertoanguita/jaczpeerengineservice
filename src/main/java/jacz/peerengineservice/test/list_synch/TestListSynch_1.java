@@ -6,7 +6,6 @@ import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
 import jacz.peerengineservice.test.Client;
 import jacz.peerengineservice.test.PeerClientConfigSerializer;
-import jacz.peerengineservice.test.SimplePeerClientActionImpl;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.util.lists.Triple;
 
@@ -31,7 +30,7 @@ public class TestListSynch_1 {
 
         Triple<Map<String, DataAccessor>, Map<String, DataAccessor>, DataAccessor> lists = readingWritingListsTest0();
 
-        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImpl(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionSynch(lists.element3), new HashMap<String, PeerFSMFactory>(), lists.element1, lists.element2);
         client.startClient();
 
     }

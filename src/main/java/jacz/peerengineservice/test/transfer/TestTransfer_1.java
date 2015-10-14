@@ -51,7 +51,7 @@ public class TestTransfer_1 {
 
         client.getPeerClient().setVisibleDownloadsTimer(3000);
 //            client.getPeerClient().downloadResource(new PeerID("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f);
-        DownloadManager downloadManager1 = client.getPeerClient().downloadResource("files", "file_6", new BasicFileWriter("./etc/basic_transfer/file.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_6"), "MD5");
+        DownloadManager downloadManager1 = client.getPeerClient().downloadResource("files", "file_1", new BasicFileWriter("./etc/basic_transfer/file.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_1"), "MD5");
 //        client.getPeerClient().downloadResource("files", "file_2", new BasicFileWriter("./etc/basic_transfer/file.rar"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_2"), "MD5", 1000000L);
 
         client.getPeerClient().setMaxDesiredDownloadSpeed(450000f);
@@ -61,7 +61,7 @@ public class TestTransfer_1 {
         System.out.println("STOP!!!");
 //        downloadManager1.stop();
 //        downloadManager2.stop();
-//        client.getPeerClient().stop();
+//        client.stopClient();
 
 
 //        ThreadUtil.safeSleep(50000);

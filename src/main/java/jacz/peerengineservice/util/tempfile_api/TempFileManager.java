@@ -58,8 +58,6 @@ import java.util.*;
  * - Optimizers should run one by one
  * - They could be set up in groups, dividing their task in sub-tasks. This way if a file access comes, the global
  * optimizing task can be easily interrupted
- * <p/>
- * todo index backup, check errors in index file (hash?)
  */
 public class TempFileManager {
 
@@ -169,6 +167,7 @@ public class TempFileManager {
                         String tempDataFilePath = tempIndex.getTempDataFilePath();
                         if (FileUtil.isFile(tempDataFilePath)) {
                             // the data file also exists -> valid temp file
+                            tempFileManagerEventsBridge.indexFileRecovered(tempFile);
                             tempFiles.add(file);
                         }
                     } catch (IOException | VersionedSerializationException e) {
@@ -201,7 +200,8 @@ public class TempFileManager {
                 "",
                 false
         );
-        generateInitialIndexFile(fileNames.get(0).element2, fileNames.get(1).element2, userDictionary);
+        generateInitialIndexFile(fileNames.get(0).element2, fileNames.get(2).element2, userDictionary);
+        tempFileManagerEventsBridge.indexFileGenerated(fileNames.get(0).element2);
         return fileNames.get(0).element2;
     }
 
@@ -446,7 +446,11 @@ public class TempFileManager {
         FileUtil.copy(indexFilePath, generateBackupPath(indexFilePath));
     }
 
-    private static String generateBackupPath(String indexFilePath) {
+    public static String generateBackupPath(String indexFilePath) {
         return indexFilePath.replace(TEMP_FILE_INDEX_NAME_END, TEMP_FILE_INDEX_BACKUP_NAME_END);
+    }
+
+    public synchronized void stop() {
+        tempFileManagerEventsBridge.stop();
     }
 }

@@ -22,7 +22,6 @@ public class PeerClientConfigSerializer {
     public static Triple<PeersPersonalData, PeerClientData, PeerRelations> readPeerClientData(String path) throws FileNotFoundException, XMLStreamException, IllegalArgumentException, NumberFormatException {
         XMLReader xmlReader = new XMLReader(path);
 
-//        PersonalData personalData = new PersonalData(xmlReader.getFieldValue("nick"), xmlReader.getFieldValue("avatar"));
         PeersPersonalData peersPersonalData = new PeersPersonalData("UNNAMED_PEER", xmlReader.getFieldValue("nick"));
 
         xmlReader.getStruct("peer-server-data");
@@ -51,7 +50,6 @@ public class PeerClientConfigSerializer {
             peerRelations.addBlockedPeer(peerID);
             xmlReader.gotoParent();
         }
-
         return new Triple<>(peersPersonalData, peerClientData, peerRelations);
     }
 }

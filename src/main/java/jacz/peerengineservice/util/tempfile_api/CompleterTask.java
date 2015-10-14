@@ -25,6 +25,7 @@ class CompleterTask extends TempIndexTask {
         }
         try {
             FileUtil.deleteFile(indexFilePath);
+            FileUtil.deleteFile(TempFileManager.generateBackupPath(indexFilePath));
         } catch (FileNotFoundException e) {
             // ignore this exception, cannot happen
         }

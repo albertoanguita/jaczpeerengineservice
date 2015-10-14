@@ -2,7 +2,7 @@ package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
 import jacz.peerengineservice.util.datatransfer.GlobalDownloadStatistics;
-import jacz.peerengineservice.util.datatransfer.PeerStatistics;
+import jacz.peerengineservice.util.datatransfer.PeerBasedStatistics;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.util.concurrency.task_executor.ParallelTask;
@@ -41,8 +41,8 @@ class DownloadReports {
         return resourceDownloadStatistics;
     }
 
-    public void initializeWriting(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerStatistics peerStatistics) throws IOException {
-        resourceDownloadStatistics = new ResourceDownloadStatistics(resourceWriter, globalDownloadStatistics, peerStatistics);
+    public void initializeWriting(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerBasedStatistics peerBasedStatistics) throws IOException {
+        resourceDownloadStatistics = new ResourceDownloadStatistics(resourceWriter, globalDownloadStatistics, peerBasedStatistics);
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
