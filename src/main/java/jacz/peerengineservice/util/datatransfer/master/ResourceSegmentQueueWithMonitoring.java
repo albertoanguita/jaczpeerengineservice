@@ -4,7 +4,6 @@ import jacz.util.date_time.RemainingTimeAction;
 import jacz.util.date_time.SpeedMonitorWithRemainingTime;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.numeric.range.LongRangeQueue;
-import jacz.util.numeric.range.Range;
 
 import java.util.List;
 
@@ -22,11 +21,6 @@ public class ResourceSegmentQueueWithMonitoring extends LongRangeQueue {
      * Maximum time used to measure speed
      */
     private long millisToMeasure;
-
-    /**
-     * Time during which speed measures are not valid
-     */
-    private Long millisSpeedMeasureIsNotValid;
 
     /**
      * The action to be invoked when the time to complete is nearly over
@@ -51,7 +45,6 @@ public class ResourceSegmentQueueWithMonitoring extends LongRangeQueue {
 
     public ResourceSegmentQueueWithMonitoring(
             long millisToMeasure,
-            Long millisSpeedMeasureIsNotValid,
             RemainingTimeAction remainingTimeAction,
             LongRange speedMonitorRange,
             int millisForSpeedMonitoring,
@@ -59,7 +52,6 @@ public class ResourceSegmentQueueWithMonitoring extends LongRangeQueue {
         super();
         speedMeasureWithRemainingTime = null;
         this.millisToMeasure = millisToMeasure;
-        this.millisSpeedMeasureIsNotValid = millisSpeedMeasureIsNotValid;
         this.remainingTimeAction = remainingTimeAction;
         this.speedMonitorRange = speedMonitorRange;
         this.millisForSpeedMonitoring = millisForSpeedMonitoring;
@@ -84,7 +76,6 @@ public class ResourceSegmentQueueWithMonitoring extends LongRangeQueue {
         speedMeasureWithRemainingTime =
                 new SpeedMonitorWithRemainingTime(
                         millisToMeasure,
-                        millisSpeedMeasureIsNotValid,
                         0,
                         remainingTimeAction,
                         remainingTimeToReport,
@@ -147,7 +138,7 @@ public class ResourceSegmentQueueWithMonitoring extends LongRangeQueue {
         return result;
     }
 
-    public synchronized Double getAverageSpeed() {
+    public synchronized double getAverageSpeed() {
         return speedMeasureWithRemainingTime.getAverageSpeed();
     }
 

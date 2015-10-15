@@ -1,5 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
+import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.master.ProviderStatistics;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
@@ -50,7 +51,7 @@ public interface DownloadProgressNotificationHandler {
      * @param providerStatistics data about the added provider
      * @param downloadManager    download manager associated to this download
      */
-    public void providerAdded(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, String providerId);
+    public void providerAdded(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerID provider);
 
     /**
      * This is invoked every time a provider was removed from the download
@@ -60,7 +61,7 @@ public interface DownloadProgressNotificationHandler {
      * @param providerStatistics data about the removed provider
      * @param downloadManager    download manager associated to this download
      */
-    public void providerRemoved(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, String providerId);
+    public void providerRemoved(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerID provider);
 
     /**
      * One of the active providers reported the part of the resource that he is currently sharing

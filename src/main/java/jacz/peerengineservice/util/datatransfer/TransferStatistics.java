@@ -1,110 +1,190 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.util.io.object_serialization.UnrecognizedVersionException;
-import jacz.util.io.object_serialization.VersionedObject;
-import jacz.util.io.object_serialization.VersionedObjectSerializer;
-import jacz.util.io.object_serialization.VersionedSerializationException;
-import jacz.util.lists.Duple;
+import jacz.peerengineservice.PeerID;
+import jacz.util.date_time.SpeedRegistry;
+import jacz.util.io.object_serialization.*;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Statistics for generic transfers
+ * Stores amount of data sent and received (both global and peer-wise)
  */
 public class TransferStatistics implements VersionedObject {
 
-    private static final String VERSION_0_1 = "transfer_0.1";
+    public static class BytesTransferred implements VersionedObject {
+
+        private static final String VERSION_0_1 = "0.1";
+
+        private static final String CURRENT_VERSION = VERSION_0_1;
+
+        private final static long SPEED_MILLIS_MEASURE = 3000L;
+
+        private final static long SPEED_TIME_STORED = 1800000L;
+
+        private final static long SPEED_MONITOR_FREQUENCY = 3000L;
+
+        private long bytesUploaded;
+
+        private long bytesDownloaded;
+
+        private transient SpeedRegistry uploadSpeed;
+
+        private transient SpeedRegistry downloadSpeed;
+
+        public BytesTransferred() {
+            this.bytesUploaded = 0L;
+            this.bytesDownloaded = 0L;
+            initSpeedRegistries();
+        }
+
+        public BytesTransferred(byte[] data) throws VersionedSerializationException {
+            this(data, new MutableOffset());
+        }
+
+        public BytesTransferred(byte[] data, MutableOffset offset) throws VersionedSerializationException {
+            VersionedObjectSerializer.deserialize(this, data, offset);
+        }
+
+        private void initSpeedRegistries() {
+            uploadSpeed = new SpeedRegistry(SPEED_MILLIS_MEASURE, SPEED_TIME_STORED, SPEED_MONITOR_FREQUENCY);
+            downloadSpeed = new SpeedRegistry(SPEED_MILLIS_MEASURE, SPEED_TIME_STORED, SPEED_MONITOR_FREQUENCY);
+        }
+
+        public synchronized void addUploaded(long bytes) {
+            bytesUploaded += bytes;
+            uploadSpeed.addProgress(bytes);
+        }
+
+        public synchronized void addDownloaded(long bytes) {
+            bytesDownloaded += bytes;
+            downloadSpeed.addProgress(bytes);
+        }
+
+        public synchronized long getBytesUploaded() {
+            return bytesUploaded;
+        }
+
+        public synchronized long getBytesDownloaded() {
+            return bytesDownloaded;
+        }
+
+        public synchronized Double[] getUploadSpeedRegistry() {
+            return uploadSpeed.getRegistry();
+        }
+
+        public synchronized Double[] getDownloadSpeedRegistry() {
+            return downloadSpeed.getRegistry();
+        }
+
+        public synchronized void stop() {
+            uploadSpeed.stop();
+            downloadSpeed.stop();
+        }
+
+        @Override
+        public String toString() {
+            return "BytesTransferred{" +
+                    "bytesUploaded=" + bytesUploaded +
+                    ", bytesDownloaded=" + bytesDownloaded +
+                    ", uploadSpeed=" + Arrays.toString(uploadSpeed.getRegistry()) +
+                    ", downloadSpeed=" + Arrays.toString(downloadSpeed.getRegistry()) +
+                    '}';
+        }
+
+        @Override
+        public String getCurrentVersion() {
+            return CURRENT_VERSION;
+        }
+
+        @Override
+        public Map<String, Serializable> serialize() {
+            Map<String, Serializable> attributes = new HashMap<>();
+            attributes.put("bytesUploaded", bytesUploaded);
+            attributes.put("bytesDownloaded", bytesDownloaded);
+            return attributes;
+        }
+
+        @Override
+        public void deserialize(Map<String, Object> attributes) {
+            bytesUploaded = (long) attributes.get("bytesUploaded");
+            bytesDownloaded = (long) attributes.get("bytesDownloaded");
+            initSpeedRegistries();
+        }
+
+        @Override
+        public void deserializeOldVersion(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
+            throw new UnrecognizedVersionException();
+        }
+    }
+
+    private static final String VERSION_0_1 = "0.1";
 
     private static final String CURRENT_VERSION = VERSION_0_1;
-
-    private static final Character VERSION_SEPARATOR = '@';
 
     /**
      * Date when these global statistics were created
      */
     public Date creationDate;
 
-    /**
-     * Total bytes transferred
-     */
-    public long transferredSize;
+    private BytesTransferred globalTransfer;
 
-    /**
-     * Time in millis that there have been active transfers
-     */
-    public long transferTime;
-
-    /**
-     * Amount of transferred sessions that have taken place (sessions initiated)
-     */
-    public long transferSessions;
+    private HashMap<PeerID, BytesTransferred> peerTransfers;
 
     public TransferStatistics() {
         reset();
     }
 
-    public TransferStatistics(byte[] data) throws VersionedSerializationException {
-        VersionedObjectSerializer.deserialize(this, data);
+    public TransferStatistics(String path) throws VersionedSerializationException, IOException {
+        VersionedObjectSerializer.deserialize(this, path);
     }
-
 
     public void reset() {
         creationDate = new Date();
-        transferredSize = 0l;
-        transferTime = 0L;
-        transferSessions = 0L;
+        globalTransfer = new BytesTransferred();
+        peerTransfers = new HashMap<>();
     }
 
-    protected String appendSuperVersion(String version) {
-        return version + VERSION_SEPARATOR + CURRENT_VERSION;
+    public synchronized void addUploadedBytes(PeerID peerID, long bytes) {
+        globalTransfer.addUploaded(bytes);
+        checkPeerExists(peerID);
+        peerTransfers.get(peerID).addUploaded(bytes);
     }
 
-    protected String extractChildVersion(String version) throws IllegalArgumentException {
-        return parseVersion(version).element1;
+    public synchronized void addDownloadedBytes(PeerID peerID, long bytes) {
+        globalTransfer.addDownloaded(bytes);
+        checkPeerExists(peerID);
+        peerTransfers.get(peerID).addDownloaded(bytes);
     }
 
-    protected String extractSuperVersion(String version) throws IllegalArgumentException {
-        return parseVersion(version).element2;
-    }
-
-    private Duple<String, String> parseVersion(String version) throws IllegalArgumentException {
-        int indexOfSeparator = version.lastIndexOf(VERSION_SEPARATOR);
-        if (indexOfSeparator >= 0 && indexOfSeparator == version.length() - 1) {
-            return new Duple<>(version.substring(0, indexOfSeparator), version.substring(indexOfSeparator + 1));
-        } else {
-            throw new IllegalArgumentException("Version does not include the separator character, or it is at the end: " + VERSION_SEPARATOR);
+    private void checkPeerExists(PeerID peerID) {
+        if (!peerTransfers.containsKey(peerID)) {
+            peerTransfers.put(peerID, new BytesTransferred());
         }
     }
 
-    public Date getCreationDate() {
-        return creationDate;
+    public synchronized void stop() {
+        if (globalTransfer != null) {
+            globalTransfer.stop();
+        }
+        if (peerTransfers != null) {
+            for (BytesTransferred peerTransfer : peerTransfers.values()) {
+                peerTransfer.stop();
+            }
+        }
     }
 
-    public synchronized long getTransferredSize() {
-        return transferredSize;
-    }
-
-    public synchronized long getTransferTime() {
-        return transferTime;
-    }
-
-    public synchronized long getTransferSessions() {
-        return transferSessions;
-    }
-
-    public synchronized void addTransferSize(long size) {
-        transferredSize += size;
-    }
-
-    public synchronized void startTransferSession() {
-        transferSessions++;
-    }
-
-    public synchronized void endTransferSession(long sessionMillis) {
-        transferTime += sessionMillis;
+    @Override
+    public String toString() {
+        return "TransferStatistics{" +
+                "creationDate=" + creationDate +
+                ", globalTransfer=" + globalTransfer +
+                ", peerTransfers=" + peerTransfers +
+                '}';
     }
 
     @Override
@@ -116,32 +196,40 @@ public class TransferStatistics implements VersionedObject {
     public Map<String, Serializable> serialize() {
         Map<String, Serializable> attributes = new HashMap<>();
         attributes.put("creationDate", creationDate);
-        attributes.put("transferredSize", transferredSize);
-        attributes.put("transferTime", transferTime);
-        attributes.put("transferSessions", transferSessions);
+        attributes.put("globalTransfer", VersionedObjectSerializer.serialize(globalTransfer));
+        FragmentedByteArray fragmentedByteArray = new FragmentedByteArray();
+        for (Map.Entry<PeerID, BytesTransferred> entry : peerTransfers.entrySet()) {
+            fragmentedByteArray.addArrays(Serializer.serialize(entry.getKey().toByteArray()), VersionedObjectSerializer.serialize(entry.getValue()));
+        }
+        attributes.put("peerTransfers", fragmentedByteArray.generateArray());
         return attributes;
     }
 
     @Override
     public void deserialize(Map<String, Object> attributes) {
         creationDate = (Date) attributes.get("creationDate");
-        transferredSize = (long) attributes.get("transferredSize");
-        transferTime = (long) attributes.get("transferTime");
-        transferSessions = (long) attributes.get("transferSessions");
-        if (creationDate == null) {
-            // no field can be null -> error
+        try {
+            globalTransfer = new BytesTransferred((byte[]) attributes.get("globalTransfer"));
+        } catch (VersionedSerializationException e) {
             throw new RuntimeException();
+        }
+        peerTransfers = new HashMap<>();
+        byte[] peerTransfersData = (byte[]) attributes.get("peerTransfers");
+        MutableOffset offset = new MutableOffset();
+        while (offset.value() < peerTransfersData.length) {
+            PeerID peerID = new PeerID(Serializer.deserializeBytes(peerTransfersData, offset));
+            try {
+                BytesTransferred bytesTransferred = new BytesTransferred(peerTransfersData, offset);
+                peerTransfers.put(peerID, bytesTransferred);
+            } catch (VersionedSerializationException e) {
+                stop();
+                throw new RuntimeException();
+            }
         }
     }
 
     @Override
     public void deserializeOldVersion(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
-        // since this object appends version values with children versions, it might happen that we get here with
-        // the current version. We check it before checking older versions
-        if (version.equals(CURRENT_VERSION)) {
-            deserialize(attributes);
-        } else {
-            throw new UnrecognizedVersionException();
-        }
+        throw new UnrecognizedVersionException();
     }
 }

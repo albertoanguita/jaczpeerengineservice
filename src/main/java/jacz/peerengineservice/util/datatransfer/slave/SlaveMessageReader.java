@@ -119,9 +119,8 @@ class SlaveMessageReader implements MessageReader {
         }
     }
 
-    public Float getAchievedSpeed() {
-        Double speed = speedMonitor.getAverageSpeed();
-        return speed == null ? null : speed.floatValue();
+    public float getAchievedSpeed() {
+        return (float) speedMonitor.getAverageSpeed();
     }
 
     @Override

@@ -32,12 +32,12 @@ public class DownloadProgressNotificationHandlerImpl implements DownloadProgress
     }
 
     @Override
-    public void providerAdded(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, String providerId) {
+    public void providerAdded(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerID providerId) {
         System.out.println(initMessage + "provider added to download of resource " + resourceID + ". Provider: " + providerId);
     }
 
     @Override
-    public void providerRemoved(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, String providerId) {
+    public void providerRemoved(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerID providerId) {
         System.out.println(initMessage + "provider removed from download of resource " + resourceID + ". Provider: " + providerId);
     }
 

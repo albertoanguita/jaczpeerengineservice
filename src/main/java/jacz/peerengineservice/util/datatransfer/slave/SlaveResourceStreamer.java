@@ -142,9 +142,6 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
      */
     private final jacz.peerengineservice.util.datatransfer.ResourceRequest resourceRequest;
 
-    private jacz.peerengineservice.util.datatransfer.slave.UploadSessionStatistics uploadSessionStatistics;
-
-
     public SlaveResourceStreamer(jacz.peerengineservice.util.datatransfer.ResourceStreamingManager resourceStreamingManager, jacz.peerengineservice.util.datatransfer.ResourceRequest request) {
         id = UniqueIdentifierFactory.getOneStaticIdentifier();
         this.resourceStreamingManager = resourceStreamingManager;
@@ -154,14 +151,13 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         alive = true;
     }
 
-    public synchronized void initialize(ResourceReader resourceReader, PeerID otherPeer, short incomingChannel, short outgoingChannel, jacz.peerengineservice.util.datatransfer.slave.UploadManager uploadManager) {
+    public synchronized void initialize(ResourceReader resourceReader, PeerID otherPeer, short incomingChannel, short outgoingChannel) {
         this.resourceReader = resourceReader;
         this.otherPeer = otherPeer;
         this.incomingChannel = incomingChannel;
         this.outgoingChannel = outgoingChannel;
         resourceSegmentQueue = new ResourceSegmentQueue();
-        uploadSessionStatistics = uploadManager.getUploadSessionStatistics();
-        SlaveMessageHandler messageHandler = new jacz.peerengineservice.util.datatransfer.slave.SlaveMessageHandler(resourceStreamingManager, otherPeer, outgoingChannel, uploadSessionStatistics);
+        SlaveMessageHandler messageHandler = new jacz.peerengineservice.util.datatransfer.slave.SlaveMessageHandler(resourceStreamingManager, otherPeer, outgoingChannel);
         messageReader = new SlaveMessageReader(this, resourceSegmentQueue, resourceReader, messageHandler);
         MessageProcessor dataSender = new MessageProcessor(messageReader, messageHandler, false);
         dataSender.start();
@@ -196,7 +192,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
                     case REPORT_RESOURCE_LENGTH:
                         try {
                             // send the master the resource size
-                            resourceStreamingManager.write(otherPeer, outgoingChannel, jacz.peerengineservice.util.datatransfer.slave.SlaveMessage.generateResourceSizeMessage(resourceReader.length()));
+                            resourceStreamingManager.write(otherPeer, outgoingChannel, SlaveMessage.generateResourceSizeMessage(resourceReader.length()), false);
                         } catch (IOException e) {
                             die(true);
                         }
@@ -206,7 +202,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
                         // send the master our available resource part
                         try {
                             ResourcePart resourcePart = new ResourcePart(resourceReader.availableSegments());
-                            resourceStreamingManager.write(otherPeer, outgoingChannel, jacz.peerengineservice.util.datatransfer.slave.SlaveMessage.generateResourceAvailabilityMessage(resourcePart));
+                            resourceStreamingManager.write(otherPeer, outgoingChannel, SlaveMessage.generateResourceAvailabilityMessage(resourcePart), false);
                         } catch (IOException e) {
                             die(true);
                         }
@@ -214,7 +210,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
 
                     case REPORT_ASSIGNED_SEGMENTS:
                         ResourcePart resourcePart = new ResourcePart(resourceSegmentQueue.getRanges());
-                        resourceStreamingManager.write(otherPeer, outgoingChannel, jacz.peerengineservice.util.datatransfer.slave.SlaveMessage.generateAssignedSegmentsMessage(resourcePart));
+                        resourceStreamingManager.write(otherPeer, outgoingChannel, SlaveMessage.generateAssignedSegmentsMessage(resourcePart), false);
                         break;
 
                     case ERASE_SEGMENTS:
@@ -227,10 +223,9 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
                             if (resourceReader.availableSegments().contains(masterMessage.segment)) {
                                 // the reader does have this segment
                                 resourceSegmentQueue.add(masterMessage.segment);
-                                uploadSessionStatistics.addAssignedSegment(masterMessage.segment);
                             } else {
                                 // the reader does not have this segment -> report master
-                                resourceStreamingManager.write(otherPeer, outgoingChannel, jacz.peerengineservice.util.datatransfer.slave.SlaveMessage.generateUnavailableSegmentsMessage());
+                                resourceStreamingManager.write(otherPeer, outgoingChannel, SlaveMessage.generateUnavailableSegmentsMessage(), false);
                             }
                         } catch (IOException e) {
                             die(true);
@@ -259,7 +254,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
     }
 
     @Override
-    public Float getAchievedSpeed() {
+    public float getAchievedSpeed() {
         return messageReader.getAchievedSpeed();
     }
 
@@ -285,7 +280,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
             // he himself has died, we should not report him our own death
             if (mustReportMaster) {
                 // send a message to the master reporting that we die
-                resourceStreamingManager.write(otherPeer, outgoingChannel, jacz.peerengineservice.util.datatransfer.slave.SlaveMessage.generateDiedMessage());
+                resourceStreamingManager.write(otherPeer, outgoingChannel, SlaveMessage.generateDiedMessage(), false);
             }
             stopProcessor();
             timeoutTimer.kill();

@@ -2,10 +2,10 @@ package jacz.peerengineservice.test;
 
 import jacz.peerengineservice.client.*;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
-import jacz.peerengineservice.util.datatransfer.GlobalDownloadStatistics;
-import jacz.peerengineservice.util.datatransfer.GlobalUploadStatistics;
-import jacz.peerengineservice.util.datatransfer.PeerBasedStatistics;
+import jacz.peerengineservice.util.datatransfer.TransferStatistics;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
+import jacz.util.io.object_serialization.VersionedObjectSerializer;
+import jacz.util.io.object_serialization.VersionedSerializationException;
 
 import java.io.IOException;
 import java.util.Map;
@@ -15,6 +15,8 @@ import java.util.Map;
  */
 public class Client {
 
+    private static final String STATISTICS_PATH = "./statistics.dat";
+
     private SimplePeerClientActionImpl peerClientActionImpl;
 
     private PeerClientData peerClientData;
@@ -23,18 +25,13 @@ public class Client {
 
     private Map<String, PeerFSMFactory> customFSMs;
 
-    private GlobalDownloadStatistics globalDownloadStatistics;
-
-    private GlobalUploadStatistics globalUploadStatistics;
-
-    private PeerBasedStatistics peerBasedStatistics;
-
     private PeerClient peerClient;
 
     private TestListContainer testListContainer;
 
     TempFileManager tempFileManager;
 
+    private TransferStatistics transferStatistics;
 
     public Client(
             PeersPersonalData peersPersonalData,
@@ -68,10 +65,16 @@ public class Client {
 //        } else {
 //            globalDownloadStatistics = new GlobalDownloadStatistics();
 //        }
-        globalDownloadStatistics = new GlobalDownloadStatistics();
-        globalUploadStatistics = new GlobalUploadStatistics();
-        peerBasedStatistics = new PeerBasedStatistics();
-        peerClient = new PeerClient(peerClientData, peerClientActionImpl, new ResourceTransferEventsImpl(), peersPersonalData, globalDownloadStatistics, globalUploadStatistics, peerBasedStatistics, peerRelations, customFSMs, new DataSynchEventsImpl(), testListContainer);
+
+//        transferStatistics = new TransferStatistics(FileReaderWriter.readBytes(STATISTICS_PATH));
+        try {
+//            byte[] data = FileReaderWriter.readBytes(STATISTICS_PATH);
+//            VersionedObjectSerializer.deserialize(transferStatistics, data);
+            transferStatistics = new TransferStatistics(STATISTICS_PATH);
+        } catch (IOException | VersionedSerializationException e) {
+            transferStatistics = new TransferStatistics();
+        }
+        peerClient = new PeerClient(peerClientData, peerClientActionImpl, new ResourceTransferEventsImpl(), peersPersonalData, transferStatistics, peerRelations, customFSMs, new DataSynchEventsImpl(), testListContainer);
 
         tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
     }
@@ -83,10 +86,20 @@ public class Client {
     public void stopClient() {
         peerClient.stop();
         tempFileManager.stop();
+        transferStatistics.stop();
+        try {
+            VersionedObjectSerializer.serialize(transferStatistics, 4, STATISTICS_PATH);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public PeerClient getPeerClient() {
         return peerClient;
+    }
+
+    public TransferStatistics getTransferStatistics() {
+        return transferStatistics;
     }
 
     public void disconnect() {

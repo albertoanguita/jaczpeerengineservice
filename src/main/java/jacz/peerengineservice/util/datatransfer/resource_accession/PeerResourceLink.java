@@ -46,46 +46,46 @@ public class PeerResourceLink implements ResourceLink {
 
     @Override
     public void requestResourceLength() {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateReportResourceLengthMessage());
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateReportResourceLengthMessage(), false);
     }
 
     @Override
     public void requestAvailableSegments() {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateReportAvailableSegmentsMessage());
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateReportAvailableSegmentsMessage(), false);
     }
 
     @Override
     public void requestAssignedSegments() {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateReportAssignedSegmentsMessage());
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateReportAssignedSegmentsMessage(), false);
     }
 
     @Override
     public void eraseSegments() {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateEraseSegmentsMessage());
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateEraseSegmentsMessage(), false);
     }
 
     @Override
     public void addNewSegment(LongRange segment) {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateAddNewSegmentsMessage(segment));
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateAddNewSegmentsMessage(segment), false);
     }
 
     @Override
     public void hardThrottle(float variation) {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateHardThrottleMessage(variation));
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateHardThrottleMessage(variation), false);
     }
 
     @Override
     public void softThrottle() {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateSoftThrottleMessage());
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateSoftThrottleMessage(), false);
     }
 
     @Override
     public void ping() {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generatePingMessage());
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generatePingMessage(), false);
     }
 
     @Override
     public void die() {
-        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateDiedMessage());
+        resourceStreamingManager.write(otherPeer, outgoingSubchannel, MasterMessage.generateDiedMessage(), false);
     }
 }

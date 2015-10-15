@@ -1,8 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
-import jacz.peerengineservice.util.datatransfer.GlobalDownloadStatistics;
-import jacz.peerengineservice.util.datatransfer.PeerBasedStatistics;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.util.concurrency.task_executor.ParallelTask;
@@ -41,8 +39,8 @@ class DownloadReports {
         return resourceDownloadStatistics;
     }
 
-    public void initializeWriting(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerBasedStatistics peerBasedStatistics) throws IOException {
-        resourceDownloadStatistics = new ResourceDownloadStatistics(resourceWriter, globalDownloadStatistics, peerBasedStatistics);
+    public void initializeWriting(ResourceWriter resourceWriter) throws IOException {
+        resourceDownloadStatistics = new ResourceDownloadStatistics(resourceWriter);
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
@@ -70,7 +68,7 @@ class DownloadReports {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
                 public void performTask() {
-                    downloadProgressNotificationHandler.providerAdded(resourceID, storeName, providerStatistics, downloadManager, resourceProvider.getID());
+                    downloadProgressNotificationHandler.providerAdded(resourceID, storeName, providerStatistics, downloadManager, resourceProvider.getPeerID());
                 }
             });
         }
@@ -82,7 +80,7 @@ class DownloadReports {
             sequentialTaskExecutor.executeTask(new ParallelTask() {
                 @Override
                 public void performTask() {
-                    downloadProgressNotificationHandler.providerRemoved(resourceID, storeName, providerStatistics, downloadManager, resourceProvider.getID());
+                    downloadProgressNotificationHandler.providerRemoved(resourceID, storeName, providerStatistics, downloadManager, resourceProvider.getPeerID());
                 }
             });
         }

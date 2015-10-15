@@ -155,8 +155,6 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             String resourceID,
             ResourceWriter resourceWriter,
             DownloadProgressNotificationHandler downloadProgressNotificationHandler,
-            GlobalDownloadStatistics globalDownloadStatistics,
-            PeerBasedStatistics peerBasedStatistics,
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm) {
@@ -192,7 +190,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         downloadManager = new DownloadManager(this);
         downloadReports = new DownloadReports(downloadManager, resourceID, storeName, downloadProgressNotificationHandler);
         try {
-            downloadReports.initializeWriting(resourceWriter, globalDownloadStatistics, peerBasedStatistics);
+            downloadReports.initializeWriting(resourceWriter);
         } catch (IOException e) {
             error = true;
         }
@@ -274,11 +272,11 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private synchronized void reportAvailableResourceProvidersSynch(Collection<? extends ResourceProvider> resourceProviders) {
         if (alive) {
             // add the resource providers which are not active providers or active requests
-            Set<String> activeResourceProviders = getActiveResourceProviders();
+            Set<PeerID> activeResourceProviders = getActiveResourceProviders();
             for (ResourceProvider resourceProvider : resourceProviders) {
                 // check that the given resource provider is not null, as the resource streaming manager might include null providers due to those
                 // not being available
-                if (resourceProvider != null && !activeResourceProviders.contains(resourceProvider.getID())) {
+                if (resourceProvider != null && !activeResourceProviders.contains(resourceProvider.getPeerID())) {
                     newResourceProvider(resourceProvider);
                 }
             }
@@ -290,8 +288,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      *
      * @return a set containing resource providers corresponding to the currently active slaves
      */
-    private synchronized Set<String> getActiveResourceProviders() {
-        Set<String> activeResourceProviders = new HashSet<>(activeSlaves.size());
+    private synchronized Set<PeerID> getActiveResourceProviders() {
+        Set<PeerID> activeResourceProviders = new HashSet<>(activeSlaves.size());
         for (SlaveController slave : activeSlaves.values()) {
             activeResourceProviders.add(slave.getResourceProviderId());
         }
@@ -455,6 +453,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     }
 
     synchronized void reportDownloadedSegment(ResourceProvider resourceProvider, LongRange downloadedSegment) {
+        resourceStreamingManager.reportDownloadedSize(resourceProvider.getPeerID(), downloadedSegment.size());
         downloadReports.reportDownloadedSegment(resourceProvider, downloadedSegment);
     }
 
@@ -601,13 +600,12 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         return priority;
     }
 
-    synchronized Float getSlaveControllerAchievedSpeed(SlaveController slaveController) {
-        ProviderStatistics providerStatistics = downloadReports.getResourceDownloadStatistics().getProviders().get(slaveController.getResourceProvider().getID());
+    synchronized float getSlaveControllerAchievedSpeed(SlaveController slaveController) {
+        ProviderStatistics providerStatistics = downloadReports.getResourceDownloadStatistics().getProviders().get(slaveController.getResourceProvider().getPeerID());
         if (providerStatistics != null) {
-            Double speed = providerStatistics.getSpeed();
-            return (speed != null) ? speed.floatValue() : null;
+            return (float) providerStatistics.getSpeed();
         } else {
-            return null;
+            return 0f;
         }
     }
 

@@ -27,8 +27,6 @@ public class SlaveMessageHandler implements MessageHandler {
 
     private final short outgoingChannel;
 
-    private final UploadSessionStatistics uploadSessionStatistics;
-
     private boolean isChoke;
 
     private final SpeedLimiter sendPacketSpeedLimiter;
@@ -36,11 +34,10 @@ public class SlaveMessageHandler implements MessageHandler {
     private final PerformRegularAction flushDataRegularAction;
 
 
-    public SlaveMessageHandler(ResourceStreamingManager resourceStreamingManager, PeerID otherPeer, short outgoingChannel, UploadSessionStatistics uploadSessionStatistics) {
+    public SlaveMessageHandler(ResourceStreamingManager resourceStreamingManager, PeerID otherPeer, short outgoingChannel) {
         this.resourceStreamingManager = resourceStreamingManager;
         this.otherPeer = otherPeer;
         this.outgoingChannel = outgoingChannel;
-        this.uploadSessionStatistics = uploadSessionStatistics;
         this.isChoke = false;
         sendPacketSpeedLimiter = new SpeedLimiter(PACKETS_PER_SECOND_MEASURE_TIME, MAX_PACKETS_PER_SECOND);
         flushDataRegularAction = PerformRegularAction.timeElapsePerformRegularAction(MILLIS_BETWEEN_FLUSHES);
@@ -55,14 +52,13 @@ public class SlaveMessageHandler implements MessageHandler {
         } else {
             byte[] dataToSend = SlaveMessage.generateResourceChunkMessage(messageForHandler.resourceChunk);
             sendPacketSpeedLimiter.addProgress(1L);
-            long time = resourceStreamingManager.write(otherPeer, outgoingChannel, dataToSend, false);
+            long time = resourceStreamingManager.write(otherPeer, outgoingChannel, dataToSend, true, false);
             if (flushDataRegularAction.mustPerformAction()) {
                 resourceStreamingManager.flush(otherPeer);
             }
             synchronized (this) {
                 isChoke = time > CHOKE_THRESHOLD;
             }
-            uploadSessionStatistics.addUploadedSegment(messageForHandler.resourceChunk.getSegment());
         }
     }
 

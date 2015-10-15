@@ -18,7 +18,7 @@ import java.util.HashMap;
 public class TestPersonalData_2 {
 
     public static void main(String args[]) throws Exception {
-        String config = "./src/main/java/jacz/peerengineservice/test/clientConf_2_new.xml";
+        String config = "./etc/tests/clientConf_2_new.xml";
         Triple<PeersPersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
         PeersPersonalData peersPersonalData = data.element1;
         PeerClientData peerClientData = data.element2;

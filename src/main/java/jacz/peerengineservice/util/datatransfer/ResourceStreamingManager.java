@@ -10,7 +10,7 @@ import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.master.MasterResourceStreamer;
-import jacz.peerengineservice.util.datatransfer.resource_accession.PeerResourceProvider;
+import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.peerengineservice.util.datatransfer.slave.SlaveResourceStreamer;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
@@ -575,13 +575,7 @@ public class ResourceStreamingManager {
      */
     private final GenericPriorityManager downloadPriorityManager;
 
-    private final GlobalDownloadStatistics globalDownloadStatistics;
-
-    private final GlobalUploadStatistics globalUploadStatistics;
-
-    private final PeerBasedStatistics peerBasedStatistics;
-
-    private final TransferStatistics2 transferStatistics2;
+    private final TransferStatistics transferStatistics;
 
     /**
      * The accuracy employed in downloads for selecting the parts to assign to each resource provider
@@ -609,10 +603,7 @@ public class ResourceStreamingManager {
             ResourceTransferEvents resourceTransferEvents,
             ConnectedPeersMessenger connectedPeersMessenger,
             PeerClientPrivateInterface peerClientPrivateInterface,
-            GlobalDownloadStatistics globalDownloadStatistics,
-            GlobalUploadStatistics globalUploadStatistics,
-            PeerBasedStatistics peerBasedStatistics,
-            TransferStatistics2 transferStatistics2,
+            TransferStatistics transferStatistics,
             double accuracy) {
         this.ownPeerID = ownPeerID;
         this.resourceTransferEventsBridge = new ResourceTransferEventsBridge(resourceTransferEvents);
@@ -628,10 +619,7 @@ public class ResourceStreamingManager {
         //badRequestsManager = new BadRequestsManager(FAILED_REQUEST_RESUBMIT_DELAY, FAILED_REQUEST_RESUBMIT_FACTOR, this);
         uploadPriorityManager = new GenericPriorityManager(true);
         downloadPriorityManager = new GenericPriorityManager(true);
-        this.globalDownloadStatistics = globalDownloadStatistics;
-        this.globalUploadStatistics = globalUploadStatistics;
-        this.peerBasedStatistics = peerBasedStatistics;
-        this.transferStatistics2 = transferStatistics2;
+        this.transferStatistics = transferStatistics;
         this.accuracy = new ContinuousDegree(accuracy);
         writeDataLock = new ReentrantLock(true);
         alive = true;
@@ -670,11 +658,14 @@ public class ResourceStreamingManager {
         return connectedPeersMessenger.sendObjectMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, new SubchannelObjectMessage(subchannel, message), true);
     }
 
-    public long write(PeerID destinationPeer, short subchannel, byte[] message) {
-        return write(destinationPeer, subchannel, message, true);
+    public long write(PeerID destinationPeer, short subchannel, byte[] message, boolean isData) {
+        return write(destinationPeer, subchannel, message, isData, true);
     }
 
-    public long write(PeerID destinationPeer, short subchannel, byte[] message, boolean flush) {
+    public long write(PeerID destinationPeer, short subchannel, byte[] message, boolean isData, boolean flush) {
+        if (isData) {
+            transferStatistics.addUploadedBytes(destinationPeer, message.length);
+        }
         return connectedPeersMessenger.sendDataMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, SubchannelDataMessage.encode(subchannel, message), flush);
     }
 
@@ -807,8 +798,6 @@ public class ResourceStreamingManager {
                             resourceID,
                             resourceWriter,
                             downloadProgressNotificationHandler,
-                            globalDownloadStatistics,
-                            peerBasedStatistics,
                             streamingNeed,
                             totalHash,
                             totalHashAlgorithm);
@@ -859,8 +848,6 @@ public class ResourceStreamingManager {
                             resourceID,
                             resourceWriter,
                             downloadProgressNotificationHandler,
-                            globalDownloadStatistics,
-                            peerBasedStatistics,
                             streamingNeed,
                             totalHash,
                             totalHashAlgorithm);
@@ -906,8 +893,7 @@ public class ResourceStreamingManager {
     }
 
     public void reportDownloadedSize(PeerID peerID, long bytes) {
-        // todo use
-        transferStatistics2.addDownloadedBytes(peerID, bytes);
+        transferStatistics.addDownloadedBytes(peerID, bytes);
     }
 
     /**
@@ -979,12 +965,12 @@ public class ResourceStreamingManager {
             // if this store is not registered in the foreign share manager, try with the general store
             foreignStoreShare = foreignShareManager.getGeneralStoreShares();
         }*/
-        Set<PeerResourceProvider> resourceProviders = null;
+        Set<ResourceProvider> resourceProviders = null;
         if (foreignStoreShare != null) {
             Set<PeerID> peersSharing = foreignStoreShare.getForeignPeerShares(resourceID);
             resourceProviders = new HashSet<>(peersSharing.size());
             for (PeerID peerID : peersSharing) {
-                PeerResourceProvider peerResourceProvider = generatePeerResourceProvider(peerID);
+                ResourceProvider peerResourceProvider = generateResourceProvider(peerID);
                 resourceProviders.add(peerResourceProvider);
             }
         }
@@ -1006,14 +992,14 @@ public class ResourceStreamingManager {
     }
 
     private void reportResourceProviderForPeerSpecificDownload(PeerID serverPeerID, MasterResourceStreamer masterResourceStreamer) {
-        PeerResourceProvider peerResourceProvider = generatePeerResourceProvider(serverPeerID);
-        List<PeerResourceProvider> providerList = new ArrayList<>(1);
-        providerList.add(peerResourceProvider);
+        ResourceProvider resourceProvider = generateResourceProvider(serverPeerID);
+        List<ResourceProvider> providerList = new ArrayList<>(1);
+        providerList.add(resourceProvider);
         masterResourceStreamer.reportAvailableResourceProviders(providerList);
     }
 
-    private PeerResourceProvider generatePeerResourceProvider(PeerID peerID) {
-        return new PeerResourceProvider(ownPeerID, peerID, this);
+    private ResourceProvider generateResourceProvider(PeerID peerID) {
+        return new ResourceProvider(ownPeerID, peerID, this);
     }
 
     private void requestNewResource(ResourceRequest request) {
@@ -1038,11 +1024,11 @@ public class ResourceStreamingManager {
     private void processResourceRequestResponse(final ResourceRequest request, ResourceStoreResponse response) {
         if (response != null && response.getResponse() == ResourceStoreResponse.Response.REQUEST_APPROVED) {
             SlaveResourceStreamer slave = new SlaveResourceStreamer(this, request);
-            UploadManager uploadManager = new UploadManager(slave, globalUploadStatistics, peerBasedStatistics);
+            UploadManager uploadManager = new UploadManager(slave);
             Short incomingSubchannel = subchannelManager.requestSubchannel(slave);
             if (incomingSubchannel != null) {
                 resourceTransferEventsBridge.approveResourceRequest(request, response);
-                slave.initialize(response.getResourceReader(), request.getRequestingPeer(), incomingSubchannel, request.getSubchannel(), uploadManager);
+                slave.initialize(response.getResourceReader(), request.getRequestingPeer(), incomingSubchannel, request.getSubchannel());
                 uploadPriorityManager.addRegulatedResource(new RemotePeerStakeholder(request.getRequestingPeer()), slave);
                 uploadsManager.addUpload(request.getStoreName(), uploadManager);
             } else {
@@ -1070,8 +1056,7 @@ public class ResourceStreamingManager {
      */
     public void reportDeadSlaveResourceStreamer(SlaveResourceStreamer slave) {
         uploadPriorityManager.removeRegulatedResource(new RemotePeerStakeholder(slave.getResourceRequest().getRequestingPeer()), slave);
-        UploadManager uploadManager = uploadsManager.removeUpload(slave.getResourceRequest().getStoreName(), slave.getId());
-        uploadManager.getUploadSessionStatistics().stop();
+        uploadsManager.removeUpload(slave.getResourceRequest().getStoreName(), slave.getId());
         freeSubchannel(slave.getIncomingChannel());
     }
 

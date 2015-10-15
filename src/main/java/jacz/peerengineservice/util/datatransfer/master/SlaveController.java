@@ -1,5 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
+import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.GenericPriorityManagerRegulatedResource;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceLink;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
@@ -46,8 +47,6 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
 
     private static final long MILLIS_TO_MEASURE_SPEED = 5000;
 
-    private static final long MILLIS_SPEED_MEASURE_IS_NOT_VALID = 2000;
-
     private static final int MILLIS_ALLOWED_OUT_OF_SPEED_RANGE = 15000;
 
     private static final long MILLIS_REMAINING_FOR_REPORT = 20000;
@@ -91,7 +90,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     /**
      * The provider id of the resource provider
      */
-    private final String resourceProviderId;
+    private final PeerID resourceProviderId;
 
     /**
      * The subchannel through which the associated slave transmits data
@@ -154,14 +153,14 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         this.sizeIsKnown = sizeIsKnown;
         this.resourceLink = resourceLink;
         this.resourceProvider = resourceProvider;
-        this.resourceProviderId = resourceProvider.getID();
+        this.resourceProviderId = resourceProvider.getPeerID();
         this.subchannel = subchannel;
         state = State.AWAITING_REQUEST_RESPONSE;
         timeoutTimer = new Timer(requestLifeMillis, this, true, "MasterResourceStreamer/timeoutTimer");
         resourceLinkTimeoutTimer = new Timer((resourceLink.surviveTimeMillis() * 2) / 3, this, false, "resourceLinkTimeoutTimer");
         requestAssignationTimer = null;
         requestAvailableSegmentsTimer = new Timer(MILLIS_FOR_AUTOMATIC_SEGMENT_AVAILABILITY_REQUEST, this);
-        resourceSegmentQueueWithMonitoring = new ResourceSegmentQueueWithMonitoring(MILLIS_TO_MEASURE_SPEED, MILLIS_SPEED_MEASURE_IS_NOT_VALID, this, new LongRange(null, null), MILLIS_ALLOWED_OUT_OF_SPEED_RANGE, MILLIS_REMAINING_FOR_REPORT);
+        resourceSegmentQueueWithMonitoring = new ResourceSegmentQueueWithMonitoring(MILLIS_TO_MEASURE_SPEED, this, new LongRange(null, null), MILLIS_ALLOWED_OUT_OF_SPEED_RANGE, MILLIS_REMAINING_FOR_REPORT);
         this.resourcePartScheduler = resourcePartScheduler;
         this.resourcePartScheduler.addSlave(this);
         this.active = active;
@@ -180,7 +179,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         return resourceProvider;
     }
 
-    String getResourceProviderId() {
+    PeerID getResourceProviderId() {
         return resourceProviderId;
     }
 
@@ -523,7 +522,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     }
 
     @Override
-    public Float getAchievedSpeed() {
+    public float getAchievedSpeed() {
         return masterResourceStreamer.getSlaveControllerAchievedSpeed(this);
     }
 

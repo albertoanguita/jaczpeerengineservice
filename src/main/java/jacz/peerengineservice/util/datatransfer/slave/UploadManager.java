@@ -1,8 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.util.datatransfer.GlobalUploadStatistics;
-import jacz.peerengineservice.util.datatransfer.PeerBasedStatistics;
 import jacz.util.identifier.UniqueIdentifier;
 
 /**
@@ -14,15 +12,15 @@ public class UploadManager {
 
     private final String store;
 
+    private final String resourceID;
+
     private final PeerID requestingPeer;
 
-    private final UploadSessionStatistics uploadSessionStatistics;
-
-    public UploadManager(SlaveResourceStreamer slaveResourceStreamer, GlobalUploadStatistics globalUploadStatistics, PeerBasedStatistics peerBasedStatistics) {
+    public UploadManager(SlaveResourceStreamer slaveResourceStreamer) {
         this.slaveResourceStreamer = slaveResourceStreamer;
         store = slaveResourceStreamer.getResourceRequest().getStoreName();
+        resourceID = slaveResourceStreamer.getResourceRequest().getResourceID();
         requestingPeer = slaveResourceStreamer.getResourceRequest().getRequestingPeer();
-        uploadSessionStatistics = new UploadSessionStatistics(requestingPeer, globalUploadStatistics, peerBasedStatistics);
     }
 
     public UniqueIdentifier getId() {
@@ -33,12 +31,12 @@ public class UploadManager {
         return store;
     }
 
-    public PeerID getRequestingPeer() {
-        return requestingPeer;
+    public String getResourceID() {
+        return resourceID;
     }
 
-    public UploadSessionStatistics getUploadSessionStatistics() {
-        return uploadSessionStatistics;
+    public PeerID getRequestingPeer() {
+        return requestingPeer;
     }
 
     /**

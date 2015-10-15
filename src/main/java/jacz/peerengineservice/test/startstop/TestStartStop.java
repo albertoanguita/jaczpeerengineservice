@@ -17,7 +17,7 @@ import java.util.HashMap;
 public class TestStartStop {
 
     public static void main(String args[]) throws Exception {
-        String config = "./src/main/java/jacz/peerengineservice/test/clientConf_1_new.xml";
+        String config = "./etc/tests/clientConf_1_new.xml";
         Triple<PeersPersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
         PeersPersonalData peersPersonalData = data.element1;
         PeerClientData peerClientData = data.element2;
@@ -30,6 +30,7 @@ public class TestStartStop {
         System.out.println("Client stopping...");
         client.stopClient();
         System.out.println("Client stopped! END!!!");
+        Thread.sleep(2000);
         System.out.println("END");
     }
 }

@@ -4,11 +4,13 @@ import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
-import jacz.peerengineservice.test.*;
+import jacz.peerengineservice.test.Client;
+import jacz.peerengineservice.test.DownloadProgressNotificationHandlerImpl;
+import jacz.peerengineservice.test.PeerClientConfigSerializer;
+import jacz.peerengineservice.test.PeerIDGenerator;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.TempFileWriter;
-import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 import jacz.util.concurrency.ThreadUtil;
 import jacz.util.lists.Triple;
 
@@ -21,7 +23,7 @@ import java.util.HashMap;
 public class TestTransfer_1_Temp {
 
     public static void main(String args[]) throws Exception {
-        String config = "./src/main/java/jacz/peerengineservice/test/clientConf_1_new.xml";
+        String config = "./etc/tests/clientConf_1_new.xml";
         Triple<PeersPersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
         PeersPersonalData peersPersonalData = data.element1;
         PeerClientData peerClientData = data.element2;
@@ -77,6 +79,11 @@ public class TestTransfer_1_Temp {
 //        downloadManager1.stop();
 //        downloadManager2.stop();
         client.stopClient();
+
+        System.out.println("STATISTICS");
+        System.out.println("----------");
+        System.out.println(client.getTransferStatistics());
+
 //        ThreadUtil.safeSleep(8000);
 //        System.out.println("RESTART!!!");
 //        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);

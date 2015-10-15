@@ -97,10 +97,7 @@ public class PeerClient {
             PeerClientAction peerClientAction,
             ResourceTransferEvents resourceTransferEvents,
             PeersPersonalData peersPersonalData,
-            GlobalDownloadStatistics globalDownloadStatistics,
-            GlobalUploadStatistics globalUploadStatistics,
-            PeerBasedStatistics peerBasedStatistics,
-            TransferStatistics2 transferStatistics2,
+            TransferStatistics transferStatistics,
             PeerRelations peerRelations,
             Map<String, PeerFSMFactory> customFSMs,
             DataSynchEvents dataSynchEvents,
@@ -122,7 +119,7 @@ public class PeerClient {
                 peerClientData.getPort(),
                 peerClientData.getPeerServerData(),
                 peerRelations);
-        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, peerClientPrivateInterface, globalDownloadStatistics, globalUploadStatistics, peerBasedStatistics, transferStatistics2, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
+        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, peerClientPrivateInterface, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
         dataSynchronizer = new DataSynchronizer(this, dataSynchEvents, dataAccessorContainer, peerClientData.getOwnPeerID());
         // add custom FSMs for list synchronizing service, in case the client uses it

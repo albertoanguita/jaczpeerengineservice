@@ -19,7 +19,7 @@ import java.util.HashMap;
 public class TestTransfer_1_Temp_Recover {
 
     public static void main(String args[]) throws Exception {
-        String config = "./src/main/java/jacz/peerengineservice/test/clientConf_1_new.xml";
+        String config = "./etc/tests/clientConf_1_new.xml";
         Triple<PeersPersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
         PeersPersonalData peersPersonalData = data.element1;
         PeerClientData peerClientData = data.element2;
@@ -59,11 +59,16 @@ public class TestTransfer_1_Temp_Recover {
         }
 
 
-//        ThreadUtil.safeSleep(15000);
-//        System.out.println("STOP!!!");
+        ThreadUtil.safeSleep(20000);
+        System.out.println("STOP!!!");
+
+        System.out.println("STATISTICS");
+        System.out.println("----------");
+        System.out.println(client.getTransferStatistics());
+
 //        downloadManager1.stop();
 //        downloadManager2.stop();
-//        client.stopClient();
+        client.stopClient();
 //        ThreadUtil.safeSleep(8000);
 //        System.out.println("RESTART!!!");
 //        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);

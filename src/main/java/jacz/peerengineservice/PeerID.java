@@ -79,6 +79,10 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
         return SixBitSerializer.serialize(id);
     }
 
+    public byte[] toByteArray() {
+        return id;
+    }
+
     /**
      * This method evaluates if this ID has higher priority compared to a given ID. This is used to determine who has
      * priority in case of duplicate connections (two peers try to connect to each other at the same time), but has

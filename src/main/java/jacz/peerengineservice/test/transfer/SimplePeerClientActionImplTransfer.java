@@ -18,9 +18,7 @@ public class SimplePeerClientActionImplTransfer extends SimplePeerClientActionIm
         super.periodicDownloadsNotification(downloadsManager);
         for (DownloadManager downloadManager : downloadsManager.getDownloads("files")) {
             Double speed = downloadManager.getStatistics().getSpeed();
-            if (speed != null) {
-                speed /= 1024d;
-            }
+            speed /= 1024d;
             long size = downloadManager.getStatistics().getDownloadedSizeThisResource();
             Long length = downloadManager.getLength();
             Double part = null;

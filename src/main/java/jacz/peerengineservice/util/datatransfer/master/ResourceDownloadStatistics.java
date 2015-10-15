@@ -1,7 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.peerengineservice.util.datatransfer.GlobalDownloadStatistics;
-import jacz.peerengineservice.util.datatransfer.PeerBasedStatistics;
+import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.util.date_time.SpeedMonitor;
@@ -55,9 +54,9 @@ public class ResourceDownloadStatistics {
      */
     private final SpeedMonitor speed;
 
-    private final HashMap<String, ProviderStatistics> providers;
+    private final HashMap<PeerID, ProviderStatistics> providers;
 
-    ResourceDownloadStatistics(ResourceWriter resourceWriter, GlobalDownloadStatistics globalDownloadStatistics, PeerBasedStatistics peerBasedStatistics) throws IOException {
+    ResourceDownloadStatistics(ResourceWriter resourceWriter) throws IOException {
         this.resourceWriter = resourceWriter;
         Map<String, Serializable> storedStatistics = resourceWriter.getSystemDictionary();
         if (storedStatistics != null && storedStatistics.containsKey(RESOURCE_WRITER_CREATION_DATE_FIELD)) {
@@ -99,7 +98,7 @@ public class ResourceDownloadStatistics {
     }
 
     synchronized ProviderStatistics reportSharedPart(ResourceProvider resourceProvider, ResourcePart resourcePart) {
-        ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
+        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerID());
         if (providerStatistics != null) {
             providerStatistics.reportSharedPart(resourcePart);
         }
@@ -108,7 +107,7 @@ public class ResourceDownloadStatistics {
 
     synchronized ProviderStatistics reportAssignedPart(ResourceProvider resourceProvider, LongRange segment) {
         assignedPart.add(segment);
-        ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
+        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerID());
         if (providerStatistics != null) {
             providerStatistics.reportAssignedSegment(segment);
         }
@@ -116,7 +115,7 @@ public class ResourceDownloadStatistics {
     }
 
     synchronized ProviderStatistics reportClearedAssignation(ResourceProvider resourceProvider) {
-        ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
+        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerID());
         if (providerStatistics != null) {
             providerStatistics.reportClearedAssignation();
         }
@@ -128,7 +127,7 @@ public class ResourceDownloadStatistics {
         assignedPart.remove(segment);
         downloadedPart.add(segment);
         downloadedSizeThisResource += segment.size();
-        ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
+        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerID());
         if (providerStatistics != null) {
             providerStatistics.reportDownloadedSegment(segment);
         }
@@ -151,16 +150,16 @@ public class ResourceDownloadStatistics {
         return downloadedSizeThisResource;
     }
 
-    public synchronized Double getSpeed() {
+    public synchronized double getSpeed() {
         return speed.getAverageSpeed();
     }
 
-    public synchronized Map<String, ProviderStatistics> getProviders() {
+    public synchronized Map<PeerID, ProviderStatistics> getProviders() {
         return new HashMap<>(providers);
     }
 
     synchronized ProviderStatistics addProvider(ResourceProvider resourceProvider) {
-        providers.put(resourceProvider.getID(), new ProviderStatistics(resourceProvider.getID()));
+        providers.put(resourceProvider.getPeerID(), new ProviderStatistics(resourceProvider.getPeerID()));
 //        ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
 //        if (providerStatistics != null) {
 //            providerStatistics.resume();
@@ -172,7 +171,7 @@ public class ResourceDownloadStatistics {
 //        if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerBasedStatistics != null) {
 //            peerBasedStatistics.startDownloadSession(((PeerResourceProvider) resourceProvider).getPeerID());
 //        }
-        return providers.get(resourceProvider.getID());
+        return providers.get(resourceProvider.getPeerID());
     }
 
     synchronized ProviderStatistics removeProvider(ResourceProvider resourceProvider) {
@@ -181,7 +180,7 @@ public class ResourceDownloadStatistics {
 //            long sessionMillis = providerStatistics.stopSession();
 //        }
 //        return providerStatistics;
-        ProviderStatistics providerStatistics = providers.remove(resourceProvider.getID());
+        ProviderStatistics providerStatistics = providers.remove(resourceProvider.getPeerID());
         if (providerStatistics != null) {
             providerStatistics.stop();
         }

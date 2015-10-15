@@ -4,7 +4,6 @@ import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWri
 import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWriteBasic;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
-import jacz.util.files.FileReaderWriter;
 import jacz.util.files.FileUtil;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
 import jacz.util.io.object_serialization.VersionedSerializationException;
@@ -421,29 +420,20 @@ public class TempFileManager {
 
     TempIndex readIndexFile(String indexFilePath) throws IOException, VersionedSerializationException {
         try {
-            byte[] data = FileReaderWriter.readBytes(indexFilePath);
-            return new TempIndex(data);
-        } catch (IOException | VersionedSerializationException e) {
-            // try to use the backup file
-            try {
-                byte[] data = FileReaderWriter.readBytes(generateBackupPath(indexFilePath));
-                TempIndex tempIndex = new TempIndex(data);
-                // backup successfully read -> copy backup to original file and notify client
+            TempIndex tempIndex = new TempIndex(indexFilePath, generateBackupPath(indexFilePath));
+            if (tempIndex.getDeserializeTries() > 0) {
                 tempFileManagerEventsBridge.indexFileErrorRestoredWithBackup(indexFilePath);
-                FileUtil.copy(generateBackupPath(indexFilePath), indexFilePath);
-                return tempIndex;
-            } catch (IOException | VersionedSerializationException e1) {
-                // could not restore data from backup
-                tempFileManagerEventsBridge.indexFileError(indexFilePath);
-                throw e1;
             }
+            return tempIndex;
+        } catch (IOException | VersionedSerializationException e) {
+            // could not restore data from backup
+            tempFileManagerEventsBridge.indexFileError(indexFilePath);
+            throw e;
         }
     }
 
     static void writeIndexFile(String indexFilePath, TempIndex index) throws IOException {
-        byte[] data = VersionedObjectSerializer.serialize(index, TEMP_FILE_INDEX_CRC_BYTES);
-        FileReaderWriter.writeBytes(indexFilePath, data);
-        FileUtil.copy(indexFilePath, generateBackupPath(indexFilePath));
+        VersionedObjectSerializer.serialize(index, TEMP_FILE_INDEX_CRC_BYTES, indexFilePath, generateBackupPath(indexFilePath));
     }
 
     public static String generateBackupPath(String indexFilePath) {

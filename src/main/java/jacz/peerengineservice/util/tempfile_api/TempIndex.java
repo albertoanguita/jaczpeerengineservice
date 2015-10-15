@@ -41,6 +41,8 @@ class TempIndex implements VersionedObject {
      */
     private LongRangeList data;
 
+    private final transient int deserializeTries;
+
     TempIndex(String tempDataFilePath, HashMap<String, Serializable> userDictionary) throws IOException {
         this.tempDataFilePath = tempDataFilePath;
         this.totalResourceSize = null;
@@ -48,10 +50,11 @@ class TempIndex implements VersionedObject {
         this.systemDictionary = new HashMap<>();
         this.data = new LongRangeList();
         setupDataFile(0);
+        deserializeTries = 0;
     }
 
-    public TempIndex(byte[] data) throws VersionedSerializationException {
-        VersionedObjectSerializer.deserialize(this, data);
+    public TempIndex(String path, String backupPath) throws VersionedSerializationException, IOException {
+        deserializeTries = VersionedObjectSerializer.deserialize(this, path, backupPath);
     }
 
     HashMap<String, Serializable> getUserDictionary() {
@@ -116,6 +119,10 @@ class TempIndex implements VersionedObject {
         if (range.getMin() < 0 || range.getMax() >= totalResourceSize) {
             throw new IndexOutOfBoundsException("offset and length values out of range of the resource size");
         }
+    }
+
+    public int getDeserializeTries() {
+        return deserializeTries;
     }
 
     private static LongRange generateRangeFromOffsetAndLength(long offset, int length) {

@@ -12,11 +12,10 @@ import jacz.util.AI.resource_distribution.PriorityResourceDistribution;
 public abstract class GenericPriorityManagerRegulatedResource extends PriorityResourceDistribution.ResourceData {
 
     public float getConsumption() {
-        Float achievedSpeed = getAchievedSpeed();
-        return achievedSpeed != null ? achievedSpeed : 0f;
+        return getAchievedSpeed();
     }
 
-    public abstract Float getAchievedSpeed();
+    public abstract float getAchievedSpeed();
 
     public abstract void hardThrottle(float variation);
 

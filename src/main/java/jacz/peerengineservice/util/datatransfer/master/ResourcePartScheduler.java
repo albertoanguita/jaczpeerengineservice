@@ -392,10 +392,10 @@ class ResourcePartScheduler {
      * @param averageSpeed    last known average speed of this slave. This value is used to calculate the size of the
      *                        assignment (the faster, the bigger assignment)
      * @return if everything went ok, an ObjectListWrapper containing the assigned segment and the allowed speed
-     *         range. If there was any issue, and ObjectListWrapper containing the cause of the issue
-     *         (a NoAssignationCause value)
+     * range. If there was any issue, and ObjectListWrapper containing the cause of the issue
+     * (a NoAssignationCause value)
      */
-    synchronized ObjectListWrapper requestAssignation(SlaveController slaveController, Double averageSpeed) {
+    synchronized ObjectListWrapper requestAssignation(SlaveController slaveController, double averageSpeed) {
         // we have to find the most adequate segment to be assigned to the given slave. There are a series of
         // parameters to take into account in this decision. The idea is to check in the available segments of this
         // slave which is more beneficial for the download. The download is beneficial if we obtain as soon as possible
@@ -415,9 +415,7 @@ class ResourcePartScheduler {
                 }
 
                 long preferredSize = 0;
-                if (averageSpeed != null) {
-                    preferredSize = averageSpeed.longValue() * ESTIMATED_ASSIGNATION_TIME;
-                }
+                preferredSize = (long) averageSpeed * ESTIMATED_ASSIGNATION_TIME;
                 preferredSize = Math.max(preferredSize, MINIMUM_PREFERRED_ASSIGNATION_SIZE);
 
                 // calculate which segments can this slave be assigned, and the block size for evaluating the segments
@@ -501,9 +499,7 @@ class ResourcePartScheduler {
                     LongRange assignedSegment = (LongRange) assignableSegments.getSegmentAroundPosition(selectedPosition, preferredSize);
                     if (assignedSegment != null) {
                         long minSpeed = 0;
-                        if (averageSpeed != null) {
-                            minSpeed = averageSpeed.longValue() / 2;
-                        }
+                        minSpeed = ((long) averageSpeed) / 2L;
                         LongRange allowedSpeedRange = new LongRange(minSpeed, null);
                         masterResourceStreamer.reportAssignedProviderSegment(slaveController.getResourceProvider(), assignedSegment);
                         updateAttributesDueToNewAssignment(slaveID, assignedSegment);
