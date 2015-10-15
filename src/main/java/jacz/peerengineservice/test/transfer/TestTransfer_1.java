@@ -27,7 +27,7 @@ public class TestTransfer_1 {
         PeerRelations peerRelations = data.element3;
 
         Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImplTransfer(), new HashMap<String, PeerFSMFactory>());
-        ForeignStoreShare foreignStoreShare = new ForeignStoreShare();
+        ForeignStoreShare foreignStoreShare = new ForeignStoreShare(client.getPeerClient());
         foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_2", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_3", PeerIDGenerator.peerID(2));
@@ -64,6 +64,11 @@ public class TestTransfer_1 {
         System.out.println("STOP!!!");
         IOUtil.pauseEnter();
         client.stopClient();
+
+        System.out.println("STATISTICS");
+        System.out.println("----------");
+        System.out.println(client.getTransferStatistics());
+
 //        downloadManager1.stop();
 //        downloadManager2.stop();
 //        client.stopClient();

@@ -34,5 +34,9 @@ public class TestTransfer_2 {
         IOUtil.pauseEnter();
         client.stopClient();
 
+        System.out.println("STATISTICS");
+        System.out.println("----------");
+        System.out.println(client.getTransferStatistics());
+
     }
 }

@@ -1,15 +1,15 @@
 package jacz.peerengineservice.util;
 
+import jacz.peerengineservice.client.PeerClient;
 import jacz.util.event.notification.NotificationEmitter;
 import jacz.util.event.notification.NotificationProcessor;
 import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.peerengineservice.PeerID;
+import jacz.util.identifier.UniqueIdentifierFactory;
+import org.apache.commons.collections4.CollectionUtils;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Class describing the resources (files) shared by all the connected peers (friends), or any other resource provider, for ONE SINGLE resource store.
@@ -21,8 +21,35 @@ import java.util.Set;
  * The ResourceStreamingManager will periodically read the values in here to correctly assign peers to active downloads
  * <p/>
  * No additional synchronization measures are needed at this class, as no clashed can be produced
+ * <p/>
+ * Strategy for not-connected peers: is it correct to add peers that are not connected, and leave them even if they
+ * disconnect. Otherwise we would have to add/remove them for each connection/disconnection. This class takes into
+ * account the connection status of peers when reporting for resource possession to the resource streaming manager,
+ * filtering those peers that are not connected or are waiting for validation.
+ * <p/>
+ * Client can, if wished, remove disconnected clients, but he will be responsible of adding them again when they
+ * reconnect. It is recommended to leave them here, since they are properly filtered.
  */
-public class ForeignStoreShare implements NotificationEmitter {
+public class ForeignStoreShare implements NotificationEmitter, NotificationReceiver {
+
+    /**
+     * Base notification time delay for emitting updates on changes
+     */
+    private static final long RECEIVER_MILLIS = 5000;
+
+    /**
+     * Factor of notification time delay upon additional changes
+     */
+    private static final double RECEIVER_TIME_FACTOR = 0.5d;
+
+    /**
+     * Max allowed changes before emitting the update
+     */
+    private static final int RECEIVER_LIMIT = 100;
+
+
+
+    private final PeerClient peerClient;
 
     /**
      * For each file, a list of peers offering it is maintained
@@ -37,9 +64,11 @@ public class ForeignStoreShare implements NotificationEmitter {
     /**
      * Class constructor
      */
-    public ForeignStoreShare() {
+    public ForeignStoreShare(PeerClient peerClient) {
+        this.peerClient = peerClient;
         remoteResources = new HashMap<>();
         notificationProcessor = new NotificationProcessor();
+        peerClient.subscribeToConnectedPeers(UniqueIdentifierFactory.getOneStaticIdentifier(), this, RECEIVER_MILLIS, RECEIVER_TIME_FACTOR, RECEIVER_LIMIT);
     }
 
     /**
@@ -91,24 +120,49 @@ public class ForeignStoreShare implements NotificationEmitter {
      */
     public synchronized Set<PeerID> getForeignPeerShares(String resourceID) {
         if (remoteResources.containsKey(resourceID)) {
-            return new HashSet<>(remoteResources.get(resourceID));
+            Set<PeerID> peerShares = new HashSet<>();
+            for (PeerID peerID : remoteResources.get(resourceID)) {
+                if (peerClient.getPeerConnectionStatus(peerID) == ConnectionStatus.CORRECT) {
+                    peerShares.add(peerID);
+                }
+            }
+            return peerShares;
         } else {
             return new HashSet<>();
         }
     }
 
     @Override
-    public UniqueIdentifier subscribe(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver, boolean groupEvents) throws IllegalArgumentException {
-        return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver, groupEvents);
+    public UniqueIdentifier subscribe(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver) throws IllegalArgumentException {
+        return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver);
     }
 
     @Override
-    public UniqueIdentifier subscribe(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver, boolean groupEvents, long millis, double timeFactorAtEachEvent, int limit) throws IllegalArgumentException {
-        return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver, groupEvents, millis, timeFactorAtEachEvent, limit);
+    public UniqueIdentifier subscribe(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver, long millis, double timeFactorAtEachEvent, int limit) throws IllegalArgumentException {
+        return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver, millis, timeFactorAtEachEvent, limit);
     }
 
     @Override
     public void unsubscribe(UniqueIdentifier receiverID) {
         notificationProcessor.unsubscribeReceiver(receiverID);
+    }
+
+    public void stop() {
+        notificationProcessor.stop();
+    }
+
+    @Override
+    public void newEvent(UniqueIdentifier emitterID, int eventCount, List<List<Object>> nonGroupedMessages, List<Object> groupedMessages) {
+        // the connection status of a peer has changed. Notify all resources shared by that peer id
+        // first, generate the set of affected peers. Messages are grouped, so they all come in the first list
+        Set<PeerID> affectedPeers = new HashSet<>();
+        for (Object o : groupedMessages) {
+            affectedPeers.add((PeerID) o);
+        }
+        for (Map.Entry<String, Set<PeerID>> remoteResource : remoteResources.entrySet()) {
+            if (CollectionUtils.containsAny(remoteResource.getValue(), affectedPeers)) {
+                notificationProcessor.newEvent(remoteResource.getKey());
+            }
+        }
     }
 }

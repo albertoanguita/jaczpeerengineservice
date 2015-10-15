@@ -16,5 +16,5 @@ public interface ResourceStore {
      * @param resourceID requested resource
      * @return the response to this request
      */
-    public ResourceStoreResponse requestResource(PeerID peerID, String resourceID);
+    ResourceStoreResponse requestResource(PeerID peerID, String resourceID);
 }

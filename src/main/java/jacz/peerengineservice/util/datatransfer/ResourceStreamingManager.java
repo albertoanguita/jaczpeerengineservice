@@ -962,10 +962,6 @@ public class ResourceStreamingManager {
 
     private void reportProvidersForOneActiveDownload(String resourceStoreName, String resourceID) {
         ForeignStoreShare foreignStoreShare = foreignShareManager.getResourceProviderShare(resourceStoreName);
-        /*if (foreignStoreShare == null) {
-            // if this store is not registered in the foreign share manager, try with the general store
-            foreignStoreShare = foreignShareManager.getGeneralStoreShares();
-        }*/
         Set<ResourceProvider> resourceProviders = null;
         if (foreignStoreShare != null) {
             Set<PeerID> peersSharing = foreignStoreShare.getForeignPeerShares(resourceID);

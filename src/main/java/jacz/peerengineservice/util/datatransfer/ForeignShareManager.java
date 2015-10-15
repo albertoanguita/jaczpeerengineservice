@@ -113,7 +113,7 @@ class ForeignShareManager implements NotificationReceiver {
     synchronized void addStore(String store, ForeignStoreShare foreignStoreShare) {
         // the subscribe call can be synched because it can cause no clash
         if (alive) {
-            UniqueIdentifier shareEmitterID = foreignStoreShare.subscribe(receiverID, this, true, RECEIVER_MILLIS, RECEIVER_TIME_FACTOR, RECEIVER_LIMIT);
+            UniqueIdentifier shareEmitterID = foreignStoreShare.subscribe(receiverID, this, RECEIVER_MILLIS, RECEIVER_TIME_FACTOR, RECEIVER_LIMIT);
             storeShares.put(store, new ForeignPeerShareWithEmitterID(foreignStoreShare, shareEmitterID));
             globalEmitterIDs.put(shareEmitterID, store);
         }
@@ -134,7 +134,7 @@ class ForeignShareManager implements NotificationReceiver {
     }
 
     /**
-     * Removes a resource store from the registered foreign resource stores
+     * Removes a resource store from the registered foreign resource stores, and stops the store share
      *
      * @param store name of the resource store to remove
      */
@@ -150,6 +150,7 @@ class ForeignShareManager implements NotificationReceiver {
         }
         if (foreignStoreShare != null) {
             foreignStoreShare.unsubscribe(receiverID);
+            foreignStoreShare.stop();
         }
     }
 
@@ -166,7 +167,7 @@ class ForeignShareManager implements NotificationReceiver {
     }
 
     @Override
-    public void newEvent(final UniqueIdentifier emitterID, int eventCount, List<List<Object>> messages) {
+    public void newEvent(final UniqueIdentifier emitterID, int eventCount, List<List<Object>> nonGroupedMessages, List<Object> groupedMessages) {
         // messages are grouped, so they all come in the first list instead of in individual lists
         // a timer thread invokes this sporadically, but this thread can clash with the unsubscribe method, so it is left un-synchronized
         // and the call to the ResourceStreamingManager is in parallel. Therefore, this newEvent call ALWAYS ends
@@ -179,7 +180,7 @@ class ForeignShareManager implements NotificationReceiver {
         if (resourceStore != null) {
             final String finalResourceStore = resourceStore;
             final List<String> affectedResources = new ArrayList<>();
-            for (Object message : messages.get(0)) {
+            for (Object message : groupedMessages) {
                 affectedResources.add((String) message);
             }
             ParallelTaskExecutor.executeTask(new ParallelTask() {

@@ -14,6 +14,7 @@ import jacz.peerengineservice.util.datatransfer.*;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
+import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.util.log.ErrorLog;
@@ -138,6 +139,7 @@ public class PeerClient {
         dataSynchronizer.stop();
         peerClientConnectionManager.stop();
         peerClientAction.stop();
+        connectedPeers.stop();
     }
 
     private void addOwnCustomFSMs(Map<String, PeerFSMFactory> customFSMs) {
@@ -219,8 +221,7 @@ public class PeerClient {
     public synchronized void addFriendPeer(final PeerID peerID) {
         peerRelations.addFriendPeer(peerID);
         searchFriends();
-        ConnectionStatus connectionStatus = connectedPeers.getPeerConnectionStatus(peerID);
-        if (connectionStatus != null && connectionStatus == ConnectionStatus.UNVALIDATED) {
+        if (connectedPeers.getPeerConnectionStatus(peerID) == ConnectionStatus.UNVALIDATED) {
             connectedPeers.setPeerConnectionStatus(peerID, ConnectionStatus.CORRECT);
             sendObjectMessage(peerID, new ValidationMessage());
         }
@@ -619,6 +620,14 @@ public class PeerClient {
      */
     public synchronized ConnectionStatus getPeerConnectionStatus(PeerID peerID) {
         return connectedPeers.getPeerConnectionStatus(peerID);
+    }
+
+    public synchronized void subscribeToConnectedPeers(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver) {
+        connectedPeers.subscribe(receiverID, notificationReceiver);
+    }
+
+    public synchronized void subscribeToConnectedPeers(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver, long millis, double timeFactorAtEachEvent, int limit) {
+        connectedPeers.subscribe(receiverID, notificationReceiver, millis, timeFactorAtEachEvent, limit);
     }
 
     /**

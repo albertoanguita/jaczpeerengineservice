@@ -1,8 +1,12 @@
 package jacz.peerengineservice.client.connection;
 
+import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.ConnectionStatus;
-import jacz.commengine.channel.ChannelConnectionPoint;
+import jacz.util.event.notification.NotificationEmitter;
+import jacz.util.event.notification.NotificationProcessor;
+import jacz.util.event.notification.NotificationReceiver;
+import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.sets.availableelements.AvailableElementsByte;
 
 import java.util.HashMap;
@@ -13,7 +17,7 @@ import java.util.Set;
 /**
  * This class stores the relation of connected peers. Information can be modified and retrieved in a thread-safe manner
  */
-public class ConnectedPeers {
+public class ConnectedPeers implements NotificationEmitter {
 
     /**
      * Connection-related data we have about a peer to which we are currently connected (connection status, ccp and
@@ -61,11 +65,18 @@ public class ConnectedPeers {
 
     private final Byte[] occupiedChannels;
 
+    /**
+     * For submitting events to subscribers (each time a connection of a peer changes)
+     */
+    private final NotificationProcessor notificationProcessor;
+
+
 
     public ConnectedPeers(Byte... occupiedChannels) {
         connectedPeers = new HashMap<>();
         ccpToPeerID = new HashMap<>();
         this.occupiedChannels = occupiedChannels;
+        notificationProcessor = new NotificationProcessor();
     }
 
     public synchronized int connectedPeersCount() {
@@ -84,6 +95,7 @@ public class ConnectedPeers {
         // process (the latter will be released shortly)
         PeerConnectionData pcd = new PeerConnectionData(status, ccp, occupiedChannels);
         connectedPeers.put(peerID, pcd);
+        notificationProcessor.newEvent(peerID);
         ccpToPeerID.put(ccp, peerID);
     }
 
@@ -112,13 +124,13 @@ public class ConnectedPeers {
      * him to make us his friend (WAITING_FOR_REMOTE_VALIDATION)
      *
      * @param peerID peer whose connection status we want to retrieve
-     * @return the connection status of the given peer, or null if we are not connected to this peer
+     * @return the connection status of the given peer (DISCONNECTED if we are not connected to this peer)
      */
     public synchronized ConnectionStatus getPeerConnectionStatus(PeerID peerID) {
         if (isConnectedPeer(peerID)) {
             return connectedPeers.get(peerID).status;
         } else {
-            return null;
+            return ConnectionStatus.DISCONNECTED;
         }
     }
 
@@ -133,6 +145,7 @@ public class ConnectedPeers {
     public synchronized void setPeerConnectionStatus(PeerID peerID, ConnectionStatus connectionStatus) {
         if (isConnectedPeer(peerID)) {
             connectedPeers.get(peerID).status = connectionStatus;
+            notificationProcessor.newEvent(peerID);
         }
     }
 
@@ -182,6 +195,8 @@ public class ConnectedPeers {
 
     /**
      * This methods erases a connected peer (due to this peer disconnecting from us, or we from him, or due to an error)
+     * <p/>
+     * The communication is already closed, so we simply need to clear resources
      *
      * @param ccp ChannelConnectionPoint associated to the peer who got disconnected
      */
@@ -190,6 +205,7 @@ public class ConnectedPeers {
             PeerID peerID = ccpToPeerID.get(ccp);
             connectedPeers.remove(peerID);
             ccpToPeerID.remove(ccp);
+            notificationProcessor.newEvent(peerID);
             return peerID;
         } else {
             return null;
@@ -206,5 +222,24 @@ public class ConnectedPeers {
         for (ChannelConnectionPoint ccp : ccpToPeerID.keySet()) {
             ccp.disconnect();
         }
+    }
+
+    @Override
+    public UniqueIdentifier subscribe(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver) throws IllegalArgumentException {
+        return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver);
+    }
+
+    @Override
+    public UniqueIdentifier subscribe(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver, long millis, double timeFactorAtEachEvent, int limit) throws IllegalArgumentException {
+        return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver, millis, timeFactorAtEachEvent, limit);
+    }
+
+    @Override
+    public void unsubscribe(UniqueIdentifier receiverID) {
+        notificationProcessor.unsubscribeReceiver(receiverID);
+    }
+
+    public void stop() {
+        notificationProcessor.stop();
     }
 }

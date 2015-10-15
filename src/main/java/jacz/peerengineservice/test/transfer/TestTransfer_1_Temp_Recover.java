@@ -26,7 +26,7 @@ public class TestTransfer_1_Temp_Recover {
         PeerRelations peerRelations = data.element3;
 
         Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImplTransfer(), new HashMap<String, PeerFSMFactory>());
-        ForeignStoreShare foreignStoreShare = new ForeignStoreShare();
+        ForeignStoreShare foreignStoreShare = new ForeignStoreShare(client.getPeerClient());
         foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_2", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_3", PeerIDGenerator.peerID(2));

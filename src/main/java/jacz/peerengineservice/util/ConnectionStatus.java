@@ -9,7 +9,12 @@ package jacz.peerengineservice.util;
 public enum ConnectionStatus {
 
     /**
-     * The respective peer has connected to us but he is not marked wither as friend nor blocked peer. Connection is allowed, but it is up to
+     * We are not connected to this peer
+     */
+    DISCONNECTED,
+
+    /**
+     * The respective peer has connected to us but he is not marked either as friend nor blocked peer. Connection is allowed, but it is up to
      * the client to decide which services he is allowed to access
      */
     UNVALIDATED,

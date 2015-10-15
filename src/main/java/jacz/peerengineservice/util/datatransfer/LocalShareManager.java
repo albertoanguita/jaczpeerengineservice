@@ -38,7 +38,7 @@ class LocalShareManager {
      * Class constructor
      */
     LocalShareManager() {
-        registeredStores = new HashMap<String, ResourceStore>();
+        registeredStores = new HashMap<>();
         generalResourceStore = null;
     }
 
