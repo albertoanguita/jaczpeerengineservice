@@ -180,6 +180,6 @@ class SlaveMessageReader implements MessageReader {
 
     @Override
     public void stopped() {
-
+        speedMonitor.stop();
     }
 }

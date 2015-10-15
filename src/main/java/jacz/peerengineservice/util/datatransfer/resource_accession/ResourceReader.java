@@ -25,8 +25,7 @@ public interface ResourceReader {
      *
      * @return the length in bytes of the resource
      * @throws IOException error accessing the resource
-     */
-    public long length() throws IOException;
+     */public long length() throws IOException;
 
     /**
      * Returns the resource segments that this resource reader can access

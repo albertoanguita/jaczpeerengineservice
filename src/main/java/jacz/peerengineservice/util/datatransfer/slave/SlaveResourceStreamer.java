@@ -2,6 +2,7 @@ package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.GenericPriorityManagerRegulatedResource;
+import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.master.MasterMessage;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
@@ -20,7 +21,7 @@ import java.util.List;
 /**
  * This class handles a slave that serves a resource to a master
  */
-public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResource implements jacz.peerengineservice.util.datatransfer.ResourceStreamingManager.SubchannelOwner, SimpleTimerAction {
+public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResource implements ResourceStreamingManager.SubchannelOwner, SimpleTimerAction {
 
     static class RemovedRange {
 
@@ -157,7 +158,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         this.incomingChannel = incomingChannel;
         this.outgoingChannel = outgoingChannel;
         resourceSegmentQueue = new ResourceSegmentQueue();
-        SlaveMessageHandler messageHandler = new jacz.peerengineservice.util.datatransfer.slave.SlaveMessageHandler(resourceStreamingManager, otherPeer, outgoingChannel);
+        SlaveMessageHandler messageHandler = new SlaveMessageHandler(resourceStreamingManager, otherPeer, outgoingChannel);
         messageReader = new SlaveMessageReader(this, resourceSegmentQueue, resourceReader, messageHandler);
         MessageProcessor dataSender = new MessageProcessor(messageReader, messageHandler, false);
         dataSender.start();

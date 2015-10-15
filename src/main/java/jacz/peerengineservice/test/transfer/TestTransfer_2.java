@@ -7,6 +7,7 @@ import jacz.peerengineservice.client.PeersPersonalData;
 import jacz.peerengineservice.test.Client;
 import jacz.peerengineservice.test.PeerClientConfigSerializer;
 import jacz.peerengineservice.test.SimplePeerClientActionImpl;
+import jacz.util.io.IOUtil;
 import jacz.util.lists.Triple;
 
 import java.util.HashMap;
@@ -27,5 +28,11 @@ public class TestTransfer_2 {
         client.getPeerClient().addLocalResourceStore("files", new ResourceStoreImpl());
 //        client.getPeerClient().setMaxDesiredUploadSpeed(25000f);
         client.startClient();
+
+
+        System.out.println("STOP!!!");
+        IOUtil.pauseEnter();
+        client.stopClient();
+
     }
 }

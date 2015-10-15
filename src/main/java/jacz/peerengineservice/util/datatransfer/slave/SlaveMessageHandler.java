@@ -65,6 +65,7 @@ public class SlaveMessageHandler implements MessageHandler {
     @Override
     public void finalizeHandler() {
         // nothing to do
+        sendPacketSpeedLimiter.stop();
     }
 
     synchronized boolean isChoke() {

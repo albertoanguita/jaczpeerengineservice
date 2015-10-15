@@ -9,6 +9,7 @@ import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.BasicFileWriter;
 import jacz.util.concurrency.ThreadUtil;
+import jacz.util.io.IOUtil;
 import jacz.util.lists.Triple;
 
 import java.util.HashMap;
@@ -34,7 +35,7 @@ public class TestTransfer_1 {
         foreignStoreShare.addResourceProvider("file_5", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_6", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_7", PeerIDGenerator.peerID(2));
-        foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(3));
+//        foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(3));
 //        foreignStoreShare.addResourceProvider("file_2", PeerIDGenerator.peerID(3));
         foreignStoreShare.addResourceProvider("file_3", PeerIDGenerator.peerID(3));
         foreignStoreShare.addResourceProvider("file_4", PeerIDGenerator.peerID(3));
@@ -58,7 +59,11 @@ public class TestTransfer_1 {
 
 
         ThreadUtil.safeSleep(15000);
+
+
         System.out.println("STOP!!!");
+        IOUtil.pauseEnter();
+        client.stopClient();
 //        downloadManager1.stop();
 //        downloadManager2.stop();
 //        client.stopClient();

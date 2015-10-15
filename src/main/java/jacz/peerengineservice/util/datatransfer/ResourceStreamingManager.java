@@ -26,6 +26,7 @@ import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.util.io.object_serialization.Serializer;
 import jacz.util.lists.DoubleElementArrayList;
 import jacz.util.numeric.ContinuousDegree;
+import jacz.util.queues.event_processing.MessageHandler;
 import jacz.util.queues.event_processing.MessageProcessor;
 import jacz.util.sets.availableelements.AvailableElementsShort;
 
@@ -290,7 +291,7 @@ public class ResourceStreamingManager {
         /**
          * Inner implementation of the MessageHandler interface, to deal with incoming messages. One of this is created for each subchannel
          */
-        private class MessageHandlerImpl implements jacz.util.queues.event_processing.MessageHandler {
+        private class MessageHandlerImpl implements MessageHandler {
 
             private final short subChannel;
 
