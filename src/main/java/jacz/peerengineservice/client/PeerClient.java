@@ -31,6 +31,8 @@ import java.util.Set;
  */
 public class PeerClient {
 
+    public static final String VERSION = "0.1";
+
     public static final String OWN_CUSTOM_PREFIX = "@@@";
 
     public static final String ERROR_LOG = "PEER_CLIENT_ERROR_LOG";

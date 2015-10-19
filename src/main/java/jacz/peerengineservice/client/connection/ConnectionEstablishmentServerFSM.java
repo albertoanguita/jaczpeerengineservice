@@ -9,8 +9,6 @@ import jacz.commengine.channel.TimedChannelFSMAction;
  * This FSM allows negotiating with other peers who want to connect to our PeerClient. This FSM implements the server
  * part of that connection. First it receives the data of a new peer trying to connect to us, and then it answers to
  * that peer if it accepts the connection or not.
- * <p/>
- * // todo tb puede servir para que el servidor testee nuestra conexión (puerto abierto, etc). DO IN HOLE PUNCHING
  */
 public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<ConnectionEstablishmentServerFSM.State> {
 
@@ -80,15 +78,32 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
 
             default:
                 // should never reach here
-                ccp.disconnect();
                 return State.ERROR;
         }
     }
 
     @Override
-    public State processMessage(State state, byte channel, byte[] bytes, ChannelConnectionPoint ccp) throws IllegalArgumentException {
-        // unexpected data
-        return State.ERROR;
+    public State processMessage(State state, byte channel, byte[] data, ChannelConnectionPoint ccp) throws IllegalArgumentException {
+        switch (state) {
+
+            case WAITING_DATA:
+                // we expect to receive one byte with the type of request, and then maybe more bytes with the
+                // rest of the order
+                if (data.length == 0) {
+                    // illegal data
+                    return State.ERROR;
+                }
+                byte order = data[0];
+                switch (order) {
+                    case (byte) 0:
+                        // ping request -> we return the service version number
+                        // todo
+                }
+
+            default:
+                // unexpected data
+                return State.ERROR;
+        }
     }
 
     @Override
