@@ -13,6 +13,7 @@ import jacz.util.log.ErrorLog;
 import jacz.util.notification.ProgressNotificationWithError;
 import jacz.util.numeric.NumericUtil;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -211,7 +212,12 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             packet.add(elementsToSend.get(index));
         }
         elementToSendIndex += packetSize;
-        byte[] bytePacket = Serializer.serializeObject(new ElementPacket(packet, elementToSendIndex, elementsToSend.size()));
+        byte[] bytePacket = new byte[0];
+        try {
+            bytePacket = Serializer.serializeObject(new ElementPacket(packet, elementToSendIndex, elementsToSend.size()));
+        } catch (IOException e) {
+            ErrorLog.reportError(PeerClient.ERROR_LOG, "Cannot serialize ElementPacket", fsmID, clientPeerID, dataAccessorName, elementsToSend, elementToSendIndex);
+        }
         bytePacket = CRC.addCRC(bytePacket, CRCBytes, true);
         ccp.write(outgoingChannel, bytePacket);
         if (progress != null) {

@@ -35,7 +35,7 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
     /**
      * Base notification time delay for emitting updates on changes
      */
-    private static final long RECEIVER_MILLIS = 5000;
+    private static final long RECEIVER_MILLIS = 1000;
 
     /**
      * Factor of notification time delay upon additional changes

@@ -6,6 +6,8 @@ import jacz.util.lists.Duple;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -39,9 +41,10 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
         return new PeerID(new SHA_256().digest(randomBytes));
     }
 
-    public static Duple<PeerID, PeerEncryption> generateIdAndEncryptionKeys(List<Integer> sizes, int posForPeerIDGeneration, byte[] randomBytes) {
-        PeerEncryption peerEncryption = PeerEncryption.generatePeerEncryption(sizes, randomBytes);
-        return new Duple<>(generateRandomPeerId(peerEncryption.getSizedKeyPairs().get(posForPeerIDGeneration).keyPair.getPublic().getEncoded()), peerEncryption);
+    public static Duple<PeerID, PeerEncryption> generateIdAndEncryptionKeys(byte[] randomBytes) throws NoSuchProviderException, NoSuchAlgorithmException {
+        PeerEncryption peerEncryption = PeerEncryption.generatePeerEncryption(randomBytes);
+        System.out.println("Generating PeerID...");
+        return new Duple<>(generateRandomPeerId(peerEncryption.getPublicDigest()), peerEncryption);
     }
 
     public static boolean isPeerID(String id) {

@@ -7,6 +7,8 @@ import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
 import jacz.util.io.object_serialization.Serializer;
 
+import java.io.IOException;
+
 /**
  * Simple peer timed action example
  */
@@ -41,7 +43,12 @@ public class ProvideFilesFSM implements PeerTimedFSMAction<ProvideFilesFSM.State
 //                objectListWrapper.getObjects().add("bbb");
 //                objectListWrapper.getObjects().add("ccc");
 //                objectListWrapper.getObjects().add("ddd");
-                byte[] data = Serializer.serializeObject(objectListWrapper);
+                byte[] data = new byte[0];
+                try {
+                    data = Serializer.serializeObject(objectListWrapper);
+                } catch (IOException e) {
+                    // ignore
+                }
                 data = new byte[1];
                 data[0] = 5;
                 System.out.println("sending data of length: " + data.length);
