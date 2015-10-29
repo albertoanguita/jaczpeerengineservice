@@ -10,6 +10,7 @@ import jacz.util.notification.ProgressNotificationWithError;
 
 /**
  * Data Synchronizer
+ * todo use database id in synch process, to invalidate all local data if different
  */
 public class DataSynchronizer {
 

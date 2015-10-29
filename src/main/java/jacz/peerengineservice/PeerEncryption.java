@@ -100,7 +100,7 @@ public final class PeerEncryption implements VersionedObject {
     public byte[] getPublicDigest() {
         FragmentedByteArray publicDigest = new FragmentedByteArray();
         for (SizedKeyPair sizedKeyPair : getSizedKeyPairs()) {
-            publicDigest.addArrays(sizedKeyPair.keyPair.getPublic().getEncoded());
+            publicDigest.addArray(sizedKeyPair.keyPair.getPublic().getEncoded());
         }
         return publicDigest.generateArray();
     }

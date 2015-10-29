@@ -5,6 +5,8 @@ import jacz.peerengineservice.util.ChannelConstants;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.channel.TimedChannelFSMAction;
 
+import java.io.Serializable;
+
 /**
  * This FSM allows negotiating with other peers who want to connect to our PeerClient. This FSM implements the server
  * part of that connection. First it receives the data of a new peer trying to connect to us, and then it answers to
@@ -32,6 +34,15 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         UNKNOWN_FRIEND_PENDING_VALIDATION
     }
 
+    public static final class PingRequest implements Serializable {
+
+        public final byte channel;
+
+        public PingRequest(byte channel) {
+            this.channel = channel;
+        }
+    }
+
 
     /**
      * FriendConnectionManager object controlling connections with friends
@@ -53,12 +64,10 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
                 // we expect to receive an ObjectListWrapper object containing the ID of the client and our own ID
                 if (message instanceof ConnectionEstablishmentClientFSM.ConnectionRequest) {
                     ConnectionEstablishmentClientFSM.ConnectionRequest connectionRequest = (ConnectionEstablishmentClientFSM.ConnectionRequest) message;
-
                     if (!connectionRequest.serverPeerID.equals(ownPeerID)) {
                         // incorrect own id
                         return State.ERROR;
                     }
-
                     ConnectionResult connectionResult = friendConnectionManager.newRequestConnectionAsServer(connectionRequest.clientPeerID, ccp);
                     if (connectionResult != null) {
                         // ok to connect -> send result to client and finish
@@ -71,6 +80,11 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
                 } else if (message instanceof ConnectionEstablishmentClientFSM.TerminationMessage) {
                     // this connection process must terminate
                     return State.ERROR;
+                } else if (message instanceof PingRequest) {
+                    // a ping request, probably from a PortTestServer --> answer with a true and finish
+                    PingRequest pingRequest = (PingRequest) message;
+                    ccp.write(pingRequest.channel, ownPeerID);
+                    return State.SUCCESS;
                 } else {
                     // incorrect data format received
                     return State.ERROR;
@@ -84,26 +98,8 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
 
     @Override
     public State processMessage(State state, byte channel, byte[] data, ChannelConnectionPoint ccp) throws IllegalArgumentException {
-        switch (state) {
-
-            case WAITING_DATA:
-                // we expect to receive one byte with the type of request, and then maybe more bytes with the
-                // rest of the order
-                if (data.length == 0) {
-                    // illegal data
-                    return State.ERROR;
-                }
-                byte order = data[0];
-                switch (order) {
-                    case (byte) 0:
-                        // ping request -> we return the service version number
-                        // todo
-                }
-
-            default:
-                // unexpected data
-                return State.ERROR;
-        }
+        // unexpected data
+        return State.ERROR;
     }
 
     @Override
