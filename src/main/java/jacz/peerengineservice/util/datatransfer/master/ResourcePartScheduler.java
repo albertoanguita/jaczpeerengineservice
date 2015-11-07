@@ -168,7 +168,7 @@ class ResourcePartScheduler {
         }
     }
 
-    public static enum NoAssignationCause {
+    public enum NoAssignationCause {
         LOW_SPEED,
         SIZE_NOT_KNOWN,
         SLAVE_NOT_FOUND,

@@ -17,7 +17,7 @@ public class CustomPeerFSM<T> implements ChannelFSMAction<T> {
      * Type of the PeerFSM (either acts as client, initiating the communication, or as server, answering to a
      * client FSM)
      */
-    private static enum Type {
+    private enum Type {
         CLIENT,
         SERVER
     }

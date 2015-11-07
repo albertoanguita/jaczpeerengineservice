@@ -3,14 +3,15 @@ package jacz.peerengineservice.client.connection;
 import jacz.peerengineservice.client.PeerServerData;
 
 /**
- * This class stores the PeerEngine connection status, formed by several different attributes
+ * This class stores the PeerEngine connection status, formed by several different attributes. We send objects of
+ * this class within periodic notifications to the client
  */
 public class State {
 
     /**
      * This enum allows to keep track of the connection state with the peer server
      */
-    public static enum ConnectionToServerState {
+    public enum ConnectionToServerState {
         DISCONNECTED,
         ONGOING_CONNECTION,
         CONNECTED,
@@ -20,7 +21,7 @@ public class State {
     /**
      * This enum stores the possible states of the server for listening to incoming connections from friends
      */
-    public static enum LocalServerConnectionsState {
+    public enum LocalServerConnectionsState {
         OPEN,
         CLOSED
     }

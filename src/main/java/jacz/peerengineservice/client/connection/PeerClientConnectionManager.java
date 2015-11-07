@@ -81,7 +81,7 @@ public class PeerClientConnectionManager implements DaemonAction {
     /**
      * This enum indicates the possibilities for the client wishing us to establish connection with the server or not
      */
-    private static enum ClientsWishForConnection {
+    private enum ClientsWishForConnection {
         POSITIVE,
         NEGATIVE
     }
@@ -111,6 +111,9 @@ public class PeerClientConnectionManager implements DaemonAction {
      */
     private final LocalAddressChecker localAddressChecker;
 
+    /**
+     * Handles connection with the server
+     */
     private final PeerServerManager peerServerManager;
 
     /**
@@ -123,7 +126,17 @@ public class PeerClientConnectionManager implements DaemonAction {
      */
     private final FriendConnectionManager friendConnectionManager;
 
-    public PeerClientConnectionManager(PeerClientPrivateInterface peerClientPrivateInterface, ConnectedPeers connectedPeers, PeerID ownPeerID, int port, PeerServerData peerServerData, PeerRelations peerRelations) {
+
+
+
+
+    public PeerClientConnectionManager(
+            PeerClientPrivateInterface peerClientPrivateInterface,
+            ConnectedPeers connectedPeers,
+            PeerID ownPeerID,
+            int port,
+            PeerServerData peerServerData,
+            PeerRelations peerRelations) {
         this.peerClientPrivateInterface = peerClientPrivateInterface;
 
         clientsWishForConnection = ClientsWishForConnection.NEGATIVE;

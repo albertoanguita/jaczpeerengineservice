@@ -74,6 +74,9 @@ public class FriendConnectionManager {
      */
     private final PeerID ownPeerID;
 
+    /**
+     * The peer server manager is used to perform searches of disconnected friends in the server
+     */
     private final PeerServerManager peerServerManager;
 
     private final PeerClientPrivateInterface peerClientPrivateInterface;
