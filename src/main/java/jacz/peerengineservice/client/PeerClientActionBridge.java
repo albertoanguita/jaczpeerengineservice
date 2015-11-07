@@ -2,7 +2,6 @@ package jacz.peerengineservice.client;
 
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.connection.ClientConnectionToServerFSM;
 import jacz.peerengineservice.client.connection.State;
 import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.peerengineservice.util.datatransfer.DownloadsManager;
@@ -139,67 +138,122 @@ public class PeerClientActionBridge implements PeerClientAction {
     }
 
     @Override
-    public void tryingToConnectToServer(final PeerServerData peerServerData, final State state) {
-        logger.info("TRYING TO CONNECT TO SERVER. Server: " + peerServerData + ". State: " + state);
+    public void unrecognizedMessageFromServer(final State state) {
+        logger.info("UNRECOGNIZED MESSAGE FROM SERVER. State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                peerClientAction.tryingToConnectToServer(peerServerData, state);
+                peerClientAction.unrecognizedMessageFromServer(state);
             }
         });
     }
 
     @Override
-    public void connectionToServerEstablished(final PeerServerData peerServerData, final State state) {
+    public void tryingToConnectToServer(final State state) {
+        logger.info("TRYING TO CONNECT TO SERVER. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.tryingToConnectToServer(state);
+            }
+        });
+    }
+
+    @Override
+    public void connectionToServerEstablished(final State state) {
         logger.info("CONNECTION TO SERVER ESTABLISHED. Server: \" + peerServerData + \". State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                peerClientAction.connectionToServerEstablished(peerServerData, state);
+                peerClientAction.connectionToServerEstablished(state);
             }
         });
     }
 
     @Override
-    public void unableToConnectToServer(final PeerServerData peerServerData, final State state) {
+    public void registrationRequired(final State state) {
+        logger.info("REGISTRATION WITH SERVER REQUIRED. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.registrationRequired(state);
+            }
+        });
+    }
+
+    @Override
+    public void localServerUnreachable(final State state) {
+        logger.info("LOCAL SERVER UNREACHABLE. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.localServerUnreachable(state);
+            }
+        });
+    }
+
+    @Override
+    public void unableToConnectToServer(final State state) {
         logger.info("UNABLE TO CONNECT TO SERVER. Server: \" + peerServerData + \". State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                peerClientAction.unableToConnectToServer(peerServerData, state);
+                peerClientAction.unableToConnectToServer(state);
             }
         });
     }
 
     @Override
-    public void serverTookTooMuchTimeToAnswerConnectionRequest(final PeerServerData peerServerData, final State state) {
-        logger.info("SERVER TOOK TOO MUCH TIME TO ANSWER CONNECTION REQUEST. Server: \" + peerServerData + \". State: " + state);
+    public void disconnectedFromServer(final State state) {
+        logger.info("DISCONNECTED FROM SERVER. State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                peerClientAction.serverTookTooMuchTimeToAnswerConnectionRequest(peerServerData, state);
+                peerClientAction.disconnectedFromServer(state);
             }
         });
     }
 
     @Override
-    public void connectionToServerDenied(final PeerServerData peerServerData, final ClientConnectionToServerFSM.ConnectionFailureReason reason, final State state) {
-        logger.info("CONNECTION TO SERVER DENIED. Reason: " + reason + ". Server: \" + peerServerData + \". State: " + state);
+    public void failedToRefreshServerConnection(final State state) {
+        logger.info("FAILED TO REFRESH SERVER CONNECTION. State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                peerClientAction.connectionToServerDenied(peerServerData, reason, state);
+                peerClientAction.failedToRefreshServerConnection(state);
             }
         });
     }
 
     @Override
-    public void connectionToServerTimedOut(final PeerServerData peerServerData, final State state) {
-        logger.info("CONNECTION TO SERVER TIMED OUT. Server: \" + peerServerData + \". State: " + state);
+    public void tryingToRegisterWithServer(final State state) {
+        logger.info("TRYING TO REGISTER WITH SERVER. State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                peerClientAction.connectionToServerTimedOut(peerServerData, state);
+                peerClientAction.tryingToRegisterWithServer(state);
+            }
+        });
+    }
+
+    @Override
+    public void registrationSuccessful(final State state) {
+        logger.info("REGISTRATION SUCCESSFUL. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.registrationSuccessful(state);
+            }
+        });
+    }
+
+    @Override
+    public void alreadyRegistered(final State state) {
+        logger.info("ALREADY REGISTERED. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.alreadyRegistered(state);
             }
         });
     }
@@ -222,17 +276,6 @@ public class PeerClientActionBridge implements PeerClientAction {
             @Override
             public void performTask() {
                 peerClientAction.localServerClosed(port, state);
-            }
-        });
-    }
-
-    @Override
-    public void disconnectedFromServer(final boolean expected, final PeerServerData peerServerData, final State state) {
-        logger.info("DISCONNECTED FROM SERVER. State: " + state);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                peerClientAction.disconnectedFromServer(expected, peerServerData, state);
             }
         });
     }

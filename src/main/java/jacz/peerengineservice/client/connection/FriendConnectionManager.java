@@ -1,22 +1,24 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.PeerClientPrivateInterface;
-import jacz.peerengineservice.client.PeerRelations;
-import jacz.peerengineservice.server.PeerConnectionInfo;
-import jacz.peerengineservice.util.ChannelConstants;
-import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.clientserver.client.ClientModule;
 import jacz.commengine.communication.CommError;
+import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.client.PeerClientPrivateInterface;
+import jacz.peerengineservice.client.PeerRelations;
+import jacz.peerengineservice.server.ServerAPI;
+import jacz.peerengineservice.server.ServerAccessException;
+import jacz.peerengineservice.util.ChannelConstants;
+import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.util.concurrency.ThreadUtil;
 import jacz.util.concurrency.timer.SimpleTimerAction;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.network.IP4Port;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -60,11 +62,6 @@ public class FriendConnectionManager {
     }
 
     /**
-     * Timeout for the fsm that retrieves disconnected peers data from the server
-     */
-    private static final long FRIEND_SEARCH_TIMEOUT = 10000L;
-
-    /**
      * Five seconds for connection (should be enough, increase if needed)
      */
     private static final long CONNECTION_TIMEOUT = 5000;
@@ -74,13 +71,9 @@ public class FriendConnectionManager {
      */
     private final PeerID ownPeerID;
 
-    /**
-     * The peer server manager is used to perform searches of disconnected friends in the server
-     */
-    private final PeerServerManager peerServerManager;
-
     private final PeerClientPrivateInterface peerClientPrivateInterface;
 
+    private final PeerClientConnectionManager peerClientConnectionManager;
 
     /**
      * Relations with other peers. The connection manager will retrieve periodically from here the list of friend peers, and try to connect to the
@@ -117,13 +110,13 @@ public class FriendConnectionManager {
 
     FriendConnectionManager(
             PeerID ownPeerID,
-            PeerServerManager peerServerManager,
             ConnectedPeers connectedPeers,
             PeerClientPrivateInterface peerClientPrivateInterface,
+            PeerClientConnectionManager peerClientConnectionManager,
             PeerRelations peerRelations) {
         this.ownPeerID = ownPeerID;
-        this.peerServerManager = peerServerManager;
         this.peerClientPrivateInterface = peerClientPrivateInterface;
+        this.peerClientConnectionManager = peerClientConnectionManager;
         this.peerRelations = peerRelations;
         this.connectedPeers = connectedPeers;
         ongoingClientConnections = new HashSet<>();
@@ -166,12 +159,21 @@ public class FriendConnectionManager {
         if (wishForFriendSearch) {
             // we must perform a friend search
             Set<PeerID> friendPeers = peerRelations.getFriendPeers();
-            Set<PeerID> disconnectedFriends = buildDisconnectedFriendsSet(friendPeers, connectedPeers, ongoingClientConnections);
+            List<PeerID> disconnectedFriends = buildDisconnectedFriendsSet(friendPeers, connectedPeers, ongoingClientConnections);
             if (!disconnectedFriends.isEmpty()) {
                 // request friends data to the server
                 // this code simply sets up the FSM in charge of asking the peer server for connected friends. Only friends to which we are not
                 // still connected are searched
-                peerServerManager.registerClientFriendSearchFSM(this, disconnectedFriends, FRIEND_SEARCH_TIMEOUT);
+                try {
+                    ServerAPI.InfoResponse infoResponse = ServerAPI.info(new ServerAPI.InfoRequest(disconnectedFriends));
+
+                } catch (IOException | ServerAccessException e) {
+                    // could not connect with server -> ignore and repeat search soon
+                    friendSearchReminder.searchIssueDetected();
+                } catch (IllegalArgumentException e) {
+                    peerClientConnectionManager.unrecognizedServerMessage();
+                    friendSearchReminder.searchIssueDetected();
+                }
             }
 
             // now remove any peer to which we should not be connected
@@ -182,9 +184,9 @@ public class FriendConnectionManager {
         }
     }
 
-    private static Set<PeerID> buildDisconnectedFriendsSet(Set<PeerID> friendPeerIDs, ConnectedPeers connectedPeers, Set<PeerID> ongoingConnections) {
+    private static List<PeerID> buildDisconnectedFriendsSet(Set<PeerID> friendPeerIDs, ConnectedPeers connectedPeers, Set<PeerID> ongoingConnections) {
         // the disconnected friends are the total friend set, minus the connected friends, minus the friends with ongoing connections
-        Set<PeerID> disconnectedFriends = new HashSet<>(friendPeerIDs);
+        List<PeerID> disconnectedFriends = new ArrayList<>(friendPeerIDs);
         disconnectedFriends.removeAll(connectedPeers.getConnectedPeers());
         for (PeerID ongoingConnection : ongoingConnections) {
             disconnectedFriends.remove(ongoingConnection);
@@ -205,20 +207,20 @@ public class FriendConnectionManager {
      * achieve connection to the list of ongoing connections, so this is not done twice. The PeerClient will be in
      * charge of informing when the connection process is completed, either successfully or not
      *
-     * @param friendsConnectionData the list of found friends in the peer server (for each ID, ip and port are given)
+     * @param infoResponse the list of found friends in the peer server
      */
-    synchronized void reportConnectedFriendsData(Map<PeerID, PeerConnectionInfo> friendsConnectionData) {
-        for (Map.Entry<PeerID, PeerConnectionInfo> connectionInfoEntry : friendsConnectionData.entrySet()) {
-            tryToConnectToAPeer(connectionInfoEntry.getKey(), connectionInfoEntry.getValue());
+    synchronized void reportConnectedFriendsData(ServerAPI.InfoResponse infoResponse) {
+        for (ServerAPI.PeerIDInfo peerIDInfo : infoResponse) {
+            tryToConnectToAPeer(peerIDInfo);
         }
     }
 
-    private void tryToConnectToAPeer(PeerID peerID, PeerConnectionInfo peerConnectionInfo) {
+    private void tryToConnectToAPeer(ServerAPI.PeerIDInfo peerIDInfo) {
         // A client module is created for each received peer. If connection is achieved, a
         // Connection Client FSM is created. The init method in the FSM will take care
         // of checking if it is actually possible to proceed with the connection
 
-        if (connectedPeers.isConnectedPeer(peerID) || ongoingClientConnections.contains(peerID)) {
+        if (connectedPeers.isConnectedPeer(peerIDInfo.getPeerID()) || ongoingClientConnections.contains(peerID)) {
             // check that we are not connected to this peer, or trying to connect to it
             return;
         }

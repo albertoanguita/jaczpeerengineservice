@@ -184,14 +184,6 @@ public class PeerClient {
         return ownPeerID;
     }
 
-    public synchronized PeerServerData getPeerServerData() {
-        return peerClientConnectionManager.getPeerServerData();
-    }
-
-    public synchronized void setPeerServerData(PeerServerData peerServerData) {
-        peerClientConnectionManager.setPeerServerData(peerServerData);
-    }
-
     public synchronized int getListeningPort() {
         return peerClientConnectionManager.getListeningPort();
     }
@@ -651,36 +643,48 @@ public class PeerClient {
         peerClientAction.listeningPortModified(port);
     }
 
-    /**
-     */
+    void unrecognizedMessageFromServer(final State state) {
+        peerClientAction.unrecognizedMessageFromServer(state);
+    }
+
     void tryingToConnectToServer(final State state) {
         peerClientAction.tryingToConnectToServer(state);
     }
 
-    /**
-     */
     void connectionToServerEstablished(final State state) {
         peerClientAction.connectionToServerEstablished(state);
+    }
+
+    void registrationRequired(final State state) {
+        peerClientAction.registrationRequired(state);
+    }
+
+    void localServerUnreachable(final State state) {
+        peerClientAction.localServerUnreachable(state);
     }
 
     void unableToConnectToServer(final State state) {
         peerClientAction.unableToConnectToServer(state);
     }
 
-    void serverTookToMuchTimeToAnswerConnectionRequest(final State state) {
-        peerClientAction.serverTookTooMuchTimeToAnswerConnectionRequest(state);
+    void disconnectedFromServer(final State state) {
+        peerClientAction.disconnectedFromServer(state);
     }
 
-    void connectionToServerDenied(final ClientConnectionToServerFSM.ConnectionFailureReason reason, final State state) {
-        peerClientAction.connectionToServerDenied(reason, state);
+    void failedToRefreshServerConnection(final State state) {
+        peerClientAction.failedToRefreshServerConnection(state);
     }
 
-    void disconnectedFromServer(final boolean expected, final State state) {
-        peerClientAction.disconnectedFromServer(expected, state);
+    void tryingToRegisterWithServer(final State state) {
+        peerClientAction.tryingToRegisterWithServer(state);
     }
 
-    void connectionToServerTimedOut(final State state) {
-        peerClientAction.connectionToServerTimedOut(state);
+    void registrationSuccessful(final State state) {
+        peerClientAction.registrationSuccessful(state);
+    }
+
+    void alreadyRegistered(final State state) {
+        peerClientAction.alreadyRegistered(state);
     }
 
     void localServerOpen(final int port, final State state) {

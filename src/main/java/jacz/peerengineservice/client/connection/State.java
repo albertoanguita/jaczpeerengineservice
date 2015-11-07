@@ -14,7 +14,6 @@ public class State {
     public enum ConnectionToServerState {
         UNREGISTERED,
         DISCONNECTED,
-//        ONGOING_CONNECTION,
         CONNECTED,
         WAITING_FOR_NEXT_CONNECTION_TRY
     }
@@ -29,11 +28,6 @@ public class State {
 
     private final ConnectionToServerState connectionToServerState;
 
-    /**
-     * Information about the server to which we are connected or trying to connect (null if disconnected or waiting for next connection try)
-     */
-    private final PeerServerData peerServerData;
-
     private final LocalServerConnectionsState localServerConnectionsState;
 
     /**
@@ -43,24 +37,18 @@ public class State {
 
     public State() {
         connectionToServerState = ConnectionToServerState.DISCONNECTED;
-        peerServerData = null;
         localServerConnectionsState = LocalServerConnectionsState.CLOSED;
         port = -1;
     }
 
-    public State(ConnectionToServerState connectionToServerState, PeerServerData peerServerData, LocalServerConnectionsState localServerConnectionsState, int port) {
+    public State(ConnectionToServerState connectionToServerState, LocalServerConnectionsState localServerConnectionsState, int port) {
         this.connectionToServerState = connectionToServerState;
-        this.peerServerData = peerServerData;
         this.localServerConnectionsState = localServerConnectionsState;
         this.port = port;
     }
 
     public ConnectionToServerState getConnectionToServerState() {
         return connectionToServerState;
-    }
-
-    public PeerServerData getPeerServerData() {
-        return peerServerData;
     }
 
     public LocalServerConnectionsState getLocalServerConnectionsState() {
@@ -73,7 +61,7 @@ public class State {
 
     @Override
     public String toString() {
-        return "State{Peer server: " + connectionToServerState + " [" + peerServerData + "], Local server: " + localServerConnectionsState + " [" + port + "]}";
+        return "State{Peer server: " + connectionToServerState + ", Local server: " + localServerConnectionsState + " [" + port + "]}";
     }
 
     @Override
@@ -86,7 +74,6 @@ public class State {
         if (port != state.port) return false;
         if (connectionToServerState != state.connectionToServerState) return false;
         if (localServerConnectionsState != state.localServerConnectionsState) return false;
-        if (peerServerData != null ? !peerServerData.equals(state.peerServerData) : state.peerServerData != null) return false;
 
         return true;
     }
@@ -94,7 +81,6 @@ public class State {
     @Override
     public int hashCode() {
         int result = connectionToServerState.hashCode();
-        result = 31 * result + (peerServerData != null ? peerServerData.hashCode() : 0);
         result = 31 * result + localServerConnectionsState.hashCode();
         result = 31 * result + port;
         return result;

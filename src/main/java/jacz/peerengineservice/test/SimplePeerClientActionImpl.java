@@ -4,8 +4,6 @@ import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClientAction;
 import jacz.peerengineservice.client.PeerRelations;
-import jacz.peerengineservice.client.PeerServerData;
-import jacz.peerengineservice.client.connection.ClientConnectionToServerFSM;
 import jacz.peerengineservice.client.connection.State;
 import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.peerengineservice.util.datatransfer.DownloadsManager;
@@ -81,28 +79,33 @@ public class SimplePeerClientActionImpl implements PeerClientAction {
     }
 
     @Override
-    public void tryingToConnectToServer(PeerServerData peerServerData, State state) {
+    public void unrecognizedMessageFromServer(State state) {
+        System.out.println(initMessage + "Unrecognized message from server. State: " + state);
+    }
+
+    @Override
+    public void tryingToConnectToServer( State state) {
         System.out.println(initMessage + "Trying to connect to server. State: " + state);
     }
 
     @Override
-    public void connectionToServerEstablished(jacz.peerengineservice.client.PeerServerData peerServerData, State state) {
+    public void connectionToServerEstablished(State state) {
         System.out.println(initMessage + "Connected to server. State: " + state);
     }
 
     @Override
-    public void unableToConnectToServer(jacz.peerengineservice.client.PeerServerData peerServerData, State state) {
+    public void registrationRequired(State state) {
+        System.out.println(initMessage + "Registration with server required. State: " + state);
+    }
+
+    @Override
+    public void localServerUnreachable(State state) {
+        System.out.println(initMessage + "Local server unreachable. State: " + state);
+    }
+
+    @Override
+    public void unableToConnectToServer(State state) {
         System.out.println(initMessage + "Unable to connect to server. State: " + state);
-    }
-
-    @Override
-    public void serverTookTooMuchTimeToAnswerConnectionRequest(jacz.peerengineservice.client.PeerServerData peerServerData, State state) {
-        System.out.println(initMessage + "Server took too much time to answer. State: " + state);
-    }
-
-    @Override
-    public void connectionToServerTimedOut(jacz.peerengineservice.client.PeerServerData peerServerData, State state) {
-        System.out.println(initMessage + "Connection to server timed out. State: " + state);
     }
 
     @Override
@@ -116,13 +119,28 @@ public class SimplePeerClientActionImpl implements PeerClientAction {
     }
 
     @Override
-    public void connectionToServerDenied(jacz.peerengineservice.client.PeerServerData peerServerData, ClientConnectionToServerFSM.ConnectionFailureReason reason, State state) {
-        System.out.println(initMessage + "Connection to server denied. " + reason + ". State: " + state);
+    public void disconnectedFromServer(State state) {
+        System.out.println(initMessage + "Disconnected from server. State: " + state);
     }
 
     @Override
-    public void disconnectedFromServer(boolean expected, jacz.peerengineservice.client.PeerServerData peerServerData, State state) {
-        System.out.println(initMessage + "Disconnected from server. Expected=" + expected + ". State: " + state);
+    public void failedToRefreshServerConnection(State state) {
+        System.out.println(initMessage + "Failed to refresh server connection. State: " + state);
+    }
+
+    @Override
+    public void tryingToRegisterWithServer(State state) {
+        System.out.println(initMessage + "Trying to register with server. State: " + state);
+    }
+
+    @Override
+    public void registrationSuccessful(State state) {
+        System.out.println(initMessage + "Registration with server successful. State: " + state);
+    }
+
+    @Override
+    public void alreadyRegistered(State state) {
+        System.out.println(initMessage + "Already registered. State: " + state);
     }
 
     @Override

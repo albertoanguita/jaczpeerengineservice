@@ -146,8 +146,8 @@ public class PeerClientConnectionManager implements DaemonAction {
 
         localAddressChecker = new LocalAddressChecker(this);
 
-        peerServerManager = new PeerServerManager(ownPeerID, peerClientPrivateInterface, wishedConnectionInformation);
-        friendConnectionManager = new FriendConnectionManager(ownPeerID, peerServerManager, connectedPeers, peerClientPrivateInterface, peerRelations);
+        peerServerManager = new PeerServerManager(ownPeerID, this, peerClientPrivateInterface, wishedConnectionInformation);
+        friendConnectionManager = new FriendConnectionManager(ownPeerID, connectedPeers, peerClientPrivateInterface, this, peerRelations);
         localServerManager = new LocalServerManager(friendConnectionManager, peerClientPrivateInterface, wishedConnectionInformation);
     }
 
@@ -183,26 +183,26 @@ public class PeerClientConnectionManager implements DaemonAction {
         friendConnectionManager.stop();
     }
 
-    /**
-     * Retrieves the currently set peer server data
-     *
-     * @return the last peer server data set
-     */
-    public synchronized PeerServerData getPeerServerData() {
-        return wishedConnectionInformation.getPeerServerData();
-    }
+//    /**
+//     * Retrieves the currently set peer server data
+//     *
+//     * @return the last peer server data set
+//     */
+//    public synchronized PeerServerData getPeerServerData() {
+//        return wishedConnectionInformation.getPeerServerData();
+//    }
 
-    /**
-     * Sets the data about the peer server to which we must connect to. This value can be set at any time, even when we are already connected to
-     * another server. In this case the manager will disconnect and then connect to the new server
-     *
-     * @param peerServerData data about the server to connect to
-     */
-    public synchronized void setPeerServerData(PeerServerData peerServerData) {
-        wishedConnectionInformation.setPeerServerData(peerServerData);
-        peerServerManager.updatedState();
-        updatedState();
-    }
+//    /**
+//     * Sets the data about the peer server to which we must connect to. This value can be set at any time, even when we are already connected to
+//     * another server. In this case the manager will disconnect and then connect to the new server
+//     *
+//     * @param peerServerData data about the server to connect to
+//     */
+//    public synchronized void setPeerServerData(PeerServerData peerServerData) {
+//        wishedConnectionInformation.setPeerServerData(peerServerData);
+//        peerServerManager.updatedState();
+//        updatedState();
+//    }
 
     public synchronized int getListeningPort() {
         return wishedConnectionInformation.getListeningPort();
@@ -314,6 +314,15 @@ public class PeerClientConnectionManager implements DaemonAction {
         ThreadUtil.safeSleep(1000);
     }
 
+    /**
+     * The peer server manager reports that he received an unrecognized server message. Stop trying to connect and
+     * notify client
+     */
+    void unrecognizedServerMessage() {
+        peerClientPrivateInterface.unrecognizedMessageFromServer(peerServerManager.getConnectionToServerStatus());
+        setWishForConnection(false);
+        updatedState();
+    }
 
     static Set<Set<Byte>> generateConcurrentChannelSets() {
         // there will be three concurrent sets. One for the request dispatcher, one for the data streaming, and one

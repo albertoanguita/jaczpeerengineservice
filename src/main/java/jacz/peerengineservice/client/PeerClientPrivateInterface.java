@@ -1,14 +1,13 @@
 package jacz.peerengineservice.client;
 
+import jacz.commengine.channel.ChannelConnectionPoint;
+import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.connection.ClientConnectionToServerFSM;
 import jacz.peerengineservice.client.connection.RequestFromPeerToPeer;
 import jacz.peerengineservice.client.connection.State;
 import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.peerengineservice.util.datatransfer.DownloadsManager;
 import jacz.peerengineservice.util.datatransfer.UploadsManager;
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.communication.CommError;
 import jacz.util.network.IP4Port;
 
 /**
@@ -53,7 +52,7 @@ public class PeerClientPrivateInterface {
     }
 
     private synchronized State buildState() {
-        return new State(connectionToServerState, peerServerData, localServerConnectionsState, port);
+        return new State(connectionToServerState, localServerConnectionsState, port);
     }
 
     public synchronized State getState() {
@@ -62,11 +61,6 @@ public class PeerClientPrivateInterface {
 
     private void updateConnectionToServerInfo(State.ConnectionToServerState connectionToServerStatus) {
         this.connectionToServerState = connectionToServerStatus;
-//        if (connectionToServerStatus == State.ConnectionToServerState.CONNECTED || connectionToServerStatus == State.ConnectionToServerState.ONGOING_CONNECTION) {
-//            this.peerServerData = peerServerData;
-//        } else {
-//            this.peerServerData = null;
-//        }
     }
 
     private void updateLocalServerInfo(State.LocalServerConnectionsState localServerConnectionsState, int port) {
@@ -82,9 +76,14 @@ public class PeerClientPrivateInterface {
         peerClient.listeningPortModified(port);
     }
 
-    public synchronized void tryingToConnectToServer(PeerServerData peerServerData, State.ConnectionToServerState connectionToServerStatus) {
-        updateConnectionToServerInfo(connectionToServerStatus, peerServerData);
-        peerClient.tryingToConnectToServer(peerServerData, buildState());
+    public synchronized void unrecognizedMessageFromServer(State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.unrecognizedMessageFromServer(buildState());
+    }
+
+    public synchronized void tryingToConnectToServer(State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.tryingToConnectToServer(buildState());
     }
 
     public synchronized void connectionToServerEstablished(State.ConnectionToServerState connectionToServerStatus) {
@@ -92,29 +91,44 @@ public class PeerClientPrivateInterface {
         peerClient.connectionToServerEstablished(buildState());
     }
 
+    public synchronized void registrationRequired(State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.registrationRequired(buildState());
+    }
+
+    public synchronized void localServerUnreachable(State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.localServerUnreachable(buildState());
+    }
+
     public synchronized void unableToConnectToServer(State.ConnectionToServerState connectionToServerStatus) {
-        updateConnectionToServerInfo(connectionToServerStatus, peerServerData);
-        peerClient.unableToConnectToServer(peerServerData, buildState());
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.unableToConnectToServer(buildState());
     }
 
-    public synchronized void serverTookToMuchTimeToAnswerConnectionRequest(PeerServerData peerServerData, State.ConnectionToServerState connectionToServerStatus) {
-        updateConnectionToServerInfo(connectionToServerStatus, peerServerData);
-        peerClient.serverTookToMuchTimeToAnswerConnectionRequest(peerServerData, buildState());
+    public synchronized void disconnectedFromServer(State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.disconnectedFromServer(buildState());
     }
 
-    public synchronized void connectionToServerDenied(PeerServerData peerServerData, ClientConnectionToServerFSM.ConnectionFailureReason reason, State.ConnectionToServerState connectionToServerStatus) {
-        updateConnectionToServerInfo(connectionToServerStatus, peerServerData);
-        peerClient.connectionToServerDenied(peerServerData, reason, buildState());
+    public synchronized void failedToRefreshServerConnection(State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.failedToRefreshServerConnection(buildState());
     }
 
-    public synchronized void disconnectedFromServer(boolean expected, PeerServerData peerServerData, State.ConnectionToServerState connectionToServerStatus) {
-        updateConnectionToServerInfo(connectionToServerStatus, peerServerData);
-        peerClient.disconnectedFromServer(expected, peerServerData, buildState());
+    public synchronized void tryingToRegisterWithServer(State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.tryingToRegisterWithServer(buildState());
     }
 
-    public synchronized void connectionToServerTimedOut(PeerServerData peerServerData, State.ConnectionToServerState connectionToServerStatus) {
-        updateConnectionToServerInfo(connectionToServerStatus, peerServerData);
-        peerClient.connectionToServerTimedOut(peerServerData, buildState());
+    public synchronized void registrationSuccessful(State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.registrationSuccessful(buildState());
+    }
+
+    public synchronized void alreadyRegistered(State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.alreadyRegistered(buildState());
     }
 
     public synchronized void localServerOpen(int port, State.LocalServerConnectionsState localServerConnectionsState) {

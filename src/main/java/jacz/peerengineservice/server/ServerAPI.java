@@ -75,9 +75,9 @@ public class ServerAPI {
 
         private String sessionID;
 
-        private int minReminderTime;
+        private long minReminderTime;
 
-        private int maxReminderTime;
+        private long maxReminderTime;
 
         public ConnectionResponseType getResponse() {
             return response;
@@ -87,11 +87,11 @@ public class ServerAPI {
             return sessionID;
         }
 
-        public int getMinReminderTime() {
+        public long getMinReminderTime() {
             return minReminderTime;
         }
 
-        public int getMaxReminderTime() {
+        public long getMaxReminderTime() {
             return maxReminderTime;
         }
 
@@ -100,8 +100,8 @@ public class ServerAPI {
             connectionResponse.response = ConnectionResponseType.valueOf(connectionResponseJSON.response);
             if (connectionResponse.response == ConnectionResponseType.OK) {
                 connectionResponse.sessionID = connectionResponseJSON.sessionID;
-                connectionResponse.minReminderTime = Integer.parseInt(connectionResponseJSON.minReminderTime);
-                connectionResponse.maxReminderTime = Integer.parseInt(connectionResponseJSON.maxReminderTime);
+                connectionResponse.minReminderTime = Long.parseLong(connectionResponseJSON.minReminderTime);
+                connectionResponse.maxReminderTime = Long.parseLong(connectionResponseJSON.maxReminderTime);
             }
             return connectionResponse;
         }
@@ -126,25 +126,33 @@ public class ServerAPI {
         }
     }
 
-    public static final class UpdateResponse {
+    private class UpdateResponseJSON {
 
-        // todo to enum
         private String response;
+    }
 
-        @Override
-        public String toString() {
-            return "UpdateResponse{" +
-                    "response='" + response + '\'' +
-                    '}';
-        }
+    public enum RefreshResponse {
+
+        OK,
+        UNRECOGNIZED_SESSION,
+        TOO_SOON
+    }
+
+    public enum DisconnectResponse {
+
+        OK,
+        UNRECOGNIZED_SESSION
     }
 
     public static final class InfoRequest {
 
         private final List<String> peerIDList;
 
-        public InfoRequest(List<String> peerIDList) {
-            this.peerIDList = peerIDList;
+        public InfoRequest(List<PeerID> peerIDList) {
+            this.peerIDList = new ArrayList<>();
+            for (PeerID peerID : peerIDList) {
+                this.peerIDList.add(peerID.toString());
+            }
         }
     }
 
@@ -173,6 +181,34 @@ public class ServerAPI {
         private String localRESTServerPort;
         private String externalMainServerPort;
         private String externalRESTServerPort;
+
+        public String getPeerID() {
+            return peerID;
+        }
+
+        public String getLocalIPAddress() {
+            return localIPAddress;
+        }
+
+        public String getExternalIPAddress() {
+            return externalIPAddress;
+        }
+
+        public String getLocalMainServerPort() {
+            return localMainServerPort;
+        }
+
+        public String getLocalRESTServerPort() {
+            return localRESTServerPort;
+        }
+
+        public String getExternalMainServerPort() {
+            return externalMainServerPort;
+        }
+
+        public String getExternalRESTServerPort() {
+            return externalRESTServerPort;
+        }
 
         @Override
         public String toString() {
@@ -233,7 +269,7 @@ public class ServerAPI {
         }
     }
 
-    public static UpdateResponse refresh(UpdateRequest updateRequest) throws IOException, ServerAccessException {
+    public static RefreshResponse refresh(UpdateRequest updateRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
                 "https://testserver01-1100.appspot.com/_ah/api/server/v1/refresh",
                 HttpClient.Verb.POST,
@@ -241,16 +277,17 @@ public class ServerAPI {
                 HttpClient.ContentType.JSON,
                 new Gson().toJson(updateRequest));
         checkError(result);
+        UpdateResponseJSON updateResponseJSON = new Gson().fromJson(result.element2, UpdateResponseJSON.class);
         try {
-            return new Gson().fromJson(result.element2, UpdateResponse.class);
-        } catch (Exception e) {
-            // unrecognized values --> log error and re-throw
+            return RefreshResponse.valueOf(updateResponseJSON.response);
+        } catch (IllegalArgumentException e) {
+            // unrecognized value --> log error and re-throw
             ErrorLog.reportError(PeerClient.ERROR_LOG, "Unrecognized refresh response", result.element2);
-            throw new IOException("Unrecognized refresh response");
+            throw e;
         }
     }
 
-    public static UpdateResponse disconnect(UpdateRequest updateRequest) throws IOException, ServerAccessException {
+    public static DisconnectResponse disconnect(UpdateRequest updateRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
                 "https://testserver01-1100.appspot.com/_ah/api/server/v1/disconnect",
                 HttpClient.Verb.POST,
@@ -258,12 +295,13 @@ public class ServerAPI {
                 HttpClient.ContentType.JSON,
                 new Gson().toJson(updateRequest));
         checkError(result);
+        UpdateResponseJSON updateResponseJSON = new Gson().fromJson(result.element2, UpdateResponseJSON.class);
         try {
-            return new Gson().fromJson(result.element2, UpdateResponse.class);
-        } catch (Exception e) {
-            // unrecognized values --> log error and re-throw
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Unrecognized refresh response", result.element2);
-            throw new IOException("Unrecognized refresh response");
+            return DisconnectResponse.valueOf(updateResponseJSON.response);
+        } catch (IllegalArgumentException e) {
+            // unrecognized value --> log error and re-throw
+            ErrorLog.reportError(PeerClient.ERROR_LOG, "Unrecognized disconnect response", result.element2);
+            throw e;
         }
     }
 
@@ -312,9 +350,9 @@ public class ServerAPI {
 //        UpdateResponse disconnectResponse = disconnect(new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
 //        System.out.println(disconnectResponse);
 
-        List<String> peerIDList = new ArrayList<>();
-        peerIDList.add("0000000000000000000000000000000000000000002");
-        peerIDList.add("0000000000000000000000000000000000000000004");
+        List<PeerID> peerIDList = new ArrayList<>();
+        peerIDList.add(new PeerID("0000000000000000000000000000000000000000002"));
+        peerIDList.add(new PeerID("0000000000000000000000000000000000000000004"));
         InfoResponse infoResponse = info(new InfoRequest(peerIDList));
         System.out.println(infoResponse);
 
