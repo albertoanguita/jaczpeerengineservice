@@ -8,6 +8,8 @@ import jacz.util.lists.Duple;
 import jacz.util.log.ErrorLog;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class provides methods for accessing the remote server functionality
@@ -120,6 +122,55 @@ public class ServerAPI {
         }
     }
 
+    public static final class InfoRequest {
+
+        private final List<String> peerIDList;
+
+        public InfoRequest(List<String> peerIDList) {
+            this.peerIDList = peerIDList;
+        }
+    }
+
+    public static final class InfoResponse {
+
+        private List<PeerIDInfo> peerIDInfoList;
+
+        public InfoResponse() {
+            peerIDInfoList = new ArrayList<>();
+        }
+
+        @Override
+        public String toString() {
+            return "InfoResponse{" +
+                    "peerIDInfoList=" + peerIDInfoList +
+                    '}';
+        }
+    }
+
+    public static final class PeerIDInfo {
+
+        private String peerID;
+        private String localIPAddress;
+        private String externalIPAddress;
+        private String localMainServerPort;
+        private String localRESTServerPort;
+        private String externalMainServerPort;
+        private String externalRESTServerPort;
+
+        @Override
+        public String toString() {
+            return "PeerIDInfo{" +
+                    "peerID='" + peerID + '\'' +
+                    ", localIPAddress='" + localIPAddress + '\'' +
+                    ", externalIPAddress='" + externalIPAddress + '\'' +
+                    ", localMainServerPort='" + localMainServerPort + '\'' +
+                    ", localRESTServerPort='" + localRESTServerPort + '\'' +
+                    ", externalMainServerPort='" + externalMainServerPort + '\'' +
+                    ", externalRESTServerPort='" + externalRESTServerPort + '\'' +
+                    '}';
+        }
+    }
+
     public static String hello() throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
                 "https://testserver01-1100.appspot.com/_ah/api/server/v1/hello",
@@ -199,16 +250,17 @@ public class ServerAPI {
         }
     }
 
-    public static UpdateResponse info(UpdateRequest updateRequest) throws IOException, ServerAccessException {
+    public static InfoResponse info(InfoRequest infoRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
                 "https://testserver01-1100.appspot.com/_ah/api/server/v1/info",
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
                 HttpClient.ContentType.JSON,
-                new Gson().toJson(updateRequest));
+                new Gson().toJson(infoRequest));
         checkError(result);
+        System.out.println(result.element2);
         try {
-            return new Gson().fromJson(result.element2, UpdateResponse.class);
+            return new Gson().fromJson(result.element2, InfoResponse.class);
         } catch (Exception e) {
             // unrecognized values --> log error and re-throw
             ErrorLog.reportError(PeerClient.ERROR_LOG, "Unrecognized refresh response", result.element2);
@@ -234,15 +286,20 @@ public class ServerAPI {
         System.out.println(registrationResponse);
 
 
-//        ConnectionResponse connectionResponse = connect(new ConnectionRequest(new PeerID("0000000000000000000000000000000000000000003"), "192.168.1.1", 50000, 50001));
-//        System.out.println(connectionResponse);
+        ConnectionResponse connectionResponse = connect(new ConnectionRequest(new PeerID("0000000000000000000000000000000000000000003"), "192.168.1.1", 50000, 50001));
+        System.out.println(connectionResponse);
 
 //        UpdateResponse refreshResponse = refresh(new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
 //        System.out.println(refreshResponse);
 
+//        UpdateResponse disconnectResponse = disconnect(new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
+//        System.out.println(disconnectResponse);
 
-        UpdateResponse disconnectResponse = disconnect(new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
-        System.out.println(disconnectResponse);
+        List<String> peerIDList = new ArrayList<>();
+        peerIDList.add("0000000000000000000000000000000000000000002");
+        peerIDList.add("0000000000000000000000000000000000000000004");
+        InfoResponse infoResponse = info(new InfoRequest(peerIDList));
+        System.out.println(infoResponse);
 
 
     }
