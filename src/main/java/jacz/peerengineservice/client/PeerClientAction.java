@@ -34,23 +34,23 @@ public interface PeerClientAction {
 
     void listeningPortModified(int port);
 
-    void tryingToConnectToServer(PeerServerData peerServerData, State state);
+    void tryingToConnectToServer(State state);
 
-    void connectionToServerEstablished(PeerServerData peerServerData, State state);
+    void connectionToServerEstablished(State state);
 
-    void unableToConnectToServer(PeerServerData peerServerData, State state);
+    void unableToConnectToServer(State state);
 
-    void serverTookTooMuchTimeToAnswerConnectionRequest(PeerServerData peerServerData, State state);
+    void serverTookTooMuchTimeToAnswerConnectionRequest(State state);
 
-    void connectionToServerDenied(PeerServerData peerServerData, ClientConnectionToServerFSM.ConnectionFailureReason reason, State state);
+    void connectionToServerDenied(ClientConnectionToServerFSM.ConnectionFailureReason reason, State state);
 
-    void connectionToServerTimedOut(PeerServerData peerServerData, State state);
+    void connectionToServerTimedOut(State state);
 
     void localServerOpen(int port, State state);
 
     void localServerClosed(int port, State state);
 
-    void disconnectedFromServer(boolean expected, PeerServerData peerServerData, State state);
+    void disconnectedFromServer(boolean expected, State state);
 
     void undefinedOwnInetAddress();
 

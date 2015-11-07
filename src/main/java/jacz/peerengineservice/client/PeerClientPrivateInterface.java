@@ -32,7 +32,7 @@ public class PeerClientPrivateInterface {
     /**
      * Information about the server to which we are trying to connect or connected (null otherwise)
      */
-    private PeerServerData peerServerData;
+//    private PeerServerData peerServerData;
 
     private State.LocalServerConnectionsState localServerConnectionsState;
 
@@ -60,13 +60,13 @@ public class PeerClientPrivateInterface {
         return buildState();
     }
 
-    private void updateConnectionToServerInfo(State.ConnectionToServerState connectionToServerStatus, PeerServerData peerServerData) {
+    private void updateConnectionToServerInfo(State.ConnectionToServerState connectionToServerStatus) {
         this.connectionToServerState = connectionToServerStatus;
-        if (connectionToServerStatus == State.ConnectionToServerState.CONNECTED || connectionToServerStatus == State.ConnectionToServerState.ONGOING_CONNECTION) {
-            this.peerServerData = peerServerData;
-        } else {
-            this.peerServerData = null;
-        }
+//        if (connectionToServerStatus == State.ConnectionToServerState.CONNECTED || connectionToServerStatus == State.ConnectionToServerState.ONGOING_CONNECTION) {
+//            this.peerServerData = peerServerData;
+//        } else {
+//            this.peerServerData = null;
+//        }
     }
 
     private void updateLocalServerInfo(State.LocalServerConnectionsState localServerConnectionsState, int port) {
@@ -87,12 +87,12 @@ public class PeerClientPrivateInterface {
         peerClient.tryingToConnectToServer(peerServerData, buildState());
     }
 
-    public synchronized void connectionToServerEstablished(PeerServerData peerServerData, State.ConnectionToServerState connectionToServerStatus) {
-        updateConnectionToServerInfo(connectionToServerStatus, peerServerData);
-        peerClient.connectionToServerEstablished(peerServerData, buildState());
+    public synchronized void connectionToServerEstablished(State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        peerClient.connectionToServerEstablished(buildState());
     }
 
-    public synchronized void unableToConnectToServer(PeerServerData peerServerData, State.ConnectionToServerState connectionToServerStatus) {
+    public synchronized void unableToConnectToServer(State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus, peerServerData);
         peerClient.unableToConnectToServer(peerServerData, buildState());
     }

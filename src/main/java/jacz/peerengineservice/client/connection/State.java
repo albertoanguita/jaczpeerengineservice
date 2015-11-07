@@ -12,8 +12,9 @@ public class State {
      * This enum allows to keep track of the connection state with the peer server
      */
     public enum ConnectionToServerState {
+        UNREGISTERED,
         DISCONNECTED,
-        ONGOING_CONNECTION,
+//        ONGOING_CONNECTION,
         CONNECTED,
         WAITING_FOR_NEXT_CONNECTION_TRY
     }

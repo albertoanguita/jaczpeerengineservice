@@ -1,29 +1,27 @@
 package jacz.peerengineservice.client.connection;
 
+import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
-import jacz.peerengineservice.client.PeerServerData;
 import jacz.peerengineservice.server.PeerServer;
 import jacz.peerengineservice.server.RequestFromPeerToServer;
+import jacz.peerengineservice.server.ServerAPI;
+import jacz.peerengineservice.server.ServerAccessException;
 import jacz.peerengineservice.util.ChannelConstants;
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.clientserver.client.ClientModule;
 import jacz.util.concurrency.ThreadUtil;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.concurrency.timer.SimpleTimerAction;
 import jacz.util.concurrency.timer.Timer;
-import jacz.util.network.IP4Port;
 import jacz.util.sets.availableelements.AvailableElementsByte;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
  * Manager class for handling connection to server
  */
-public class PeerServerManager implements DaemonAction, SimpleTimerAction {
+public class PeerServerManager implements DaemonAction {
 
     /**
      * This class ensures that the connection with the server (if any) is fine (pings the server and checks server timeout)
@@ -126,6 +124,8 @@ public class PeerServerManager implements DaemonAction, SimpleTimerAction {
      */
     private ChannelConnectionPoint peerServerCCP;
 
+    private String peerServerSessionID;
+
     /**
      * Available channels for communication with the peer server
      */
@@ -169,6 +169,7 @@ public class PeerServerManager implements DaemonAction, SimpleTimerAction {
         this.peerClientPrivateInterface = peerClientPrivateInterface;
 
         peerServerCCP = null;
+        peerServerSessionID = null;
         availableChannels = new AvailableElementsByte(ChannelConstants.PEER_SERVER_CONNECTION_CHANNEL, ChannelConstants.REQUESTS_CHANNEL);
         serverConnectionMaintainer = new ServerConnectionMaintainer(this);
 
@@ -239,14 +240,12 @@ public class PeerServerManager implements DaemonAction, SimpleTimerAction {
                     longDelay();
                     return false;
                 }
+            } else if (connectionToServerStatus == State.ConnectionToServerState.UNREGISTERED) {
+                registerWithPeerServer();
+                return false;
             } else if (connectionToServerStatus == State.ConnectionToServerState.DISCONNECTED) {
                 // client wants us to connect to the server
                 connectToPeerServer();
-                shortDelay();
-                return false;
-            } else if (connectionToServerStatus == State.ConnectionToServerState.ONGOING_CONNECTION) {
-                // we are already connecting to the peer server, wait a little time
-                shortDelay();
                 return false;
             } else if (connectionToServerStatus == State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY) {
                 return true;
@@ -272,12 +271,12 @@ public class PeerServerManager implements DaemonAction, SimpleTimerAction {
         return true;
     }
 
-    @Override
-    public synchronized Long wakeUp(Timer timer) {
-        connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
-        updatedState();
-        return 0L;
-    }
+//    @Override
+//    public synchronized Long wakeUp(Timer timer) {
+//        connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
+//        updatedState();
+//        return 0L;
+//    }
 
 
     private void shortDelay() {
@@ -295,48 +294,157 @@ public class PeerServerManager implements DaemonAction, SimpleTimerAction {
         }
     }
 
-
-    private void connectToPeerServer() {
-        connectionInformation.setLocalInetAddress(wishedConnectionInformation.getLocalInetAddress());
-        connectionInformation.setPeerServerData(wishedConnectionInformation.getPeerServerData());
-        connectionInformation.setListeningPort(wishedConnectionInformation.getListeningPort());
-        String serverIP = connectionInformation.getPeerServerData().getIp4Port().getIp();
-        int serverPort = connectionInformation.getPeerServerData().getIp4Port().getPort();
-        Set<Byte> allChannels = new HashSet<>();
-        for (Byte channel = Byte.MIN_VALUE; channel < Byte.MAX_VALUE; channel++) {
-            allChannels.add(channel);
-        }
-        allChannels.add(Byte.MAX_VALUE);
-        Set<Set<Byte>> concurrentChannels = new HashSet<>();
-        concurrentChannels.add(allChannels);
-
-        ClientModule peerClientModule = new ClientModule(new IP4Port(serverIP, serverPort), new PeerClientConnectionToServerChannelActionImpl(this), concurrentChannels);
-        // with the ClientModule we obtain the peerServerCCP and register the FSM for setting up the connection
+    private void registerWithPeerServer() {
         try {
-            connectionToServerStatus = State.ConnectionToServerState.ONGOING_CONNECTION;
-            peerClientPrivateInterface.tryingToConnectToServer(connectionInformation.getPeerServerData(), connectionToServerStatus);
-            peerServerCCP = peerClientModule.connect();
-            peerServerCCP.registerTimedFSM(new ClientConnectionToServerFSM(this, ownPeerID, connectionInformation.getLocalInetAddress(), connectionInformation.getListeningPort()), CONNECTION_TO_PEER_SERVER_TIMEOUT, "ClientConnectionToServerFSM", ChannelConstants.PEER_SERVER_CONNECTION_CHANNEL);
-            peerServerCCP.registerGenericFSM(new ServerRequestDispatcherFSM(this), "ServerRequestDispatcherFSM", ChannelConstants.REQUESTS_CHANNEL);
-            peerClientModule.start();
-        } catch (IOException e) {
-            // error connecting to the peer server
-            connectionToServerStatus = State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY;
-            peerClientPrivateInterface.unableToConnectToServer(new PeerServerData(connectionInformation.getPeerServerData()), connectionToServerStatus);
+            ServerAPI.RegistrationResponse registrationResponse =
+                    ServerAPI.register(new ServerAPI.RegistrationRequest(ownPeerID));
+            switch (registrationResponse) {
+
+                case OK:
+                    connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
+                    // todo notify
+                    break;
+                case ALREADY_REGISTERED:
+                    connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
+                    // todo notify
+                    break;
+                default:
+                    connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
+                    // todo notify
+                    break;
+            }
+        } catch (IOException | ServerAccessException e) {
+            // failed to connect to server or error in the request -> try again later
+            connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
+            peerClientPrivateInterface.unableToConnectToServer(connectionToServerStatus);
             retryConnectionReminder.mustRetryConnection();
             connectionInformation.clear();
+        } catch (IllegalArgumentException e) {
+            // response from server not understandable
+            connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
+            // todo notify
+            setWishForConnect(false);
         }
     }
 
+    private void connectToPeerServer() {
+        connectionInformation.setLocalInetAddress(wishedConnectionInformation.getLocalInetAddress());
+//        connectionInformation.setPeerServerData(wishedConnectionInformation.getPeerServerData());
+        connectionInformation.setListeningPort(wishedConnectionInformation.getListeningPort());
+
+        try {
+            ServerAPI.ConnectionResponse connectionResponse =
+                    ServerAPI.connect(
+                            new ServerAPI.ConnectionRequest(
+                                    ownPeerID,
+                                    connectionInformation.getLocalInetAddress().toString(),
+                                    connectionInformation.getListeningPort(),
+                                    connectionInformation.getListeningPort()
+                            )
+                    );
+            switch (connectionResponse.getResponse()) {
+
+                case OK:
+                    connectionToServerStatus = State.ConnectionToServerState.CONNECTED;
+                    peerServerSessionID = connectionResponse.getSessionID();
+                    serverConnectionMaintainer.connectionToServerEstablished(connectionResponse.getMinReminderTime(), connectionResponse.getMaxReminderTime());
+                    peerClientPrivateInterface.connectionToServerEstablished(connectionToServerStatus);
+                    break;
+                case UNREGISTERED_PEER:
+                    // todo notify
+                    connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
+                    break;
+                case PEER_MAIN_SERVER_UNREACHABLE:
+                    // todo notify client
+                    break;
+                case PEER_REST_SERVER_UNREACHABLE:
+                    // ignore
+                    break;
+                case WRONG_AUTHENTICATION:
+                    // ignore
+                    break;
+            }
+        } catch (IOException | ServerAccessException e) {
+            // failed to connect to server or error in the request -> try again later
+            connectionToServerStatus = State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY;
+            peerClientPrivateInterface.unableToConnectToServer(connectionToServerStatus);
+            retryConnectionReminder.mustRetryConnection();
+            connectionInformation.clear();
+        } catch (IllegalArgumentException e) {
+            // response from server not understandable
+            connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
+            // todo notify
+            setWishForConnect(false);
+        }
+//
+//
+//        String serverIP = connectionInformation.getPeerServerData().getIp4Port().getIp();
+//        int serverPort = connectionInformation.getPeerServerData().getIp4Port().getPort();
+//        Set<Byte> allChannels = new HashSet<>();
+//        for (Byte channel = Byte.MIN_VALUE; channel < Byte.MAX_VALUE; channel++) {
+//            allChannels.add(channel);
+//        }
+//        allChannels.add(Byte.MAX_VALUE);
+//        Set<Set<Byte>> concurrentChannels = new HashSet<>();
+//        concurrentChannels.add(allChannels);
+//
+//        ClientModule peerClientModule = new ClientModule(new IP4Port(serverIP, serverPort), new PeerClientConnectionToServerChannelActionImpl(this), concurrentChannels);
+//        // with the ClientModule we obtain the peerServerCCP and register the FSM for setting up the connection
+//        try {
+//            connectionToServerStatus = State.ConnectionToServerState.ONGOING_CONNECTION;
+//            peerClientPrivateInterface.tryingToConnectToServer(connectionInformation.getPeerServerData(), connectionToServerStatus);
+//            peerServerCCP = peerClientModule.connect();
+//            peerServerCCP.registerTimedFSM(new ClientConnectionToServerFSM(this, ownPeerID, connectionInformation.getLocalInetAddress(), connectionInformation.getListeningPort()), CONNECTION_TO_PEER_SERVER_TIMEOUT, "ClientConnectionToServerFSM", ChannelConstants.PEER_SERVER_CONNECTION_CHANNEL);
+//            peerServerCCP.registerGenericFSM(new ServerRequestDispatcherFSM(this), "ServerRequestDispatcherFSM", ChannelConstants.REQUESTS_CHANNEL);
+//            peerClientModule.start();
+//        } catch (IOException e) {
+//            // error connecting to the peer server
+//            connectionToServerStatus = State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY;
+//            peerClientPrivateInterface.unableToConnectToServer(new PeerServerData(connectionInformation.getPeerServerData()), connectionToServerStatus);
+//            retryConnectionReminder.mustRetryConnection();
+//            connectionInformation.clear();
+//        }
+    }
+
     private void disconnectFromPeerServer() {
-        if (peerServerCCP != null) {
-            peerServerCCP.disconnect();
+        try {
+            ServerAPI.UpdateResponse updateResponse =
+                    ServerAPI.disconnect(new ServerAPI.UpdateRequest(ownPeerID));
+            switch (updateResponse) {
+
+                case OK:
+                    connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
+                    // todo notify
+                    break;
+                case ALREADY_REGISTERED:
+                    connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
+                    // todo notify
+                    break;
+                default:
+                    connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
+                    // todo notify
+                    break;
+            }
+        } catch (IOException | ServerAccessException e) {
+            // failed to connect to server or error in the request -> try again later
+            connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
+            peerClientPrivateInterface.unableToConnectToServer(connectionToServerStatus);
+            retryConnectionReminder.mustRetryConnection();
+            connectionInformation.clear();
+        } catch (IllegalArgumentException e) {
+            // response from server not understandable
+            connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
+            // todo notify
+            setWishForConnect(false);
         }
-        peerServerCCP = null;
-        if (connectionToServerStatus == State.ConnectionToServerState.CONNECTED) {
-            peerClientPrivateInterface.disconnectedFromServer(true, connectionInformation.getPeerServerData(), State.ConnectionToServerState.DISCONNECTED);
-        }
-        connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
+//        if (peerServerCCP != null) {
+//            peerServerCCP.disconnect();
+//        }
+//        peerServerCCP = null;
+//        if (connectionToServerStatus == State.ConnectionToServerState.CONNECTED) {
+//            peerClientPrivateInterface.disconnectedFromServer(true, connectionInformation.getPeerServerData(), State.ConnectionToServerState.DISCONNECTED);
+//        }
+//        connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
     }
 
     synchronized void connectionToServerEstablished(ChannelConnectionPoint ccp) {

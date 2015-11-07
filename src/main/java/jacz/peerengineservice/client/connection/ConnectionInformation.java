@@ -11,7 +11,7 @@ class ConnectionInformation {
 
     private InetAddress localInetAddress;
 
-    private PeerServerData peerServerData;
+//    private PeerServerData peerServerData;
 
     private int listeningPort;
 
@@ -21,13 +21,13 @@ class ConnectionInformation {
 
     ConnectionInformation(InetAddress localInetAddress, PeerServerData peerServerData, int listeningPort) {
         this.localInetAddress = localInetAddress;
-        this.peerServerData = new PeerServerData(peerServerData);
+//        this.peerServerData = new PeerServerData(peerServerData);
         this.listeningPort = listeningPort;
     }
 
     synchronized void clear() {
         setLocalInetAddress(null);
-        setPeerServerData(null);
+//        setPeerServerData(null);
         setListeningPort(-1);
     }
 
@@ -39,13 +39,13 @@ class ConnectionInformation {
         this.localInetAddress = localInetAddress;
     }
 
-    synchronized PeerServerData getPeerServerData() {
-        return peerServerData;
-    }
-
-    synchronized void setPeerServerData(PeerServerData peerServerData) {
-        this.peerServerData = peerServerData;
-    }
+//    synchronized PeerServerData getPeerServerData() {
+//        return peerServerData;
+//    }
+//
+//    synchronized void setPeerServerData(PeerServerData peerServerData) {
+//        this.peerServerData = peerServerData;
+//    }
 
     synchronized int getListeningPort() {
         return listeningPort;
@@ -70,7 +70,7 @@ class ConnectionInformation {
         if (listeningPort != that.listeningPort) return false;
         if (!localInetAddress.equals(that.localInetAddress)) return false;
         //noinspection RedundantIfStatement
-        if (!peerServerData.equals(that.peerServerData)) return false;
+//        if (!peerServerData.equals(that.peerServerData)) return false;
 
         return true;
     }
@@ -78,7 +78,7 @@ class ConnectionInformation {
     @Override
     public synchronized int hashCode() {
         int result = localInetAddress.hashCode();
-        result = 31 * result + peerServerData.hashCode();
+//        result = 31 * result + peerServerData.hashCode();
         result = 31 * result + listeningPort;
         return result;
     }

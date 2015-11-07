@@ -652,37 +652,35 @@ public class PeerClient {
     }
 
     /**
-     * @param peerServerData peer server details
      */
-    void tryingToConnectToServer(final PeerServerData peerServerData, final State state) {
-        peerClientAction.tryingToConnectToServer(peerServerData, state);
+    void tryingToConnectToServer(final State state) {
+        peerClientAction.tryingToConnectToServer(state);
     }
 
     /**
-     * @param peerServerData peer server details
      */
-    void connectionToServerEstablished(final PeerServerData peerServerData, final State state) {
-        peerClientAction.connectionToServerEstablished(peerServerData, state);
+    void connectionToServerEstablished(final State state) {
+        peerClientAction.connectionToServerEstablished(state);
     }
 
-    void unableToConnectToServer(final PeerServerData peerServerData, final State state) {
-        peerClientAction.unableToConnectToServer(peerServerData, state);
+    void unableToConnectToServer(final State state) {
+        peerClientAction.unableToConnectToServer(state);
     }
 
-    void serverTookToMuchTimeToAnswerConnectionRequest(final PeerServerData peerServerData, final State state) {
-        peerClientAction.serverTookTooMuchTimeToAnswerConnectionRequest(peerServerData, state);
+    void serverTookToMuchTimeToAnswerConnectionRequest(final State state) {
+        peerClientAction.serverTookTooMuchTimeToAnswerConnectionRequest(state);
     }
 
-    void connectionToServerDenied(final PeerServerData peerServerData, final ClientConnectionToServerFSM.ConnectionFailureReason reason, final State state) {
-        peerClientAction.connectionToServerDenied(peerServerData, reason, state);
+    void connectionToServerDenied(final ClientConnectionToServerFSM.ConnectionFailureReason reason, final State state) {
+        peerClientAction.connectionToServerDenied(reason, state);
     }
 
-    void disconnectedFromServer(final boolean expected, final PeerServerData peerServerData, final State state) {
-        peerClientAction.disconnectedFromServer(expected, peerServerData, state);
+    void disconnectedFromServer(final boolean expected, final State state) {
+        peerClientAction.disconnectedFromServer(expected, state);
     }
 
-    void connectionToServerTimedOut(final PeerServerData peerServerData, final State state) {
-        peerClientAction.connectionToServerTimedOut(peerServerData, state);
+    void connectionToServerTimedOut(final State state) {
+        peerClientAction.connectionToServerTimedOut(state);
     }
 
     void localServerOpen(final int port, final State state) {

@@ -79,6 +79,22 @@ public class ServerAPI {
 
         private int maxReminderTime;
 
+        public ConnectionResponseType getResponse() {
+            return response;
+        }
+
+        public String getSessionID() {
+            return sessionID;
+        }
+
+        public int getMinReminderTime() {
+            return minReminderTime;
+        }
+
+        public int getMaxReminderTime() {
+            return maxReminderTime;
+        }
+
         private static ConnectionResponse buildConnectionResponse(ConnectionResponseJSON connectionResponseJSON) {
             ConnectionResponse connectionResponse = new ConnectionResponse();
             connectionResponse.response = ConnectionResponseType.valueOf(connectionResponseJSON.response);
@@ -112,6 +128,7 @@ public class ServerAPI {
 
     public static final class UpdateResponse {
 
+        // todo to enum
         private String response;
 
         @Override
