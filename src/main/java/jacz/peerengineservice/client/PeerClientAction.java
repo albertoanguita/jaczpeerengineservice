@@ -1,12 +1,11 @@
 package jacz.peerengineservice.client;
 
+import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.connection.ClientConnectionToServerFSM;
 import jacz.peerengineservice.client.connection.State;
 import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.peerengineservice.util.datatransfer.DownloadsManager;
 import jacz.peerengineservice.util.datatransfer.UploadsManager;
-import jacz.commengine.communication.CommError;
 import jacz.util.network.IP4Port;
 
 /**

@@ -156,23 +156,16 @@ public class ServerAPI {
         }
     }
 
-    public static final class InfoResponse {
+    public static final class InfoResponseJSON {
 
-        private List<PeerIDInfo> peerIDInfoList;
+        private List<PeerIDInfoJSON> peerIDInfoList;
 
-        public InfoResponse() {
+        public InfoResponseJSON() {
             peerIDInfoList = new ArrayList<>();
-        }
-
-        @Override
-        public String toString() {
-            return "InfoResponse{" +
-                    "peerIDInfoList=" + peerIDInfoList +
-                    '}';
         }
     }
 
-    public static final class PeerIDInfo {
+    public static final class PeerIDInfoJSON {
 
         private String peerID;
         private String localIPAddress;
@@ -181,8 +174,56 @@ public class ServerAPI {
         private String localRESTServerPort;
         private String externalMainServerPort;
         private String externalRESTServerPort;
+    }
 
-        public String getPeerID() {
+    public static final class InfoResponse {
+
+        private final List<PeerIDInfo> peerIDInfoList;
+
+        private InfoResponse(List<PeerIDInfo> peerIDInfoList) {
+            this.peerIDInfoList = peerIDInfoList;
+        }
+
+        public List<PeerIDInfo> getPeerIDInfoList() {
+            return peerIDInfoList;
+        }
+
+        private static InfoResponse buildInfoResponse(InfoResponseJSON infoResponseJson) {
+            List<PeerIDInfo> peerIDInfoList = new ArrayList<>();
+            for (PeerIDInfoJSON peerIDInfoJson : infoResponseJson.peerIDInfoList) {
+                peerIDInfoList.add(PeerIDInfo.buildPeerIDInfo(peerIDInfoJson));
+            }
+            return new InfoResponse(peerIDInfoList);
+        }
+    }
+
+    public static final class PeerIDInfo {
+
+        private final PeerID peerID;
+        private final String localIPAddress;
+        private final String externalIPAddress;
+        private final int localMainServerPort;
+        private final int localRESTServerPort;
+        private final int externalMainServerPort;
+        private final int externalRESTServerPort;
+
+        public PeerIDInfo(PeerID peerID,
+                          String localIPAddress,
+                          String externalIPAddress,
+                          int localMainServerPort,
+                          int localRESTServerPort,
+                          int externalMainServerPort,
+                          int externalRESTServerPort) {
+            this.peerID = peerID;
+            this.localIPAddress = localIPAddress;
+            this.externalIPAddress = externalIPAddress;
+            this.localMainServerPort = localMainServerPort;
+            this.localRESTServerPort = localRESTServerPort;
+            this.externalMainServerPort = externalMainServerPort;
+            this.externalRESTServerPort = externalRESTServerPort;
+        }
+
+        public PeerID getPeerID() {
             return peerID;
         }
 
@@ -194,33 +235,32 @@ public class ServerAPI {
             return externalIPAddress;
         }
 
-        public String getLocalMainServerPort() {
+        public int getLocalMainServerPort() {
             return localMainServerPort;
         }
 
-        public String getLocalRESTServerPort() {
+        public int getLocalRESTServerPort() {
             return localRESTServerPort;
         }
 
-        public String getExternalMainServerPort() {
+        public int getExternalMainServerPort() {
             return externalMainServerPort;
         }
 
-        public String getExternalRESTServerPort() {
+        public int getExternalRESTServerPort() {
             return externalRESTServerPort;
         }
 
-        @Override
-        public String toString() {
-            return "PeerIDInfo{" +
-                    "peerID='" + peerID + '\'' +
-                    ", localIPAddress='" + localIPAddress + '\'' +
-                    ", externalIPAddress='" + externalIPAddress + '\'' +
-                    ", localMainServerPort='" + localMainServerPort + '\'' +
-                    ", localRESTServerPort='" + localRESTServerPort + '\'' +
-                    ", externalMainServerPort='" + externalMainServerPort + '\'' +
-                    ", externalRESTServerPort='" + externalRESTServerPort + '\'' +
-                    '}';
+        private static PeerIDInfo buildPeerIDInfo(PeerIDInfoJSON peerIDInfoJson) {
+            return new PeerIDInfo(
+                    new PeerID(peerIDInfoJson.peerID),
+                    peerIDInfoJson.localIPAddress,
+                    peerIDInfoJson.externalIPAddress,
+                    Integer.parseInt(peerIDInfoJson.localMainServerPort),
+                    Integer.parseInt(peerIDInfoJson.localRESTServerPort),
+                    Integer.parseInt(peerIDInfoJson.externalMainServerPort),
+                    Integer.parseInt(peerIDInfoJson.externalRESTServerPort)
+            );
         }
     }
 
@@ -313,9 +353,9 @@ public class ServerAPI {
                 HttpClient.ContentType.JSON,
                 new Gson().toJson(infoRequest));
         checkError(result);
-        System.out.println(result.element2);
+        InfoResponseJSON infoResponseJson = new Gson().fromJson(result.element2, InfoResponseJSON.class);
         try {
-            return new Gson().fromJson(result.element2, InfoResponse.class);
+            return InfoResponse.buildInfoResponse(infoResponseJson);
         } catch (Exception e) {
             // unrecognized values --> log error and re-throw
             ErrorLog.reportError(PeerClient.ERROR_LOG, "Unrecognized refresh response", result.element2);

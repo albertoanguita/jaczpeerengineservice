@@ -12,11 +12,7 @@ import jacz.util.lists.Triple;
 import java.util.HashMap;
 
 /**
- * Class description
- * <p/>
- * User: Alberto<br>
- * Date: 4/05/12<br>
- * Last Modified: 4/05/12
+ * Simple connection, no actions
  */
 public class TestConnection_2 {
 
