@@ -225,36 +225,43 @@ public class FriendConnectionManager {
             return;
         }
 
-//        IP4Port ip4Port = peerConnectionInfo.getIp4Port();
         IP4Port ip4Port = new IP4Port(peerIDInfo.getExternalIPAddress(), peerIDInfo.getExternalMainServerPort());
-        ClientModule friendClientModule = new ClientModule(ip4Port, new PeerClientConnectionToClientChannelActionImpl(this), PeerClientConnectionManager.generateConcurrentChannelSets());
+//        ClientModule friendClientModule = new ClientModule(ip4Port, new PeerClientConnectionToClientChannelActionImpl(this), PeerClientConnectionManager.generateConcurrentChannelSets());
         try {
             // first try public connection
-            ChannelConnectionPoint ccp = friendClientModule.connect();
-            contactWithPeerAchieved(ccp, true, peerIDInfo.getPeerID());
-            friendClientModule.start();
+//            ChannelConnectionPoint ccp = friendClientModule.connect();
+//            contactWithPeerAchieved(ccp, true, peerIDInfo.getPeerID(), new IP4Port(peerIDInfo.getLocalIPAddress(), peerIDInfo.getLocalMainServerPort()));
+//            friendClientModule.start();
+            tryConnection(ip4Port, peerIDInfo.getPeerID(), new IP4Port(peerIDInfo.getLocalIPAddress(), peerIDInfo.getLocalMainServerPort()));
         } catch (IOException e) {
             // if this didn't work, try local connection (if exists)
-            if (peerIDInfo.getLocalIPAddress() != null) {
-                IP4Port localIP4Port = new IP4Port(peerIDInfo.getLocalIPAddress(), peerIDInfo.getLocalMainServerPort());
-                friendClientModule = new ClientModule(localIP4Port, new PeerClientConnectionToClientChannelActionImpl(this), PeerClientConnectionManager.generateConcurrentChannelSets());
-                try {
-                    ChannelConnectionPoint ccp = friendClientModule.connect();
-                    contactWithPeerAchieved(ccp, true, peerIDInfo.getPeerID());
-                    friendClientModule.start();
-                } catch (IOException e2) {
-                    // peer not available or wrong peer data received, repeat soon
-                    friendSearchReminder.searchIssueDetected();
-                }
+            IP4Port localIP4Port = new IP4Port(peerIDInfo.getLocalIPAddress(), peerIDInfo.getLocalMainServerPort());
+//            friendClientModule = new ClientModule(localIP4Port, new PeerClientConnectionToClientChannelActionImpl(this), PeerClientConnectionManager.generateConcurrentChannelSets());
+            try {
+//                ChannelConnectionPoint ccp = friendClientModule.connect();
+//                contactWithPeerAchieved(ccp, true, peerIDInfo.getPeerID(), null);
+//                friendClientModule.start();
+                tryConnection(localIP4Port, peerIDInfo.getPeerID(), null);
+            } catch (IOException e2) {
+                // peer not available or wrong peer data received, repeat soon
+                friendSearchReminder.searchIssueDetected();
             }
         }
     }
 
-    synchronized void reportClientConnectedToOurPeerServer(ChannelConnectionPoint ccp) {
-        contactWithPeerAchieved(ccp, false, null);
+    private void tryConnection(IP4Port ip4Port, PeerID serverPeerID, IP4Port secondaryIP4Port) throws IOException {
+        ClientModule friendClientModule = new ClientModule(ip4Port, new PeerClientConnectionToClientChannelActionImpl(this), PeerClientConnectionManager.generateConcurrentChannelSets());
+        // first try public connection
+        ChannelConnectionPoint ccp = friendClientModule.connect();
+        contactWithPeerAchieved(ccp, true, serverPeerID, secondaryIP4Port);
+        friendClientModule.start();
     }
 
-    private void contactWithPeerAchieved(ChannelConnectionPoint ccp, boolean isClient, PeerID remotePeerID) {
+    synchronized void reportClientConnectedToOurPeerServer(ChannelConnectionPoint ccp) {
+        contactWithPeerAchieved(ccp, false, null, null);
+    }
+
+    private void contactWithPeerAchieved(ChannelConnectionPoint ccp, boolean isClient, PeerID remotePeerID, IP4Port secondaryIP4Port) {
         // depending on whether we are client or server, the corresponding FSM for establishing connection with the
         // other peer is created. This FSMs will send and receive data about the ID of the other peer to accept or
         // revoke the connection
@@ -262,7 +269,7 @@ public class FriendConnectionManager {
         if (isClient) {
             // first mark as ongoing client connection
             ongoingClientConnections.add(remotePeerID);
-            ccp.registerTimedFSM(new ConnectionEstablishmentClientFSM(this, ownPeerID, remotePeerID), CONNECTION_TIMEOUT, "ConnectionEstablishmentClientFSM", ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL);
+            ccp.registerTimedFSM(new ConnectionEstablishmentClientFSM(this, ownPeerID, remotePeerID, secondaryIP4Port), CONNECTION_TIMEOUT, "ConnectionEstablishmentClientFSM", ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL);
         } else {
             ccp.registerTimedFSM(new ConnectionEstablishmentServerFSM(this, ownPeerID), CONNECTION_TIMEOUT, "ConnectionEstablishmentServerFSM", ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL);
         }
@@ -330,9 +337,23 @@ public class FriendConnectionManager {
      *
      * @param peerID the ID of the friend whose ongoing connection process has finished
      */
-    synchronized void connectionAsClientFailed(PeerID peerID) {
+    synchronized void connectionAsClientFailed(PeerID peerID, IP4Port secondaryIP4Port, PeerID serverPeerID) {
         // if the connection was not successful, disconnect from the other peer (only for client role)
         ongoingClientConnections.remove(peerID);
+        // if there is a secondary address available, try it
+        if (secondaryIP4Port != null) {
+//            ClientModule friendClientModule = new ClientModule(secondaryIP4Port, new PeerClientConnectionToClientChannelActionImpl(this), PeerClientConnectionManager.generateConcurrentChannelSets());
+            try {
+//                ChannelConnectionPoint ccp = friendClientModule.connect();
+//                contactWithPeerAchieved(ccp, true, serverPeerID, null);
+//                friendClientModule.start();
+                tryConnection(secondaryIP4Port, serverPeerID, null);
+            } catch (IOException e) {
+                // peer not available or wrong peer data received, repeat soon
+                friendSearchReminder.searchIssueDetected();
+            }
+
+        }
     }
 
     /**
@@ -426,12 +447,5 @@ public class FriendConnectionManager {
             }
         }
         return mustDisconnectPeerSet;
-    }
-
-    /**
-     * Search process failed, run again
-     */
-    void friendDataRequestToServerTimedOut() {
-        friendSearchReminder.searchIssueDetected();
     }
 }

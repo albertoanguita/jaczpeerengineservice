@@ -13,7 +13,9 @@ public class State {
      */
     public enum ConnectionToServerState {
         UNREGISTERED,
+        REGISTERING,
         DISCONNECTED,
+        CONNECTING,
         CONNECTED,
         WAITING_FOR_NEXT_CONNECTION_TRY
     }

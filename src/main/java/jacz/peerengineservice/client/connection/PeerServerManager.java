@@ -258,7 +258,7 @@ public class PeerServerManager implements DaemonAction {
     }
 
     private void registerWithPeerServer() {
-        peerClientPrivateInterface.tryingToRegisterWithServer(connectionToServerStatus);
+        peerClientPrivateInterface.tryingToRegisterWithServer(State.ConnectionToServerState.REGISTERING);
         try {
             ServerAPI.RegistrationResponse registrationResponse =
                     ServerAPI.register(new ServerAPI.RegistrationRequest(ownPeerID));
@@ -290,13 +290,13 @@ public class PeerServerManager implements DaemonAction {
     private void connectToPeerServer() {
         connectionInformation.setLocalInetAddress(wishedConnectionInformation.getLocalInetAddress());
         connectionInformation.setListeningPort(wishedConnectionInformation.getListeningPort());
-        peerClientPrivateInterface.tryingToConnectToServer(connectionToServerStatus);
+        peerClientPrivateInterface.tryingToConnectToServer(State.ConnectionToServerState.CONNECTING);
         try {
             ServerAPI.ConnectionResponse connectionResponse =
                     ServerAPI.connect(
                             new ServerAPI.ConnectionRequest(
                                     ownPeerID,
-                                    connectionInformation.getLocalInetAddress().toString(),
+                                    connectionInformation.getLocalInetAddress().getHostAddress(),
                                     connectionInformation.getListeningPort(),
                                     connectionInformation.getListeningPort()
                             )

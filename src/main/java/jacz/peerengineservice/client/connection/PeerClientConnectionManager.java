@@ -3,7 +3,6 @@ package jacz.peerengineservice.client.connection;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.PeerRelations;
-import jacz.peerengineservice.client.PeerServerData;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.util.concurrency.ThreadUtil;
 import jacz.util.concurrency.daemon.Daemon;
@@ -135,12 +134,11 @@ public class PeerClientConnectionManager implements DaemonAction {
             ConnectedPeers connectedPeers,
             PeerID ownPeerID,
             int port,
-            PeerServerData peerServerData,
             PeerRelations peerRelations) {
         this.peerClientPrivateInterface = peerClientPrivateInterface;
 
         clientsWishForConnection = ClientsWishForConnection.NEGATIVE;
-        wishedConnectionInformation = new ConnectionInformation(LocalAddressChecker.detectLocalAddress(), peerServerData, port);
+        wishedConnectionInformation = new ConnectionInformation(LocalAddressChecker.detectLocalAddress(), port);
 
         stateDaemon = new Daemon(this);
 

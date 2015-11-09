@@ -1,7 +1,5 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.peerengineservice.client.PeerServerData;
-
 import java.net.InetAddress;
 
 /**
@@ -11,23 +9,19 @@ class ConnectionInformation {
 
     private InetAddress localInetAddress;
 
-//    private PeerServerData peerServerData;
-
     private int listeningPort;
 
     ConnectionInformation() {
         clear();
     }
 
-    ConnectionInformation(InetAddress localInetAddress, PeerServerData peerServerData, int listeningPort) {
+    ConnectionInformation(InetAddress localInetAddress, int listeningPort) {
         this.localInetAddress = localInetAddress;
-//        this.peerServerData = new PeerServerData(peerServerData);
         this.listeningPort = listeningPort;
     }
 
     synchronized void clear() {
         setLocalInetAddress(null);
-//        setPeerServerData(null);
         setListeningPort(-1);
     }
 
@@ -38,14 +32,6 @@ class ConnectionInformation {
     synchronized void setLocalInetAddress(InetAddress localInetAddress) {
         this.localInetAddress = localInetAddress;
     }
-
-//    synchronized PeerServerData getPeerServerData() {
-//        return peerServerData;
-//    }
-//
-//    synchronized void setPeerServerData(PeerServerData peerServerData) {
-//        this.peerServerData = peerServerData;
-//    }
 
     synchronized int getListeningPort() {
         return listeningPort;

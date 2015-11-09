@@ -195,6 +195,13 @@ public class ServerAPI {
             }
             return new InfoResponse(peerIDInfoList);
         }
+
+        @Override
+        public String toString() {
+            return "InfoResponse{" +
+                    "peerIDInfoList=" + peerIDInfoList +
+                    '}';
+        }
     }
 
     public static final class PeerIDInfo {
@@ -257,10 +264,23 @@ public class ServerAPI {
                     peerIDInfoJson.localIPAddress,
                     peerIDInfoJson.externalIPAddress,
                     Integer.parseInt(peerIDInfoJson.localMainServerPort),
-                    Integer.parseInt(peerIDInfoJson.localRESTServerPort),
+                    -1,
                     Integer.parseInt(peerIDInfoJson.externalMainServerPort),
-                    Integer.parseInt(peerIDInfoJson.externalRESTServerPort)
+                    -1
             );
+        }
+
+        @Override
+        public String toString() {
+            return "PeerIDInfo{" +
+                    "peerID=" + peerID +
+                    ", localIPAddress='" + localIPAddress + '\'' +
+                    ", externalIPAddress='" + externalIPAddress + '\'' +
+                    ", localMainServerPort=" + localMainServerPort +
+                    ", localRESTServerPort=" + localRESTServerPort +
+                    ", externalMainServerPort=" + externalMainServerPort +
+                    ", externalRESTServerPort=" + externalRESTServerPort +
+                    '}';
         }
     }
 

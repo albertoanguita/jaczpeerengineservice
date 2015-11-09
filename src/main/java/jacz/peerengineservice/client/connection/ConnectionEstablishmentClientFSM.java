@@ -6,6 +6,7 @@ import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.util.log.ErrorLog;
+import jacz.util.network.IP4Port;
 
 import java.io.Serializable;
 
@@ -54,17 +55,19 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
     /**
      * FriendConnectionManager which is trying to connect to another peer (server peer)
      */
-    private FriendConnectionManager friendConnectionManager;
+    private final FriendConnectionManager friendConnectionManager;
 
     /**
      * Our own ID
      */
-    private PeerID ownPeerID;
+    private final PeerID ownPeerID;
 
     /**
      * The ID of the peer we are trying to connect to
      */
-    private PeerID serverPeerID;
+    private final PeerID serverPeerID;
+
+    private final IP4Port secondaryIP4Port;
 
     /**
      * Class constructor
@@ -73,10 +76,15 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
      * @param ownPeerID               our own ID
      * @param serverPeerID            the ID of the peer we are trying to connect to
      */
-    public ConnectionEstablishmentClientFSM(FriendConnectionManager friendConnectionManager, PeerID ownPeerID, PeerID serverPeerID) {
+    public ConnectionEstablishmentClientFSM(
+            FriendConnectionManager friendConnectionManager,
+            PeerID ownPeerID,
+            PeerID serverPeerID,
+            IP4Port secondaryIP4Port) {
         this.friendConnectionManager = friendConnectionManager;
         this.ownPeerID = ownPeerID;
         this.serverPeerID = serverPeerID;
+        this.secondaryIP4Port = secondaryIP4Port;
     }
 
     @Override
@@ -158,6 +166,6 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
      * Reports the PeerClientConnectionManager that this connection is no longer ongoing
      */
     private void error() {
-        friendConnectionManager.connectionAsClientFailed(serverPeerID);
+        friendConnectionManager.connectionAsClientFailed(serverPeerID, secondaryIP4Port, serverPeerID);
     }
 }

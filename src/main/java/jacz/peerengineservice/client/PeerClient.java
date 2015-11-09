@@ -120,7 +120,6 @@ public class PeerClient {
                 connectedPeers,
                 peerClientData.getOwnPeerID(),
                 peerClientData.getPort(),
-                peerClientData.getPeerServerData(),
                 peerRelations);
         resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, peerClientPrivateInterface, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
