@@ -1,7 +1,5 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.peerengineservice.client.PeerServerData;
-
 /**
  * This class stores the PeerEngine connection status, formed by several different attributes. We send objects of
  * this class within periodic notifications to the client

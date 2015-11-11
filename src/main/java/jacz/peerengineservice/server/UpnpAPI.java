@@ -1,6 +1,5 @@
 package jacz.peerengineservice.server;
 
-import jacz.util.concurrency.ThreadUtil;
 import org.bitlet.weupnp.GatewayDevice;
 import org.bitlet.weupnp.GatewayDiscover;
 import org.bitlet.weupnp.PortMappingEntry;
@@ -9,8 +8,6 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.text.DateFormat;
-import java.util.Date;
 import java.util.Map;
 
 /**
@@ -59,7 +56,11 @@ public class UpnpAPI {
 
     private static final String PROTOCOL = "TCP";
 
-    public static GatewayDevice fetchGatewayDevice() throws UpnpException, NoGatewayException {
+    private static final int INITIAL_PORT = 1024;
+
+    private static final int FINAL_PORT = 49151;
+
+    public static GatewayDevice fetchGatewayDevice(String externalIPAddress) throws UpnpException, NoGatewayException {
 
         try {
             GatewayDiscover gatewayDiscover = new GatewayDiscover();
@@ -68,8 +69,13 @@ public class UpnpAPI {
             if (gateways.isEmpty()) {
                 throw new NoGatewayException();
             } else {
-                // choose the first active gateway
-                GatewayDevice activeGW = gatewayDiscover.getValidGateway();
+                GatewayDevice activeGW = null;
+                for (GatewayDevice gw : gateways.values()) {
+                    if (gw.getExternalIPAddress().equals(externalIPAddress)) {
+                        activeGW = gw;
+                        break;
+                    }
+                }
                 if (activeGW != null) {
                     return activeGW;
                 } else {
@@ -129,6 +135,7 @@ public class UpnpAPI {
 
     public static int mapPortFrom(GatewayDevice activeGW, String mappingDescription, int externalPort, int internalPort, boolean replace) throws UpnpException, NoGatewayException {
         // search for a free port
+        // todo start from 8000...
         PortMapping portMapping = fetchPort(activeGW, externalPort);
         while (externalPort <= 65535 && portMapping != null) {
             if (replace && portMapping.description.equals(mappingDescription)) {
@@ -159,7 +166,7 @@ public class UpnpAPI {
 
     public static void main(String[] args) {
         try {
-            GatewayDevice activeGW = fetchGatewayDevice();
+            GatewayDevice activeGW = fetchGatewayDevice("77.231.224.163");
 //        System.out.println(fetchPort(activeGW, 80));
 
 //            int port = mapPortFrom(activeGW, "test2", 85, 70, true);
