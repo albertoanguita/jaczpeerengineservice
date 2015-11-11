@@ -105,6 +105,8 @@ public class PeerClientConnectionManager implements DaemonAction {
      */
     private final Daemon stateDaemon;
 
+    private final NetworkTopologyManager networkTopologyManager;
+
     /**
      * Periodically checks the local address
      */
@@ -144,6 +146,7 @@ public class PeerClientConnectionManager implements DaemonAction {
 
         localAddressChecker = new LocalAddressChecker(this);
 
+        networkTopologyManager = new NetworkTopologyManager(peerClientPrivateInterface);
         peerServerManager = new PeerServerManager(ownPeerID, this, peerClientPrivateInterface, wishedConnectionInformation);
         friendConnectionManager = new FriendConnectionManager(ownPeerID, connectedPeers, peerClientPrivateInterface, this, peerRelations);
         localServerManager = new LocalServerManager(friendConnectionManager, peerClientPrivateInterface, wishedConnectionInformation);
@@ -176,31 +179,11 @@ public class PeerClientConnectionManager implements DaemonAction {
     public void stop() {
         setWishForConnection(false);
         localAddressChecker.stop();
+        networkTopologyManager.stop();
         peerServerManager.stop();
         localServerManager.stop();
         friendConnectionManager.stop();
     }
-
-//    /**
-//     * Retrieves the currently set peer server data
-//     *
-//     * @return the last peer server data set
-//     */
-//    public synchronized PeerServerData getPeerServerData() {
-//        return wishedConnectionInformation.getPeerServerData();
-//    }
-
-//    /**
-//     * Sets the data about the peer server to which we must connect to. This value can be set at any time, even when we are already connected to
-//     * another server. In this case the manager will disconnect and then connect to the new server
-//     *
-//     * @param peerServerData data about the server to connect to
-//     */
-//    public synchronized void setPeerServerData(PeerServerData peerServerData) {
-//        wishedConnectionInformation.setPeerServerData(peerServerData);
-//        peerServerManager.updatedState();
-//        updatedState();
-//    }
 
     public synchronized int getListeningPort() {
         return wishedConnectionInformation.getListeningPort();
@@ -258,6 +241,12 @@ public class PeerClientConnectionManager implements DaemonAction {
      */
     @Override
     public synchronized boolean solveState() {
+        // in any case, solve the network topology first
+        if (!networkTopologyManager.isInWishedState()) {
+            longDelay();
+            return false;
+        }
+
         if (clientsWishForConnection == ClientsWishForConnection.POSITIVE) {
             // first open the server for listening to incoming peer connections, then connect to the peer server
             localServerManager.setWishForConnect(true);

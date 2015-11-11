@@ -33,6 +33,18 @@ public interface PeerClientAction {
 
     void listeningPortModified(int port);
 
+    void tryingToFetchLocalAddress(State state);
+
+    void localAddressFetched(String localAddress, State state);
+
+    void couldNotFetchLocalAddress(State state);
+
+    void tryingToFetchExternalAddress(State state);
+
+    void externalAddressFetched(String externalAddress, boolean hasGateway, State state);
+
+    void couldNotFetchExternalAddress(State state);
+
     void unrecognizedMessageFromServer(State state);
 
     void tryingToConnectToServer(State state);

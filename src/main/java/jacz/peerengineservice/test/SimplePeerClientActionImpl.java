@@ -79,6 +79,36 @@ public class SimplePeerClientActionImpl implements PeerClientAction {
     }
 
     @Override
+    public void tryingToFetchLocalAddress(State state) {
+        System.out.println(initMessage + "Trying to fetch local address. State: " + state);
+    }
+
+    @Override
+    public void localAddressFetched(String localAddress, State state) {
+        System.out.println(initMessage + "Local address fetched. Local address: " + localAddress + ". State: " + state);
+    }
+
+    @Override
+    public void couldNotFetchLocalAddress(State state) {
+        System.out.println(initMessage + "Could not fetch local address. State: " + state);
+    }
+
+    @Override
+    public void tryingToFetchExternalAddress(State state) {
+        System.out.println(initMessage + "Trying to fetch external address. State: " + state);
+    }
+
+    @Override
+    public void externalAddressFetched(String externalAddress, boolean hasGateway, State state) {
+        System.out.println(initMessage + "External address fetched. External address: " + externalAddress + ". Has gateway: " + hasGateway + ". State: " + state);
+    }
+
+    @Override
+    public void couldNotFetchExternalAddress(State state) {
+        System.out.println(initMessage + "Could not fetch external address. State: " + state);
+    }
+
+    @Override
     public void unrecognizedMessageFromServer(State state) {
         System.out.println(initMessage + "Unrecognized message from server. State: " + state);
     }

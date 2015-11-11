@@ -138,6 +138,73 @@ public class PeerClientActionBridge implements PeerClientAction {
     }
 
     @Override
+    public void tryingToFetchLocalAddress(final State state) {
+        logger.info("TRYING TO FETCH LOCAL ADDRESS. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.tryingToFetchLocalAddress(state);
+            }
+        });
+    }
+
+    @Override
+    public void localAddressFetched(final String localAddress, final State state) {
+        logger.info("LOCAL ADDRESS FETCHED. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.localAddressFetched(localAddress, state);
+            }
+        });
+    }
+
+    @Override
+    public void couldNotFetchLocalAddress(final State state) {
+        logger.info("COULD NOT FETCH LOCAL ADDRESS. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.couldNotFetchLocalAddress(state);
+            }
+        });
+    }
+
+    @Override
+    public void tryingToFetchExternalAddress(final State state) {
+        logger.info("TRYING TO FETCH EXTERNAL ADDRESS. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.tryingToFetchExternalAddress(state);
+            }
+        });
+    }
+
+
+    @Override
+    public void externalAddressFetched(final String externalAddress, final boolean hasGateway, final State state) {
+        logger.info("EXTERNAL ADDRESS FETCHED. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.externalAddressFetched(externalAddress, hasGateway, state);
+            }
+        });
+    }
+
+    @Override
+    public void couldNotFetchExternalAddress(final State state) {
+        logger.info("COULD NOT FETCH EXTERNAL ADDRESS. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.couldNotFetchExternalAddress(state);
+            }
+        });
+    }
+
+    @Override
     public void unrecognizedMessageFromServer(final State state) {
         logger.info("UNRECOGNIZED MESSAGE FROM SERVER. State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {

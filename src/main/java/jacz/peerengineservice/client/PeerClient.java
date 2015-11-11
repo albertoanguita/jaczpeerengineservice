@@ -629,7 +629,7 @@ public class PeerClient {
      * @param peerID peer that was disconnected
      * @param error  error that provoked the disconnection (null if no error)
      */
-    synchronized void peerDisconnected(final PeerID peerID, final CommError error) {
+    synchronized void peerDisconnected(PeerID peerID, CommError error) {
         peerClientAction.peerDisconnected(peerID, error);
     }
 
@@ -638,59 +638,85 @@ public class PeerClient {
      * ******************************** NOTIFICATIONS FROM THE PEER CLIENT CONNECTION MANAGER ******************************************
      */
 
-    void listeningPortModified(final int port) {
+    void listeningPortModified(int port) {
         peerClientAction.listeningPortModified(port);
     }
 
-    void unrecognizedMessageFromServer(final State state) {
+
+
+    void tryingToFetchLocalAddress(State state) {
+        peerClientAction.tryingToFetchLocalAddress(state);
+    }
+
+    void localAddressFetched(String localAddress, State state) {
+        peerClientAction.localAddressFetched(localAddress, state);
+    }
+
+    void couldNotFetchLocalAddress(State state) {
+        peerClientAction.couldNotFetchLocalAddress(state);
+    }
+
+    void tryingToFetchExternalAddress(State state) {
+        peerClientAction.tryingToFetchExternalAddress(state);
+    }
+
+    void externalAddressFetched(String externalAddress, boolean hasGateway, State state) {
+        peerClientAction.externalAddressFetched(externalAddress, hasGateway, state);
+    }
+
+    void couldNotFetchExternalAddress(State state) {
+        peerClientAction.couldNotFetchExternalAddress(state);
+    }
+
+    void unrecognizedMessageFromServer(State state) {
         peerClientAction.unrecognizedMessageFromServer(state);
     }
 
-    void tryingToConnectToServer(final State state) {
+    void tryingToConnectToServer(State state) {
         peerClientAction.tryingToConnectToServer(state);
     }
 
-    void connectionToServerEstablished(final State state) {
+    void connectionToServerEstablished(State state) {
         peerClientAction.connectionToServerEstablished(state);
     }
 
-    void registrationRequired(final State state) {
+    void registrationRequired(State state) {
         peerClientAction.registrationRequired(state);
     }
 
-    void localServerUnreachable(final State state) {
+    void localServerUnreachable(State state) {
         peerClientAction.localServerUnreachable(state);
     }
 
-    void unableToConnectToServer(final State state) {
+    void unableToConnectToServer(State state) {
         peerClientAction.unableToConnectToServer(state);
     }
 
-    void disconnectedFromServer(final State state) {
+    void disconnectedFromServer(State state) {
         peerClientAction.disconnectedFromServer(state);
     }
 
-    void failedToRefreshServerConnection(final State state) {
+    void failedToRefreshServerConnection(State state) {
         peerClientAction.failedToRefreshServerConnection(state);
     }
 
-    void tryingToRegisterWithServer(final State state) {
+    void tryingToRegisterWithServer(State state) {
         peerClientAction.tryingToRegisterWithServer(state);
     }
 
-    void registrationSuccessful(final State state) {
+    void registrationSuccessful(State state) {
         peerClientAction.registrationSuccessful(state);
     }
 
-    void alreadyRegistered(final State state) {
+    void alreadyRegistered(State state) {
         peerClientAction.alreadyRegistered(state);
     }
 
-    void localServerOpen(final int port, final State state) {
+    void localServerOpen(int port, State state) {
         peerClientAction.localServerOpen(port, state);
     }
 
-    void localServerClosed(final int port, final State state) {
+    void localServerClosed(int port, State state) {
         peerClientAction.localServerClosed(port, state);
     }
 
@@ -698,20 +724,20 @@ public class PeerClient {
         peerClientAction.undefinedOwnInetAddress();
     }
 
-    void peerCouldNotConnectToUs(final Exception e, final IP4Port ip4Port) {
+    void peerCouldNotConnectToUs(Exception e, IP4Port ip4Port) {
         peerClientAction.peerCouldNotConnectToUs(e, ip4Port);
     }
 
-    void localServerError(final Exception e) {
+    void localServerError(Exception e) {
         peerClientAction.localServerError(e);
         peerClientConnectionManager.setWishForConnection(false);
     }
 
-    void periodicDownloadsNotification(final DownloadsManager downloadsManager) {
+    void periodicDownloadsNotification(DownloadsManager downloadsManager) {
         peerClientAction.periodicDownloadsNotification(downloadsManager);
     }
 
-    void periodicUploadsNotification(final UploadsManager uploadsManager) {
+    void periodicUploadsNotification(UploadsManager uploadsManager) {
         peerClientAction.periodicUploadsNotification(uploadsManager);
     }
 }

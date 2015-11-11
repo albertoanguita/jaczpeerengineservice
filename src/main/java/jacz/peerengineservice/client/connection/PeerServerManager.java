@@ -192,17 +192,18 @@ public class PeerServerManager implements DaemonAction {
         serverConnectionMaintainer.stop();
         retryConnectionReminder.stop();
         setWishForConnect(false);
-        // actively wait until the server is closed
-        boolean mustWait;
-        synchronized (this) {
-            mustWait = connectionToServerStatus != State.ConnectionToServerState.DISCONNECTED;
-        }
-        while (mustWait) {
-            ThreadUtil.safeSleep(100L);
-            synchronized (this) {
-                mustWait = connectionToServerStatus != State.ConnectionToServerState.DISCONNECTED;
-            }
-        }
+        stateDaemon.blockUntilStateIsSolved();
+//        // actively wait until the server is closed
+//        boolean mustWait;
+//        synchronized (this) {
+//            mustWait = isInWishedState();
+//        }
+//        while (mustWait) {
+//            ThreadUtil.safeSleep(100L);
+//            synchronized (this) {
+//                mustWait = isInWishedState();
+//            }
+//        }
     }
 
     synchronized void updatedState() {

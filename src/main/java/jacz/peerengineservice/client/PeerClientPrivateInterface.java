@@ -26,12 +26,9 @@ public class PeerClientPrivateInterface {
      */
     private final PeerClient peerClient;
 
-    private State.ConnectionToServerState connectionToServerState;
+    private State.NetworkTopologyState networkTopologyState;
 
-    /**
-     * Information about the server to which we are trying to connect or connected (null otherwise)
-     */
-//    private PeerServerData peerServerData;
+    private State.ConnectionToServerState connectionToServerState;
 
     private State.LocalServerConnectionsState localServerConnectionsState;
 
@@ -47,16 +44,21 @@ public class PeerClientPrivateInterface {
      */
     PeerClientPrivateInterface(PeerClient peerClient) {
         this.peerClient = peerClient;
+        networkTopologyState = State.NetworkTopologyState.NO_DATA;
         connectionToServerState = State.ConnectionToServerState.DISCONNECTED;
         localServerConnectionsState = State.LocalServerConnectionsState.CLOSED;
     }
 
     private synchronized State buildState() {
-        return new State(connectionToServerState, localServerConnectionsState, port);
+        return new State(networkTopologyState, connectionToServerState, localServerConnectionsState, port);
     }
 
     public synchronized State getState() {
         return buildState();
+    }
+
+    private void updateNetworkTopologyState(State.NetworkTopologyState networkTopologyState) {
+        this.networkTopologyState = networkTopologyState;
     }
 
     private void updateConnectionToServerInfo(State.ConnectionToServerState connectionToServerStatus) {
@@ -75,6 +77,47 @@ public class PeerClientPrivateInterface {
     public synchronized void listeningPortModified(int port) {
         peerClient.listeningPortModified(port);
     }
+
+
+
+    ////////////////////////////////// NETWORK TOPOLOGY MANAGER  //////////////////////////////////
+
+    public synchronized void tryingToFetchLocalAddress(State.NetworkTopologyState networkTopologyState) {
+        updateNetworkTopologyState(networkTopologyState);
+        peerClient.tryingToFetchLocalAddress(buildState());
+    }
+
+    public synchronized void localAddressFetched(String localAddress, State.NetworkTopologyState networkTopologyState) {
+        updateNetworkTopologyState(networkTopologyState);
+        peerClient.localAddressFetched(localAddress, buildState());
+    }
+
+    public synchronized void couldNotFetchLocalAddress(State.NetworkTopologyState networkTopologyState) {
+        updateNetworkTopologyState(networkTopologyState);
+        peerClient.couldNotFetchLocalAddress(buildState());
+    }
+
+    public synchronized void tryingToFetchExternalAddress(State.NetworkTopologyState networkTopologyState) {
+        updateNetworkTopologyState(networkTopologyState);
+        peerClient.tryingToFetchExternalAddress(buildState());
+    }
+
+    public synchronized void externalAddressFetched(String externalAddress, boolean hasGateway, State.NetworkTopologyState networkTopologyState) {
+        updateNetworkTopologyState(networkTopologyState);
+        peerClient.externalAddressFetched(externalAddress, hasGateway, buildState());
+    }
+
+    public synchronized void couldNotFetchExternalAddress(State.NetworkTopologyState networkTopologyState) {
+        updateNetworkTopologyState(networkTopologyState);
+        peerClient.couldNotFetchExternalAddress(buildState());
+    }
+
+
+
+
+
+
+    ////////////////////////////////// PEER SERVER MANAGER  //////////////////////////////////
 
     public synchronized void unrecognizedMessageFromServer(State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
@@ -131,6 +174,10 @@ public class PeerClientPrivateInterface {
         peerClient.alreadyRegistered(buildState());
     }
 
+
+
+    ////////////////////////////////// LOCAL SERVER MANAGER  //////////////////////////////////
+
     public synchronized void localServerOpen(int port, State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, port);
         peerClient.localServerOpen(port, buildState());
@@ -152,6 +199,9 @@ public class PeerClientPrivateInterface {
     public synchronized void localServerError(Exception e) {
         peerClient.localServerError(e);
     }
+
+
+    ////////////////////////////////// FRIEND CONNECTION MANAGER  //////////////////////////////////
 
     public synchronized void newPeerConnected(PeerID peerID, ChannelConnectionPoint ccp, ConnectionStatus status) {
         peerClient.newPeerConnected(peerID, ccp, status);

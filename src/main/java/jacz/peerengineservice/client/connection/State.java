@@ -7,6 +7,16 @@ package jacz.peerengineservice.client.connection;
 public class State {
 
     /**
+     * State of detection of the local network topology
+     */
+    public enum NetworkTopologyState {
+        NO_DATA,
+        WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH,
+        LOCAL_ADDRESS_FETCHED,
+        ALL_FETCHED
+    }
+
+    /**
      * This enum allows to keep track of the connection state with the peer server
      */
     public enum ConnectionToServerState {
@@ -26,6 +36,8 @@ public class State {
         CLOSED
     }
 
+    private final NetworkTopologyState networkTopologyState;
+
     private final ConnectionToServerState connectionToServerState;
 
     private final LocalServerConnectionsState localServerConnectionsState;
@@ -35,13 +47,8 @@ public class State {
      */
     private final int port;
 
-    public State() {
-        connectionToServerState = ConnectionToServerState.DISCONNECTED;
-        localServerConnectionsState = LocalServerConnectionsState.CLOSED;
-        port = -1;
-    }
-
-    public State(ConnectionToServerState connectionToServerState, LocalServerConnectionsState localServerConnectionsState, int port) {
+    public State(NetworkTopologyState networkTopologyState, ConnectionToServerState connectionToServerState, LocalServerConnectionsState localServerConnectionsState, int port) {
+        this.networkTopologyState = networkTopologyState;
         this.connectionToServerState = connectionToServerState;
         this.localServerConnectionsState = localServerConnectionsState;
         this.port = port;
@@ -59,9 +66,20 @@ public class State {
         return port;
     }
 
+//    @Override
+//    public String toString() {
+//        return "State{Peer server: " + connectionToServerState + ", Local server: " + localServerConnectionsState + " [" + port + "]}";
+//    }
+
+
     @Override
     public String toString() {
-        return "State{Peer server: " + connectionToServerState + ", Local server: " + localServerConnectionsState + " [" + port + "]}";
+        return "State{" +
+                "networkTopologyState=" + networkTopologyState +
+                ", connectionToServerState=" + connectionToServerState +
+                ", localServerConnectionsState=" + localServerConnectionsState +
+                ", port=" + port +
+                '}';
     }
 
     @Override
