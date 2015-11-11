@@ -7,11 +7,7 @@ import jacz.peerengineservice.util.ChannelConstants;
 import jacz.util.concurrency.ThreadUtil;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
-import jacz.util.concurrency.timer.SimpleTimerAction;
-import jacz.util.concurrency.timer.Timer;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,49 +29,6 @@ import java.util.Set;
  * data to which we are connected, port we are using for listening to incoming connections, etc)
  */
 public class PeerClientConnectionManager implements DaemonAction {
-
-    /**
-     * This class checks that the local internet address is not modified. In case of modification, it notifies the PeerClientConfigurationManager
-     * <p/>
-     * This class must be stopped after its use
-     */
-    private static class LocalAddressChecker implements SimpleTimerAction {
-
-        private final static long LOCAL_ADDRESS_TIMER = 60000L;
-
-        private final PeerClientConnectionManager peerClientConnectionManager;
-
-        private final Timer timer;
-
-        private LocalAddressChecker(PeerClientConnectionManager peerClientConnectionManager) {
-            this.peerClientConnectionManager = peerClientConnectionManager;
-            timer = new Timer(LOCAL_ADDRESS_TIMER, this, true, "LocalAddressChecker");
-        }
-
-        @Override
-        public Long wakeUp(Timer timer) {
-            peerClientConnectionManager.updateLocalAddress(detectLocalAddress());
-            return null;
-        }
-
-        /**
-         * Detects the local address assigned to our machine
-         *
-         * @return the value has changed from the last detection
-         */
-        public static InetAddress detectLocalAddress() {
-            try {
-                return InetAddress.getLocalHost();
-            } catch (UnknownHostException e) {
-                return null;
-            }
-        }
-
-
-        public void stop() {
-            timer.kill();
-        }
-    }
 
     /**
      * This enum indicates the possibilities for the client wishing us to establish connection with the server or not
@@ -105,12 +58,10 @@ public class PeerClientConnectionManager implements DaemonAction {
      */
     private final Daemon stateDaemon;
 
-    private final NetworkTopologyManager networkTopologyManager;
-
     /**
-     * Periodically checks the local address
+     * Handles detection of network properties
      */
-    private final LocalAddressChecker localAddressChecker;
+    private final NetworkTopologyManager networkTopologyManager;
 
     /**
      * Handles connection with the server
@@ -128,9 +79,6 @@ public class PeerClientConnectionManager implements DaemonAction {
     private final FriendConnectionManager friendConnectionManager;
 
 
-
-
-
     public PeerClientConnectionManager(
             PeerClientPrivateInterface peerClientPrivateInterface,
             ConnectedPeers connectedPeers,
@@ -140,13 +88,12 @@ public class PeerClientConnectionManager implements DaemonAction {
         this.peerClientPrivateInterface = peerClientPrivateInterface;
 
         clientsWishForConnection = ClientsWishForConnection.NEGATIVE;
-        wishedConnectionInformation = new ConnectionInformation(LocalAddressChecker.detectLocalAddress(), port);
+        wishedConnectionInformation = new ConnectionInformation();
+        wishedConnectionInformation.setListeningPort(port);
 
         stateDaemon = new Daemon(this);
 
-        localAddressChecker = new LocalAddressChecker(this);
-
-        networkTopologyManager = new NetworkTopologyManager(peerClientPrivateInterface);
+        networkTopologyManager = new NetworkTopologyManager(this, peerClientPrivateInterface);
         peerServerManager = new PeerServerManager(ownPeerID, this, peerClientPrivateInterface, wishedConnectionInformation);
         friendConnectionManager = new FriendConnectionManager(ownPeerID, connectedPeers, peerClientPrivateInterface, this, peerRelations);
         localServerManager = new LocalServerManager(friendConnectionManager, peerClientPrivateInterface, wishedConnectionInformation);
@@ -178,7 +125,6 @@ public class PeerClientConnectionManager implements DaemonAction {
      */
     public void stop() {
         setWishForConnection(false);
-        localAddressChecker.stop();
         networkTopologyManager.stop();
         peerServerManager.stop();
         localServerManager.stop();
@@ -206,18 +152,24 @@ public class PeerClientConnectionManager implements DaemonAction {
     /**
      * Sets the local address assigned to our machine (null if not detectable)
      *
-     * @param inetAddress detected local address
+     * @param localAddress detected local address
      */
-    synchronized void updateLocalAddress(InetAddress inetAddress) {
-        if (inetAddress == null || !inetAddress.equals(wishedConnectionInformation.getLocalInetAddress())) {
-            if (inetAddress == null) {
-                setWishForConnection(false);
-                peerClientPrivateInterface.undefinedOwnInetAddress();
-            }
-            wishedConnectionInformation.setLocalInetAddress(inetAddress);
-            peerServerManager.updatedState();
-            updatedState();
-        }
+    synchronized void updateLocalAddress(String localAddress) {
+        wishedConnectionInformation.setLocalInetAddress(localAddress);
+        peerServerManager.updatedState();
+        updatedState();
+    }
+
+    synchronized void networkNotAvailable() {
+        // the local address is not available due to some problem in the local network
+        // the user has been notified. Disconnect services until we have connection.
+        updatedState();
+    }
+
+    private void disconnectServices() {
+        friendConnectionManager.setWishForFriendSearch(false);
+        peerServerManager.setWishForConnect(false);
+        friendConnectionManager.disconnectAllPeers();
     }
 
     private void updatedState() {
@@ -243,6 +195,7 @@ public class PeerClientConnectionManager implements DaemonAction {
     public synchronized boolean solveState() {
         // in any case, solve the network topology first
         if (!networkTopologyManager.isInWishedState()) {
+            disconnectServices();
             longDelay();
             return false;
         }
@@ -268,25 +221,21 @@ public class PeerClientConnectionManager implements DaemonAction {
             friendConnectionManager.setWishForFriendSearch(true);
 
         } else {
-            // first deactivate friend search
-            friendConnectionManager.setWishForFriendSearch(false);
+            // disconnect all services and wait for being in wished state
+            disconnectServices();
 
-            // second, disconnect from the peer server
-            peerServerManager.setWishForConnect(false);
             if (!peerServerManager.isInWishedState()) {
                 peerServerManager.updatedState();
                 longDelay();
                 return false;
             }
 
-            // third, close our server for accepting peer connections and kick all connected peers
-            localServerManager.setWishForConnect(false);
             if (!localServerManager.isInWishedState()) {
                 shortDelay();
                 return false;
             }
 
-            // fourth, disconnect all remaining peers
+            // finally, disconnect all remaining peers
             friendConnectionManager.disconnectAllPeers();
         }
         // all connection status is ok

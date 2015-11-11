@@ -53,9 +53,10 @@ public class NetworkTopologyManager implements DaemonAction {
          *
          * @return the detected local address, or null if no detection
          */
-        public static InetAddress detectLocalAddress() {
+        public static String detectLocalAddress() {
             try {
-                return InetAddress.getLocalHost();
+                InetAddress inetAddress = InetAddress.getLocalHost();
+                return inetAddress != null ? inetAddress.getHostAddress() : null;
             } catch (UnknownHostException e) {
                 return null;
             }
@@ -94,11 +95,16 @@ public class NetworkTopologyManager implements DaemonAction {
 
 
     /**
+     * The PeerClientConnectionManager that created us
+     */
+    private PeerClientConnectionManager peerClientConnectionManager;
+
+    /**
      * Actions to invoke by the PeerClientConnectionManager in order to communicate with the PeerClient which owns us
      */
     private final PeerClientPrivateInterface peerClientPrivateInterface;
 
-    private InetAddress localAddress;
+    private String localAddress;
 
     private String externalAddress;
 
@@ -115,7 +121,10 @@ public class NetworkTopologyManager implements DaemonAction {
     private final LocalAddressChecker localAddressChecker;
 
 
-    public NetworkTopologyManager(PeerClientPrivateInterface peerClientPrivateInterface) {
+    public NetworkTopologyManager(
+            PeerClientConnectionManager peerClientConnectionManager,
+            PeerClientPrivateInterface peerClientPrivateInterface) {
+        this.peerClientConnectionManager = peerClientConnectionManager;
         this.peerClientPrivateInterface = peerClientPrivateInterface;
         localAddress = null;
         externalAddress = null;
@@ -126,7 +135,7 @@ public class NetworkTopologyManager implements DaemonAction {
     }
 
     public String getLocalAddress() {
-        return localAddress != null ? localAddress.getHostAddress() : null;
+        return localAddress;
     }
 
     public String getExternalAddress() {
@@ -156,6 +165,7 @@ public class NetworkTopologyManager implements DaemonAction {
 
             case NO_DATA:
                 // fetch the local address
+                peerClientPrivateInterface.initializingConnection();
                 return fetchLocalAddress();
 
             case LOCAL_ADDRESS_FETCHED:
@@ -171,19 +181,20 @@ public class NetworkTopologyManager implements DaemonAction {
     }
 
     private synchronized boolean fetchLocalAddress() {
-        peerClientPrivateInterface.tryingToFetchLocalAddress(networkTopologyState);
-        InetAddress newLocalAddress = LocalAddressChecker.detectLocalAddress();
+        String newLocalAddress = LocalAddressChecker.detectLocalAddress();
         if (newLocalAddress != null && !newLocalAddress.equals(localAddress)) {
             // local address has changed
             localAddress = newLocalAddress;
             networkTopologyState = State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED;
             peerClientPrivateInterface.localAddressFetched(getLocalAddress(), networkTopologyState);
+            peerClientConnectionManager.updateLocalAddress(localAddress);
             return false;
         } else if (newLocalAddress == null) {
             // error fetching local address
             networkTopologyState = State.NetworkTopologyState.WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH;
             localAddressChecker.mustSearchSoon();
             peerClientPrivateInterface.couldNotFetchLocalAddress(networkTopologyState);
+            peerClientConnectionManager.networkNotAvailable();
             return true;
         } else {
             // local address has not changed, all ok

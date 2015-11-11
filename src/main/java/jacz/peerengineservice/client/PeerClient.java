@@ -638,14 +638,16 @@ public class PeerClient {
      * ******************************** NOTIFICATIONS FROM THE PEER CLIENT CONNECTION MANAGER ******************************************
      */
 
+    void initializingConnection() {
+        peerClientAction.initializingConnection();
+    }
+
     void listeningPortModified(int port) {
         peerClientAction.listeningPortModified(port);
     }
 
-
-
-    void tryingToFetchLocalAddress(State state) {
-        peerClientAction.tryingToFetchLocalAddress(state);
+    void undefinedOwnInetAddress() {
+        peerClientAction.undefinedOwnInetAddress();
     }
 
     void localAddressFetched(String localAddress, State state) {
@@ -718,10 +720,6 @@ public class PeerClient {
 
     void localServerClosed(int port, State state) {
         peerClientAction.localServerClosed(port, state);
-    }
-
-    void undefinedOwnInetAddress() {
-        peerClientAction.undefinedOwnInetAddress();
     }
 
     void peerCouldNotConnectToUs(Exception e, IP4Port ip4Port) {

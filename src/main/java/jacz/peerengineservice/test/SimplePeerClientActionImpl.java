@@ -79,8 +79,8 @@ public class SimplePeerClientActionImpl implements PeerClientAction {
     }
 
     @Override
-    public void tryingToFetchLocalAddress(State state) {
-        System.out.println(initMessage + "Trying to fetch local address. State: " + state);
+    public void initializingConnection() {
+        System.out.println(initMessage + "Initializing connection");
     }
 
     @Override

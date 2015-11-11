@@ -138,12 +138,12 @@ public class PeerClientActionBridge implements PeerClientAction {
     }
 
     @Override
-    public void tryingToFetchLocalAddress(final State state) {
-        logger.info("TRYING TO FETCH LOCAL ADDRESS. State: " + state);
+    public void initializingConnection() {
+        logger.info("INITIALIZING CONNECTION");
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                peerClientAction.tryingToFetchLocalAddress(state);
+                peerClientAction.initializingConnection();
             }
         });
     }

@@ -74,18 +74,22 @@ public class PeerClientPrivateInterface {
         }
     }
 
+    ////////////////////////////////// PEER CLIENT CONNECTION MANAGER  //////////////////////////////////
+
+    public synchronized void initializingConnection() {
+        peerClient.initializingConnection();
+    }
+
     public synchronized void listeningPortModified(int port) {
         peerClient.listeningPortModified(port);
     }
 
+    public synchronized void undefinedOwnInetAddress() {
+        peerClient.undefinedOwnInetAddress();
+    }
 
 
     ////////////////////////////////// NETWORK TOPOLOGY MANAGER  //////////////////////////////////
-
-    public synchronized void tryingToFetchLocalAddress(State.NetworkTopologyState networkTopologyState) {
-        updateNetworkTopologyState(networkTopologyState);
-        peerClient.tryingToFetchLocalAddress(buildState());
-    }
 
     public synchronized void localAddressFetched(String localAddress, State.NetworkTopologyState networkTopologyState) {
         updateNetworkTopologyState(networkTopologyState);
@@ -186,10 +190,6 @@ public class PeerClientPrivateInterface {
     public synchronized void localServerClosed(int port, State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, port);
         peerClient.localServerClosed(port, buildState());
-    }
-
-    public synchronized void undefinedOwnInetAddress() {
-        peerClient.undefinedOwnInetAddress();
     }
 
     public synchronized void peerCouldNotConnectToUs(Exception e, IP4Port ip4Port) {

@@ -1,35 +1,34 @@
 package jacz.peerengineservice.client.connection;
 
-import java.net.InetAddress;
-
 /**
  * Information fields related to connection to server and peers. Thread safe
  */
 class ConnectionInformation {
 
-    private InetAddress localInetAddress;
+    private String localInetAddress;
 
-    private int listeningPort;
+    private Integer listeningPort;
 
     ConnectionInformation() {
-        clear();
+        this.localInetAddress = null;
+        this.listeningPort = null;
     }
 
-    ConnectionInformation(InetAddress localInetAddress, int listeningPort) {
-        this.localInetAddress = localInetAddress;
-        this.listeningPort = listeningPort;
-    }
+//    ConnectionInformation(String localInetAddress, int listeningPort) {
+//        this.localInetAddress = localInetAddress;
+//        this.listeningPort = listeningPort;
+//    }
+//
+//    synchronized void clear() {
+//        setLocalInetAddress(null);
+//        setListeningPort(-1);
+//    }
 
-    synchronized void clear() {
-        setLocalInetAddress(null);
-        setListeningPort(-1);
-    }
-
-    synchronized InetAddress getLocalInetAddress() {
+    synchronized String getLocalInetAddress() {
         return localInetAddress;
     }
 
-    synchronized void setLocalInetAddress(InetAddress localInetAddress) {
+    synchronized void setLocalInetAddress(String localInetAddress) {
         this.localInetAddress = localInetAddress;
     }
 

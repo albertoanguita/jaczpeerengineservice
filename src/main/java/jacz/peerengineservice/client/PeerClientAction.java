@@ -33,7 +33,7 @@ public interface PeerClientAction {
 
     void listeningPortModified(int port);
 
-    void tryingToFetchLocalAddress(State state);
+    void initializingConnection();
 
     void localAddressFetched(String localAddress, State state);
 

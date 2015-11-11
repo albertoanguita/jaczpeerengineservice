@@ -4,7 +4,6 @@ import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.server.ServerAPI;
 import jacz.peerengineservice.server.ServerAccessException;
-import jacz.util.concurrency.ThreadUtil;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.concurrency.timer.SimpleTimerAction;
@@ -297,7 +296,7 @@ public class PeerServerManager implements DaemonAction {
                     ServerAPI.connect(
                             new ServerAPI.ConnectionRequest(
                                     ownPeerID,
-                                    connectionInformation.getLocalInetAddress().getHostAddress(),
+                                    connectionInformation.getLocalInetAddress(),
                                     connectionInformation.getListeningPort(),
                                     connectionInformation.getListeningPort()
                             )

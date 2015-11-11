@@ -1,11 +1,10 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.clientserver.server.ServerAction;
 import jacz.commengine.clientserver.server.ServerModule;
 import jacz.commengine.communication.CommError;
-import jacz.util.concurrency.ThreadUtil;
+import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.identifier.UniqueIdentifier;
@@ -150,17 +149,7 @@ public class LocalServerManager implements DaemonAction {
 
     void stop() {
         setWishForConnect(false);
-        // active wait until the local server is closed
-        boolean mustWait;
-        synchronized (this) {
-            mustWait = localServerConnectionsState != State.LocalServerConnectionsState.CLOSED;
-        }
-        while (mustWait) {
-            ThreadUtil.safeSleep(100L);
-            synchronized (this) {
-                mustWait = localServerConnectionsState != State.LocalServerConnectionsState.CLOSED;
-            }
-        }
+        stateDaemon.blockUntilStateIsSolved();
     }
 
     synchronized void updatedState() {

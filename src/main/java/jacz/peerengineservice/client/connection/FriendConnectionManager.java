@@ -136,6 +136,7 @@ public class FriendConnectionManager {
 
     void stop() {
         setWishForFriendSearch(false);
+        disconnectAllPeers();
         // actively wait until there are zero peers connected
         boolean mustWait;
         synchronized (this) {
