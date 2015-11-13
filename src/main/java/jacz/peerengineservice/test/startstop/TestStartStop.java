@@ -26,7 +26,7 @@ public class TestStartStop {
         Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImpl(), new HashMap<String, PeerFSMFactory>());
         client.startClient();
 
-        Thread.sleep(12000);
+        Thread.sleep(25000);
         System.out.println("Client stopping...");
         client.stopClient();
         System.out.println("Client stopped! END!!!");

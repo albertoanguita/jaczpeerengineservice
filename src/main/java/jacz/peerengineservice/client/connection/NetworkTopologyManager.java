@@ -187,7 +187,6 @@ public class NetworkTopologyManager implements DaemonAction {
             localAddress = newLocalAddress;
             networkTopologyState = State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED;
             peerClientPrivateInterface.localAddressFetched(getLocalAddress(), networkTopologyState);
-            peerClientConnectionManager.updateLocalAddress(localAddress);
             return false;
         } else if (newLocalAddress == null) {
             // error fetching local address

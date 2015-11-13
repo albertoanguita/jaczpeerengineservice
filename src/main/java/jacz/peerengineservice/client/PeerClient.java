@@ -39,6 +39,10 @@ public class PeerClient {
 
     public static final String MANUAL_REMOVE_BAG = "PEER_CLIENT_MANUAL_REMOVE_BAG";
 
+    public static final int DEFAULT_EXTERNAL_PORT = 37720;
+
+
+
     /**
      * Our own peer ID
      */
@@ -120,6 +124,7 @@ public class PeerClient {
                 connectedPeers,
                 peerClientData.getOwnPeerID(),
                 peerClientData.getPort(),
+                DEFAULT_EXTERNAL_PORT,
                 peerRelations);
         resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, peerClientPrivateInterface, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
@@ -714,12 +719,56 @@ public class PeerClient {
         peerClientAction.alreadyRegistered(state);
     }
 
-    void localServerOpen(int port, State state) {
-        peerClientAction.localServerOpen(port, state);
+    void tryingToOpenLocalServer(State state) {
+        peerClientAction.tryingToOpenLocalServer(state);
     }
 
-    void localServerClosed(int port, State state) {
-        peerClientAction.localServerClosed(port, state);
+    void localServerOpen(State state) {
+        peerClientAction.localServerOpen(state);
+    }
+
+    void couldNotOpenLocalServer(State state) {
+        peerClientAction.couldNotOpenLocalServer(state);
+    }
+
+    void tryingToCloseLocalServer(State state) {
+        peerClientAction.tryingToCloseLocalServer(state);
+    }
+
+    void localServerClosed(State state) {
+        peerClientAction.localServerClosed(state);
+    }
+
+    void tryingToCreateNATRule(State state) {
+        peerClientAction.tryingToCreateNATRule(state);
+    }
+
+    void NATRuleCreated(State state) {
+        peerClientAction.NATRuleCreated(state);
+    }
+
+    void couldNotFetchUPNPGateway(State state) {
+        peerClientAction.couldNotFetchUPNPGateway(state);
+    }
+
+    void errorCreatingNATRule(State state) {
+        peerClientAction.errorCreatingNATRule(state);
+    }
+
+    void tryingToDestroyNATRule(State state) {
+        peerClientAction.tryingToDestroyNATRule(state);
+    }
+
+    void NATRuleDestroyed(State state) {
+        peerClientAction.NATRuleDestroyed(state);
+    }
+
+    void couldNotDestroyNATRule(State state) {
+        peerClientAction.couldNotDestroyNATRule(state);
+    }
+
+    void listeningConnectionsWithoutNATRule(State state) {
+        peerClientAction.listeningConnectionsWithoutNATRule(state);
     }
 
     void peerCouldNotConnectToUs(Exception e, IP4Port ip4Port) {

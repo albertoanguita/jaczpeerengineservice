@@ -326,23 +326,144 @@ public class PeerClientActionBridge implements PeerClientAction {
     }
 
     @Override
-    public void localServerOpen(final int port, final State state) {
-        logger.info("LOCAL SERVER OPEN. Port: " + port + ". State: " + state);
+    public void tryingToOpenLocalServer(final State state) {
+        logger.info("TRYING TO OPEN LOCAL SERVER. State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                peerClientAction.localServerOpen(port, state);
+                peerClientAction.tryingToOpenLocalServer(state);
             }
         });
     }
 
     @Override
-    public void localServerClosed(final int port, final State state) {
-        logger.info("LOCAL SERVER CLOSED. Port: " + port + ". State: " + state);
+    public void localServerOpen(final State state) {
+        logger.info("LOCAL SERVER OPEN. State: " + state);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                peerClientAction.localServerClosed(port, state);
+                peerClientAction.localServerOpen(state);
+            }
+        });
+    }
+
+    @Override
+    public void couldNotOpenLocalServer(final State state) {
+        logger.info("COULD NOT OPEN LOCAL SERVER. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.couldNotOpenLocalServer(state);
+            }
+        });
+    }
+
+    @Override
+    public void tryingToCloseLocalServer(final State state) {
+        logger.info("TRYING TO CLOSE LOCAL SERVER. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.tryingToCloseLocalServer(state);
+            }
+        });
+    }
+
+    @Override
+    public void localServerClosed(final State state) {
+        logger.info("LOCAL SERVER CLOSED. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.localServerClosed(state);
+            }
+        });
+    }
+
+    @Override
+    public void tryingToCreateNATRule(final State state) {
+        logger.info("TRYING TO CREATE NAT RULE. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.tryingToCreateNATRule(state);
+            }
+        });
+    }
+
+    @Override
+    public void NATRuleCreated(final State state) {
+        logger.info("NAT RULE CREATED. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.NATRuleCreated(state);
+            }
+        });
+    }
+
+    @Override
+    public void couldNotFetchUPNPGateway(final State state) {
+        logger.info("COULD NOT FETCH UPNP GATEWAY. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.couldNotFetchUPNPGateway(state);
+            }
+        });
+    }
+
+    @Override
+    public void errorCreatingNATRule(final State state) {
+        logger.info("ERROR CREATING NAT RULE. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.errorCreatingNATRule(state);
+            }
+        });
+    }
+
+    @Override
+    public void tryingToDestroyNATRule(final State state) {
+        logger.info("TRYING TO DESTROY NAT RULE. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.tryingToDestroyNATRule(state);
+            }
+        });
+    }
+
+    @Override
+    public void NATRuleDestroyed(final State state) {
+        logger.info("NAT RULE DESTROYED. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.NATRuleDestroyed(state);
+            }
+        });
+    }
+
+    @Override
+    public void couldNotDestroyNATRule(final State state) {
+        logger.info("COULD NOT DESTROY NAT RULE. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.couldNotDestroyNATRule(state);
+            }
+        });
+    }
+
+    @Override
+    public void listeningConnectionsWithoutNATRule(final State state) {
+        logger.info("LISTENING CONNECTIONS WITHOUT NAT RULE. State: " + state);
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                peerClientAction.listeningConnectionsWithoutNATRule(state);
             }
         });
     }

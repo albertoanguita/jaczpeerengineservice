@@ -1,6 +1,6 @@
 <peer-client-config>
   <field name="nick">alb</field>
-  <field name="port">10001</field>
+  <field name="port">0</field>
   <field name="peer-id">0000000000000000000000000000000000000000001</field>
   <str name="peer-server-data">
     <!--<ip>138.100.11.51</ip>-->

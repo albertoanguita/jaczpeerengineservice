@@ -32,8 +32,15 @@ public class State {
      * This enum stores the possible states of the server for listening to incoming connections from friends
      */
     public enum LocalServerConnectionsState {
+        CLOSED,
+        OPENING,
+        WAITING_FOR_OPENING_TRY,
         OPEN,
-        CLOSED
+        CREATING_NAT_RULE,
+        WAITING_FOR_NAT_RULE_TRY,
+        LISTENING,
+        DESTROYING_NAT_RULE,
+        CLOSING
     }
 
     private final NetworkTopologyState networkTopologyState;
@@ -43,15 +50,18 @@ public class State {
     private final LocalServerConnectionsState localServerConnectionsState;
 
     /**
-     * Port at which we listen to connections from other peers, if the local server is open (-1 otherwise)
+     * Internal port at which we listen to connections from other peers, if the local server is open (-1 otherwise)
      */
-    private final int port;
+    private final int localPort;
 
-    public State(NetworkTopologyState networkTopologyState, ConnectionToServerState connectionToServerState, LocalServerConnectionsState localServerConnectionsState, int port) {
+    private final int externalPort;
+
+    public State(NetworkTopologyState networkTopologyState, ConnectionToServerState connectionToServerState, LocalServerConnectionsState localServerConnectionsState, int localPort, int externalPort) {
         this.networkTopologyState = networkTopologyState;
         this.connectionToServerState = connectionToServerState;
         this.localServerConnectionsState = localServerConnectionsState;
-        this.port = port;
+        this.localPort = localPort;
+        this.externalPort = externalPort;
     }
 
     public ConnectionToServerState getConnectionToServerState() {
@@ -62,15 +72,13 @@ public class State {
         return localServerConnectionsState;
     }
 
-    public int getPort() {
-        return port;
+    public int getLocalPort() {
+        return localPort;
     }
 
-//    @Override
-//    public String toString() {
-//        return "State{Peer server: " + connectionToServerState + ", Local server: " + localServerConnectionsState + " [" + port + "]}";
-//    }
-
+    public int getExternalPort() {
+        return externalPort;
+    }
 
     @Override
     public String toString() {
@@ -78,7 +86,8 @@ public class State {
                 "networkTopologyState=" + networkTopologyState +
                 ", connectionToServerState=" + connectionToServerState +
                 ", localServerConnectionsState=" + localServerConnectionsState +
-                ", port=" + port +
+                ", internalPort=" + localPort +
+                ", externalPort=" + externalPort +
                 '}';
     }
 
@@ -89,7 +98,8 @@ public class State {
 
         State state = (State) o;
 
-        if (port != state.port) return false;
+        if (localPort != state.localPort) return false;
+        if (externalPort != state.externalPort) return false;
         if (connectionToServerState != state.connectionToServerState) return false;
         if (localServerConnectionsState != state.localServerConnectionsState) return false;
 
@@ -100,7 +110,8 @@ public class State {
     public int hashCode() {
         int result = connectionToServerState.hashCode();
         result = 31 * result + localServerConnectionsState.hashCode();
-        result = 31 * result + port;
+        result = 31 * result + localPort;
+        result = 31 * result + externalPort;
         return result;
     }
 }

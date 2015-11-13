@@ -133,25 +133,43 @@ public class UpnpAPI {
         }
     }
 
-    public static int mapPortFrom(GatewayDevice activeGW, String mappingDescription, int externalPort, int internalPort, boolean replace) throws UpnpException, NoGatewayException {
+    public static int mapPortFrom(GatewayDevice activeGW, String mappingDescription, int initialExternalPort, int internalPort, boolean replace) throws UpnpException, NoGatewayException {
         // search for a free port
-        // todo start from 8000...
-        PortMapping portMapping = fetchPort(activeGW, externalPort);
-        while (externalPort <= 65535 && portMapping != null) {
-            if (replace && portMapping.description.equals(mappingDescription)) {
+//        PortMapping portMapping = fetchPort(activeGW, externalPort);
+//        while (externalPort <= FINAL_PORT && portMapping != null) {
+        // search a suitable external port
+        int externalPort = initialExternalPort;
+        boolean finished = false;
+        while (!finished) {
+            PortMapping portMapping = fetchPort(activeGW, externalPort);
+            if (portMapping != null && replace && portMapping.description.equals(mappingDescription)) {
                 unmapPort(activeGW, externalPort);
-                break;
+                portMapping = null;
+            }
+            if (portMapping == null) {
+                finished = true;
             } else {
                 externalPort++;
-                portMapping = fetchPort(activeGW, externalPort);
+                if (externalPort == initialExternalPort) {
+                    externalPort = -1;
+                    finished = true;
+                }
+                if (externalPort > FINAL_PORT) {
+                    externalPort = INITIAL_PORT;
+                }
             }
+//            if (replace && portMapping.description.equals(mappingDescription)) {
+//                unmapPort(activeGW, externalPort);
+//                break;
+//            } else {
+//                externalPort++;
+//                portMapping = fetchPort(activeGW, externalPort);
+//            }
         }
-        if (externalPort < 65536) {
+        if (externalPort != -1) {
             generatePortMapping(activeGW, mappingDescription, externalPort, internalPort);
-            return externalPort;
-        } else {
-            return -1;
         }
+        return externalPort;
     }
 
     public static void unmapPort(GatewayDevice activeGW, int externalPort) throws UpnpException, NoGatewayException {

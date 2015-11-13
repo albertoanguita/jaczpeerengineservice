@@ -88,6 +88,17 @@ public class PeerServerManager implements DaemonAction {
         }
     }
 
+    private static final class ActualConnectionData {
+        String localAddress;
+        int localPort;
+        int externalPort;
+
+        public ActualConnectionData() {
+            localAddress = "";
+            localPort = -1;
+            externalPort = -1;
+        }
+    }
 
 
 
@@ -119,12 +130,17 @@ public class PeerServerManager implements DaemonAction {
     /**
      * Collection of all information related to connection to the server (what we are currently using)
      */
-    private final ConnectionInformation connectionInformation;
+//    private final ConnectionInformation connectionInformation;
+    private final ActualConnectionData actualConnectionData;
 
     /**
      * Collection of all information related to connection to the server, as provided by the user
      */
-    private final ConnectionInformation wishedConnectionInformation;
+//    private final ConnectionInformation wishedConnectionInformation;
+
+    private NetworkTopologyManager networkTopologyManager;
+
+    private LocalServerManager localServerManager;
 
     /**
      * Status of the connection to the peer server
@@ -145,7 +161,7 @@ public class PeerServerManager implements DaemonAction {
             PeerID ownPeerID,
             PeerClientConnectionManager peerClientConnectionManager,
             PeerClientPrivateInterface peerClientPrivateInterface,
-            ConnectionInformation wishedConnectionInformation) {
+            NetworkTopologyManager networkTopologyManager) {
         this.ownPeerID = ownPeerID;
         this.peerClientConnectionManager = peerClientConnectionManager;
         this.peerClientPrivateInterface = peerClientPrivateInterface;
@@ -153,13 +169,18 @@ public class PeerServerManager implements DaemonAction {
         peerServerSessionID = "";
         serverConnectionMaintainer = new ServerConnectionMaintainer(this);
 
-        connectionInformation = new ConnectionInformation();
-        this.wishedConnectionInformation = wishedConnectionInformation;
+//        connectionInformation = new ConnectionInformation();
+        actualConnectionData = new ActualConnectionData();
+        this.networkTopologyManager = networkTopologyManager;
 
         connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
         wishForConnect = false;
         stateDaemon = new Daemon(this);
         retryConnectionReminder = new RetryConnectionReminder(this);
+    }
+
+    public void setLocalServerManager(LocalServerManager localServerManager) {
+        this.localServerManager = localServerManager;
     }
 
     public State.ConnectionToServerState getConnectionToServerStatus() {
@@ -184,7 +205,10 @@ public class PeerServerManager implements DaemonAction {
     }
 
     private boolean isCorrectConnectionInformation() {
-        return connectionInformation.equals(wishedConnectionInformation);
+//        return connectionInformation.equals(wishedConnectionInformation);
+        return actualConnectionData.localAddress.equals(networkTopologyManager.getLocalAddress()) &&
+                actualConnectionData.localPort == localServerManager.getActualListeningPort() &&
+                actualConnectionData.externalPort == localServerManager.getExternalListeningPort();
     }
 
     void stop() {
@@ -288,17 +312,18 @@ public class PeerServerManager implements DaemonAction {
     }
 
     private void connectToPeerServer() {
-        connectionInformation.setLocalInetAddress(wishedConnectionInformation.getLocalInetAddress());
-        connectionInformation.setListeningPort(wishedConnectionInformation.getListeningPort());
+        actualConnectionData.localAddress = networkTopologyManager.getLocalAddress();
+        actualConnectionData.localPort = localServerManager.getActualListeningPort();
+        actualConnectionData.externalPort = localServerManager.getExternalListeningPort();
         peerClientPrivateInterface.tryingToConnectToServer(State.ConnectionToServerState.CONNECTING);
         try {
             ServerAPI.ConnectionResponse connectionResponse =
                     ServerAPI.connect(
                             new ServerAPI.ConnectionRequest(
                                     ownPeerID,
-                                    connectionInformation.getLocalInetAddress(),
-                                    connectionInformation.getListeningPort(),
-                                    connectionInformation.getListeningPort()
+                                    actualConnectionData.localAddress,
+                                    actualConnectionData.localPort,
+                                    actualConnectionData.externalPort
                             )
                     );
             switch (connectionResponse.getResponse()) {

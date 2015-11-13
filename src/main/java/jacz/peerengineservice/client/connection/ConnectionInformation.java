@@ -5,66 +5,28 @@ package jacz.peerengineservice.client.connection;
  */
 class ConnectionInformation {
 
-    private String localInetAddress;
-
-    private Integer listeningPort;
+    private int localPort;
 
     ConnectionInformation() {
-        this.localInetAddress = null;
-        this.listeningPort = null;
+        this.localPort = -1;
     }
 
-//    ConnectionInformation(String localInetAddress, int listeningPort) {
-//        this.localInetAddress = localInetAddress;
-//        this.listeningPort = listeningPort;
-//    }
-//
-//    synchronized void clear() {
-//        setLocalInetAddress(null);
-//        setListeningPort(-1);
-//    }
 
-    synchronized String getLocalInetAddress() {
-        return localInetAddress;
+    synchronized int getLocalPort() {
+        return localPort;
     }
 
-    synchronized void setLocalInetAddress(String localInetAddress) {
-        this.localInetAddress = localInetAddress;
-    }
-
-    synchronized int getListeningPort() {
-        return listeningPort;
-    }
-
-    synchronized boolean setListeningPort(int listeningPort) {
-        if (this.listeningPort != listeningPort) {
-            this.listeningPort = listeningPort;
+    /**
+     *
+     * @param localPort 0 for random port
+     * @return true if the port has changed
+     */
+    synchronized boolean setListeningPort(int localPort) {
+        if (this.localPort != localPort) {
+            this.localPort = localPort;
             return true;
         } else {
             return false;
         }
-    }
-
-    @Override
-    public synchronized boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ConnectionInformation that = (ConnectionInformation) o;
-
-        if (listeningPort != that.listeningPort) return false;
-        if (!localInetAddress.equals(that.localInetAddress)) return false;
-        //noinspection RedundantIfStatement
-//        if (!peerServerData.equals(that.peerServerData)) return false;
-
-        return true;
-    }
-
-    @Override
-    public synchronized int hashCode() {
-        int result = localInetAddress.hashCode();
-//        result = 31 * result + peerServerData.hashCode();
-        result = 31 * result + listeningPort;
-        return result;
     }
 }

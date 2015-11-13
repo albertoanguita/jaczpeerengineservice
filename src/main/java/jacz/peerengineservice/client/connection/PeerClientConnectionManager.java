@@ -83,20 +83,22 @@ public class PeerClientConnectionManager implements DaemonAction {
             PeerClientPrivateInterface peerClientPrivateInterface,
             ConnectedPeers connectedPeers,
             PeerID ownPeerID,
-            int port,
+            int localPort,
+            int defaultExternalPort,
             PeerRelations peerRelations) {
         this.peerClientPrivateInterface = peerClientPrivateInterface;
 
         clientsWishForConnection = ClientsWishForConnection.NEGATIVE;
         wishedConnectionInformation = new ConnectionInformation();
-        wishedConnectionInformation.setListeningPort(port);
+        wishedConnectionInformation.setListeningPort(localPort);
 
         stateDaemon = new Daemon(this);
 
         networkTopologyManager = new NetworkTopologyManager(this, peerClientPrivateInterface);
-        peerServerManager = new PeerServerManager(ownPeerID, this, peerClientPrivateInterface, wishedConnectionInformation);
+        peerServerManager = new PeerServerManager(ownPeerID, this, peerClientPrivateInterface, networkTopologyManager);
         friendConnectionManager = new FriendConnectionManager(ownPeerID, connectedPeers, peerClientPrivateInterface, this, peerRelations);
-        localServerManager = new LocalServerManager(friendConnectionManager, peerClientPrivateInterface, wishedConnectionInformation);
+        localServerManager = new LocalServerManager(ownPeerID, defaultExternalPort, networkTopologyManager, friendConnectionManager, peerClientPrivateInterface, wishedConnectionInformation);
+        peerServerManager.setLocalServerManager(localServerManager);
     }
 
     /**
@@ -108,12 +110,7 @@ public class PeerClientConnectionManager implements DaemonAction {
      */
     public synchronized void setWishForConnection(boolean enabled) {
         if (enabled) {
-            if (wishedConnectionInformation.getLocalInetAddress() == null) {
-                peerClientPrivateInterface.undefinedOwnInetAddress();
-                clientsWishForConnection = ClientsWishForConnection.NEGATIVE;
-            } else {
-                clientsWishForConnection = ClientsWishForConnection.POSITIVE;
-            }
+            clientsWishForConnection = ClientsWishForConnection.POSITIVE;
         } else {
             clientsWishForConnection = ClientsWishForConnection.NEGATIVE;
         }
@@ -132,7 +129,7 @@ public class PeerClientConnectionManager implements DaemonAction {
     }
 
     public synchronized int getListeningPort() {
-        return wishedConnectionInformation.getListeningPort();
+        return wishedConnectionInformation.getLocalPort();
     }
 
     /**
@@ -149,17 +146,6 @@ public class PeerClientConnectionManager implements DaemonAction {
         updatedState();
     }
 
-    /**
-     * Sets the local address assigned to our machine (null if not detectable)
-     *
-     * @param localAddress detected local address
-     */
-    synchronized void updateLocalAddress(String localAddress) {
-        wishedConnectionInformation.setLocalInetAddress(localAddress);
-        peerServerManager.updatedState();
-        updatedState();
-    }
-
     synchronized void networkNotAvailable() {
         // the local address is not available due to some problem in the local network
         // the user has been notified. Disconnect services until we have connection.
@@ -170,6 +156,7 @@ public class PeerClientConnectionManager implements DaemonAction {
         friendConnectionManager.setWishForFriendSearch(false);
         peerServerManager.setWishForConnect(false);
         friendConnectionManager.disconnectAllPeers();
+        localServerManager.setWishForConnect(false);
     }
 
     private void updatedState() {

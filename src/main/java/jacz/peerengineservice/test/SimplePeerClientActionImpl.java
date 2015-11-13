@@ -139,13 +139,68 @@ public class SimplePeerClientActionImpl implements PeerClientAction {
     }
 
     @Override
-    public void localServerOpen(int port, State state) {
-        System.out.println(initMessage + "Local server open on port " + port + ". State: " + state);
+    public void tryingToOpenLocalServer(State state) {
+        System.out.println(initMessage + "Trying to open Local server. State: " + state);
     }
 
     @Override
-    public void localServerClosed(int port, State state) {
-        System.out.println(initMessage + "Local server closed on port " + port + ". State: " + state);
+    public void localServerOpen(State state) {
+        System.out.println(initMessage + "Local server open. State: " + state);
+    }
+
+    @Override
+    public void couldNotOpenLocalServer(State state) {
+        System.out.println(initMessage + "Could not open local server. State: " + state);
+    }
+
+    @Override
+    public void tryingToCloseLocalServer(State state) {
+        System.out.println(initMessage + "Trying to close local server. State: " + state);
+    }
+
+    @Override
+    public void localServerClosed(State state) {
+        System.out.println(initMessage + "Local server closed. State: " + state);
+    }
+
+    @Override
+    public void tryingToCreateNATRule(State state) {
+        System.out.println(initMessage + "Trying to create NAT rule. State: " + state);
+    }
+
+    @Override
+    public void NATRuleCreated(State state) {
+        System.out.println(initMessage + "NAT rule created. State: " + state);
+    }
+
+    @Override
+    public void couldNotFetchUPNPGateway(State state) {
+        System.out.println(initMessage + "Could not fetch UPNP gateway. State: " + state);
+    }
+
+    @Override
+    public void errorCreatingNATRule(State state) {
+        System.out.println(initMessage + "Error creating NAT rule. State: " + state);
+    }
+
+    @Override
+    public void tryingToDestroyNATRule(State state) {
+        System.out.println(initMessage + "Trying to destroy NAT rule. State: " + state);
+    }
+
+    @Override
+    public void NATRuleDestroyed(State state) {
+        System.out.println(initMessage + "NAT rule destroyed. State: " + state);
+    }
+
+    @Override
+    public void couldNotDestroyNATRule(State state) {
+        System.out.println(initMessage + "Could not destroy NAT rule. State: " + state);
+    }
+
+    @Override
+    public void listeningConnectionsWithoutNATRule(State state) {
+        System.out.println(initMessage + "Listening connections without NAT rule. State: " + state);
     }
 
     @Override

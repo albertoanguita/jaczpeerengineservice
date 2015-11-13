@@ -67,9 +67,31 @@ public interface PeerClientAction {
 
     void alreadyRegistered(State state);
 
-    void localServerOpen(int port, State state);
+    void tryingToOpenLocalServer(State state);
 
-    void localServerClosed(int port, State state);
+    void localServerOpen(State state);
+
+    void couldNotOpenLocalServer(State state);
+
+    void tryingToCloseLocalServer(State state);
+
+    void localServerClosed(State state);
+
+    void tryingToCreateNATRule(State state);
+
+    void NATRuleCreated(State state);
+
+    void couldNotFetchUPNPGateway(State state);
+
+    void errorCreatingNATRule(State state);
+
+    void tryingToDestroyNATRule(State state);
+
+    void NATRuleDestroyed(State state);
+
+    void couldNotDestroyNATRule(State state);
+
+    void listeningConnectionsWithoutNATRule(State state);
 
     void undefinedOwnInetAddress();
 

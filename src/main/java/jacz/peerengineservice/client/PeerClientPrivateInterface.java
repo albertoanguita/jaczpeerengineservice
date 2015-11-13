@@ -35,7 +35,12 @@ public class PeerClientPrivateInterface {
     /**
      * Port at which we listen to connections from other peers, if the local server is open (-1 otherwise)
      */
-    private int port;
+    private int localPort;
+
+    /**
+     * Port at which we listen to connections from other peers, if the local server is open (-1 otherwise)
+     */
+    private int externalPort;
 
     /**
      * Class constructor. Non-public so this class cannot be used outside this package
@@ -50,7 +55,7 @@ public class PeerClientPrivateInterface {
     }
 
     private synchronized State buildState() {
-        return new State(networkTopologyState, connectionToServerState, localServerConnectionsState, port);
+        return new State(networkTopologyState, connectionToServerState, localServerConnectionsState, localPort, externalPort);
     }
 
     public synchronized State getState() {
@@ -65,13 +70,10 @@ public class PeerClientPrivateInterface {
         this.connectionToServerState = connectionToServerStatus;
     }
 
-    private void updateLocalServerInfo(State.LocalServerConnectionsState localServerConnectionsState, int port) {
+    private void updateLocalServerInfo(State.LocalServerConnectionsState localServerConnectionsState, int localPort, int externalPort) {
         this.localServerConnectionsState = localServerConnectionsState;
-        if (localServerConnectionsState == State.LocalServerConnectionsState.OPEN) {
-            this.port = port;
-        } else {
-            this.port = -1;
-        }
+        this.localPort = localPort;
+        this.externalPort = externalPort;
     }
 
     ////////////////////////////////// PEER CLIENT CONNECTION MANAGER  //////////////////////////////////
@@ -115,10 +117,6 @@ public class PeerClientPrivateInterface {
         updateNetworkTopologyState(networkTopologyState);
         peerClient.couldNotFetchExternalAddress(buildState());
     }
-
-
-
-
 
 
     ////////////////////////////////// PEER SERVER MANAGER  //////////////////////////////////
@@ -179,17 +177,71 @@ public class PeerClientPrivateInterface {
     }
 
 
-
     ////////////////////////////////// LOCAL SERVER MANAGER  //////////////////////////////////
 
-    public synchronized void localServerOpen(int port, State.LocalServerConnectionsState localServerConnectionsState) {
-        updateLocalServerInfo(localServerConnectionsState, port);
-        peerClient.localServerOpen(port, buildState());
+    public synchronized void tryingToOpenLocalServer(int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, -1);
+        peerClient.tryingToOpenLocalServer(buildState());
     }
 
-    public synchronized void localServerClosed(int port, State.LocalServerConnectionsState localServerConnectionsState) {
-        updateLocalServerInfo(localServerConnectionsState, port);
-        peerClient.localServerClosed(port, buildState());
+    public synchronized void localServerOpen(int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, -1);
+        peerClient.localServerOpen(buildState());
+    }
+
+    public synchronized void couldNotOpenLocalServer(int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, -1);
+        peerClient.couldNotOpenLocalServer(buildState());
+    }
+
+    public synchronized void tryingToCloseLocalServer(int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, -1);
+        peerClient.tryingToCloseLocalServer(buildState());
+    }
+
+    public synchronized void localServerClosed(int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, -1);
+        peerClient.localServerClosed(buildState());
+    }
+
+    public synchronized void tryingToCreateNATRule(int externalPort, int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
+        peerClient.tryingToCreateNATRule(buildState());
+    }
+
+    public synchronized void NATRuleCreated(int externalPort, int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
+        peerClient.NATRuleCreated(buildState());
+    }
+
+    public synchronized void couldNotFetchUPNPGateway(int externalPort, int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
+        peerClient.couldNotFetchUPNPGateway(buildState());
+    }
+
+    public synchronized void errorCreatingNATRule(int externalPort, int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
+        peerClient.errorCreatingNATRule(buildState());
+    }
+
+    public synchronized void tryingToDestroyNATRule(int externalPort, int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
+        peerClient.tryingToDestroyNATRule(buildState());
+    }
+
+    public synchronized void NATRuleDestroyed(int externalPort, int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
+        peerClient.NATRuleDestroyed(buildState());
+    }
+
+    public synchronized void couldNotDestroyNATRule(int externalPort, int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
+        peerClient.couldNotDestroyNATRule(buildState());
+    }
+
+    public synchronized void listeningConnectionsWithoutNATRule(int externalPort, int localPort, State.LocalServerConnectionsState localServerConnectionsState) {
+        updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
+        peerClient.listeningConnectionsWithoutNATRule(buildState());
     }
 
     public synchronized void peerCouldNotConnectToUs(Exception e, IP4Port ip4Port) {
