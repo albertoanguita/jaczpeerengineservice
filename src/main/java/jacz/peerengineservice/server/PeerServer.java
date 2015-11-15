@@ -7,10 +7,12 @@ import jacz.commengine.communication.CommError;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.network.IP4Port;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
  * This class represents the Peer Server that accepts connections from peer clients. The Peer Server mission is to allow clients find each other.
+ * todo remove
  */
 public class PeerServer {
 
@@ -76,7 +78,11 @@ public class PeerServer {
     }
 
     public synchronized void startServer() {
-        serverModule.startListeningConnections();
+        try {
+            serverModule.startListeningConnections();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         running = true;
         peerServerAction.serverStarted();
     }

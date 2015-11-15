@@ -46,7 +46,7 @@ public class TestListSynch_2 {
         movies.add(new TestData_0.Movie("2", false, 8, "ccc", TestListSynch_1.actors("c1")));
         movies.add(new TestData_0.Movie("3", false, 9, "ddd", TestListSynch_1.actors("d1", "d2")));
         movies.add(new TestData_0.Movie("4", true, 10, null, null));
-        DataAccessor testData_0 = new TestData_0(movies);
+        DataAccessor testData_0 = new TestData_0("2", movies);
 
         Map<String, DataAccessor> readingLists = new HashMap<>();
         Map<String, DataAccessor> writingLists = new HashMap<>();

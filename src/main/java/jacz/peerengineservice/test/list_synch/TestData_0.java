@@ -54,9 +54,12 @@ public class TestData_0 implements DataAccessor {
     }
 
 
+    private String databaseID;
+
     private Set<Movie> movies;
 
-    public TestData_0(Set<Movie> movies) {
+    public TestData_0(String databaseID, Set<Movie> movies) {
+        this.databaseID = databaseID;
         this.movies = movies;
     }
 
@@ -72,13 +75,23 @@ public class TestData_0 implements DataAccessor {
     }
 
     @Override
+    public String getDatabaseID() {
+        return databaseID;
+    }
+
+    @Override
+    public void setDatabaseID(String databaseID) {
+        this.databaseID = databaseID;
+    }
+
+    @Override
     public Integer getLastTimestamp() throws DataAccessException {
         List<Movie> orderedMovies = getOrderedMovies();
         return orderedMovies.get(orderedMovies.size() - 1).timestamp;
     }
 
     @Override
-    public List<? extends Serializable> getElements(Integer latestClientTimestamp) throws DataAccessException {
+    public List<? extends Serializable> getElements(int latestClientTimestamp) throws DataAccessException {
         List<Movie> orderedMovies =  getOrderedMovies();
         while (!orderedMovies.isEmpty() && orderedMovies.get(0).timestamp <= latestClientTimestamp) {
             orderedMovies.remove(0);

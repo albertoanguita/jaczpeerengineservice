@@ -1,6 +1,7 @@
 package jacz.peerengineservice.util.data_synchronization;
 
 import jacz.peerengineservice.PeerID;
+import jacz.util.lists.Duple;
 
 import java.io.Serializable;
 import java.util.List;
@@ -33,9 +34,23 @@ public interface DataAccessor {
     void beginSynchProcess(Mode mode);
 
     /**
+     * The database id (for the server only)
+     *
+     * @return a String with the database ID. If null, no ID is considered for synching
+     */
+    String getDatabaseID();
+
+    /**
+     * Sets a new database ID for the client
+     *
+     * @param databaseID the new databaseID
+     */
+    void setDatabaseID(String databaseID);
+
+    /**
      * The last timestamp that the client has, for sending it to the server
      *
-     * @return the last value of the timestamp of the requested data, or NULL if the whole list is requested
+     * @return the last value of the timestamp of the requested data, or NULL/negative if the whole list is requested
      * @throws DataAccessException error accessing the data
      */
     Integer getLastTimestamp() throws DataAccessException;
@@ -50,10 +65,10 @@ public interface DataAccessor {
      *
      * @param latestClientTimestamp the most recent timestamp held by the client. Elements must be provided
      *                              with newer timestamps, order by timestamp
-     *                              If null, all elements are requested
+     *                              If -1, all elements are requested
      * @return an object representing the required element. This element must implement the Serializable interface
      */
-    List<? extends Serializable> getElements(Integer latestClientTimestamp) throws DataAccessException;
+    List<? extends Serializable> getElements(int latestClientTimestamp) throws DataAccessException;
 
     int elementsPerMessage();
 

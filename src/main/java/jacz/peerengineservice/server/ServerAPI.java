@@ -396,22 +396,22 @@ public class ServerAPI {
     public static void main(String[] args) throws Exception {
 //        System.out.println(hello());
 
-        RegistrationResponse registrationResponse = register(new RegistrationRequest(new PeerID("0000000000000000000000000000000000000000003")));
-
-        System.out.println(registrationResponse);
+//        RegistrationResponse registrationResponse = register(new RegistrationRequest(new PeerID("0000000000000000000000000000000000000000003")));
+//
+//        System.out.println(registrationResponse);
 
 
         ConnectionResponse connectionResponse = connect(new ConnectionRequest(new PeerID("0000000000000000000000000000000000000000003"), "192.168.1.1", 50000, 50001));
         System.out.println(connectionResponse);
 
-//        UpdateResponse refreshResponse = refresh(new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
+//        RefreshResponse refreshResponse = refresh(new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIDvmYoJDA"));
 //        System.out.println(refreshResponse);
 
 //        UpdateResponse disconnectResponse = disconnect(new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
 //        System.out.println(disconnectResponse);
 
         List<PeerID> peerIDList = new ArrayList<>();
-        peerIDList.add(new PeerID("0000000000000000000000000000000000000000002"));
+        peerIDList.add(new PeerID("0000000000000000000000000000000000000000003"));
         peerIDList.add(new PeerID("0000000000000000000000000000000000000000004"));
         InfoResponse infoResponse = info(new InfoRequest(peerIDList));
         System.out.println(infoResponse);

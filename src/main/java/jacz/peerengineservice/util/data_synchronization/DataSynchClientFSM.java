@@ -28,6 +28,8 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
         // We expect the result of this request (accept or deny)
         WAITING_FOR_REQUEST_ANSWER,
 
+        WAITING_FOR_DATABASE_ID,
+
         // We are waiting for the server to send us more packages
         SYNCHING,
 
@@ -51,10 +53,13 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
         final String dataAccessorName;
 
+        final String databaseID;
+
         final Integer lastTimestamp;
 
-        SynchRequest(String dataAccessorName, Integer lastTimestamp) {
+        SynchRequest(String dataAccessorName, String databaseID, Integer lastTimestamp) {
             this.dataAccessorName = dataAccessorName;
+            this.databaseID = databaseID;
             this.lastTimestamp = lastTimestamp;
         }
     }
@@ -69,8 +74,6 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
     private final String dataAccessorName;
 
-    private final PeerID ownPeerID;
-
     private final PeerID serverPeerID;
 
     private final ProgressNotificationWithError<Integer, SynchError> progress;
@@ -78,11 +81,10 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
     private SynchError synchError;
 
 
-    public DataSynchClientFSM(DataSynchEventsBridge dataSynchEventsBridge, DataAccessor dataAccessor, String dataAccessorName, PeerID ownPeerID, PeerID serverPeerID, ProgressNotificationWithError<Integer, SynchError> progress) {
+    public DataSynchClientFSM(DataSynchEventsBridge dataSynchEventsBridge, DataAccessor dataAccessor, String dataAccessorName, PeerID serverPeerID, ProgressNotificationWithError<Integer, SynchError> progress) {
         this.dataSynchEventsBridge = dataSynchEventsBridge;
         this.dataAccessor = dataAccessor;
         this.dataAccessorName = dataAccessorName;
-        this.ownPeerID = ownPeerID;
         this.serverPeerID = serverPeerID;
         this.progress = progress;
         this.synchError = new SynchError(SynchError.Type.UNDEFINED, null);
@@ -122,6 +124,23 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
                                 return State.REQUEST_DENIED;
                         }
                     }
+                    return State.WAITING_FOR_DATABASE_ID;
+
+                } catch (ClassNotFoundException e) {
+                    // invalid class found, error
+                    ErrorLog.reportError(PeerClient.ERROR_LOG, e.toString(), serverPeerID, dataAccessorName, fsmID);
+                    synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Received request object not recognized in state: " + currentState);
+                    return State.ERROR;
+                }
+
+            case WAITING_FOR_DATABASE_ID:
+                try {
+                    if (!(message instanceof String)) {
+                        // unrecognized class
+                        throw new ClassNotFoundException("");
+                    }
+                    String databaseID = (String) message;
+                    dataAccessor.setDatabaseID(databaseID);
                     dataAccessor.beginSynchProcess(DataAccessor.Mode.CLIENT);
                     if (progress != null) {
                         progress.addNotification(0);
@@ -195,7 +214,7 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
     @Override
     public State init(ChannelConnectionPoint ccp) {
         try {
-            ccp.write(outgoingChannel, new SynchRequest(dataAccessorName, dataAccessor.getLastTimestamp()));
+            ccp.write(outgoingChannel, new SynchRequest(dataAccessorName, dataAccessor.getDatabaseID(), dataAccessor.getLastTimestamp()));
             return State.WAITING_FOR_REQUEST_ANSWER;
         } catch (DataAccessException e) {
             ErrorLog.reportError(PeerClient.ERROR_LOG, "Data access error in client synch FSM, getting last timestamp", serverPeerID, dataAccessorName, fsmID);

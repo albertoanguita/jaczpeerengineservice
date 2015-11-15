@@ -128,7 +128,7 @@ public class PeerClient {
                 peerRelations);
         resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, peerClientPrivateInterface, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
-        dataSynchronizer = new DataSynchronizer(this, dataSynchEvents, dataAccessorContainer, peerClientData.getOwnPeerID());
+        dataSynchronizer = new DataSynchronizer(this, dataSynchEvents, dataAccessorContainer);
         // add custom FSMs for list synchronizing service, in case the client uses it
         addOwnCustomFSMs(this.customFSMs);
         registerErrorLog();

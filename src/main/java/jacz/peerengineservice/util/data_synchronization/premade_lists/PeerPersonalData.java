@@ -58,13 +58,23 @@ public class PeerPersonalData implements DataAccessor {
     }
 
     @Override
+    public String getDatabaseID() {
+        return null;
+    }
+
+    @Override
+    public void setDatabaseID(String databaseID) {
+        // ignore, no database ID is used
+    }
+
+    @Override
     public Integer getLastTimestamp() throws DataAccessException {
         // all elements are requested
         return null;
     }
 
     @Override
-    public List<Serializable> getElements(Integer latestClientTimestamp) throws DataAccessException {
+    public List<Serializable> getElements(int latestClientTimestamp) throws DataAccessException {
         List<Serializable> elements = new ArrayList<>();
         elements.add(getNick());
         return elements;

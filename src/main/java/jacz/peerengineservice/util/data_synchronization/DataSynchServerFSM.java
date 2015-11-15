@@ -167,12 +167,22 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
                 // valid request -> send ok and start synching
                 dataSynchEventsBridge.serverSynchRequestAccepted(clientPeerID, dataAccessorName, fsmID);
                 dataAccessor.beginSynchProcess(DataAccessor.Mode.SERVER);
-                ccp.write(outgoingChannel, SynchRequestAnswer.OK);
+                ccp.write(outgoingChannel, SynchRequestAnswer.OK, false);
                 progress = serverSynchRequestAnswer.progress;
                 if (progress != null) {
                     progress.addNotification(0);
                 }
-                elementsToSend = dataAccessor.getElements(request.lastTimestamp);
+                // send the server database ID
+                ccp.write(outgoingChannel, dataAccessor.getDatabaseID(), false);
+                String clientDatabaseID = request.databaseID;
+                int lastTimestamp = request.lastTimestamp != null ? request.lastTimestamp : -1;
+                if (clientDatabaseID == null || !clientDatabaseID.equals(dataAccessor.getDatabaseID())) {
+                    // the whole list is required, as database IDs do not match
+                    elementsToSend = dataAccessor.getElements(-1);
+                } else {
+                    // pass the timestamp given by the client, as not the whole list is required
+                    elementsToSend = dataAccessor.getElements(lastTimestamp);
+                }
                 elementToSendIndex = 0;
                 elementsPerMessage = Math.max(dataAccessor.elementsPerMessage(), 1);
                 CRCBytes = Math.max(dataAccessor.CRCBytes(), 0);

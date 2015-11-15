@@ -31,17 +31,11 @@ public class DataSynchronizer {
      */
     private DataAccessorContainer dataAccessorContainer;
 
-    /**
-     * Owr own peer id
-     */
-    private PeerID ownPeerID;
 
-
-    public DataSynchronizer(PeerClient peerClient, DataSynchEvents dataSynchEvents, DataAccessorContainer dataAccessorContainer, PeerID ownPeerID) {
+    public DataSynchronizer(PeerClient peerClient, DataSynchEvents dataSynchEvents, DataAccessorContainer dataAccessorContainer) {
         this.peerClient = peerClient;
         this.dataSynchEventsBridge = new DataSynchEventsBridge(dataSynchEvents);
         this.dataAccessorContainer = dataAccessorContainer;
-        this.ownPeerID = ownPeerID;
     }
 
     public synchronized void synchronizeData(PeerID serverPeerID, String dataAccessorName, long timeout) {
@@ -52,7 +46,7 @@ public class DataSynchronizer {
         try {
             DataAccessor dataAccessor = dataAccessorContainer.getAccessorForReceiving(serverPeerID, dataAccessorName);
             // same for server FSM
-            DataSynchClientFSM dataSynchClientFSM = new DataSynchClientFSM(dataSynchEventsBridge, dataAccessor, dataAccessorName, ownPeerID, serverPeerID, progress);
+            DataSynchClientFSM dataSynchClientFSM = new DataSynchClientFSM(dataSynchEventsBridge, dataAccessor, dataAccessorName, serverPeerID, progress);
             UniqueIdentifier fsmID = peerClient.registerTimedCustomFSM(
                     serverPeerID,
                     dataSynchClientFSM,
