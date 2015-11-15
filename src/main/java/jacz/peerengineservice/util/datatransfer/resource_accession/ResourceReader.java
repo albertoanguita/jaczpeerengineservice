@@ -1,7 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
 import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 
@@ -18,7 +17,7 @@ public interface ResourceReader {
      *
      * @return true if random access is supported
      */
-    public boolean supportsRandomAccess();
+    boolean supportsRandomAccess();
 
     /**
      * Retrieves the length in bytes of the resource
@@ -33,7 +32,7 @@ public interface ResourceReader {
      * @return a range set with long ranges representing the resource segments that this resource reader can effectively read
      * @throws IOException error accessing the resource
      */
-    public LongRangeList availableSegments() throws IOException;
+    LongRangeList availableSegments() throws IOException;
 
     /**
      * Reads an array of bytes from the resource
@@ -44,10 +43,10 @@ public interface ResourceReader {
      * @throws IndexOutOfBoundsException if an incorrect offset is given, or the offset + length surpasses the resource length
      * @throws IOException               the read process could not conclude due to some IO error (usually if working with files)
      */
-    public byte[] read(long offset, int length) throws IndexOutOfBoundsException, IOException;
+    byte[] read(long offset, int length) throws IndexOutOfBoundsException, IOException;
 
     /**
      * Reading from this reader has concluded
      */
-    public void stop();
+    void stop();
 }
