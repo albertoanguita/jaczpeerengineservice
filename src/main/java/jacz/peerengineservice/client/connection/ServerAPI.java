@@ -1,4 +1,4 @@
-package jacz.peerengineservice.server;
+package jacz.peerengineservice.client.connection;
 
 import com.google.gson.Gson;
 import jacz.peerengineservice.PeerID;

@@ -6,7 +6,6 @@ import jacz.commengine.clientserver.server.ServerModule;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
-import jacz.peerengineservice.server.UpnpAPI;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.concurrency.timer.SimpleTimerAction;

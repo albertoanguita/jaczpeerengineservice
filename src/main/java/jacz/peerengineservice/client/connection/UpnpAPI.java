@@ -1,4 +1,4 @@
-package jacz.peerengineservice.server;
+package jacz.peerengineservice.client.connection;
 
 import org.bitlet.weupnp.GatewayDevice;
 import org.bitlet.weupnp.GatewayDiscover;

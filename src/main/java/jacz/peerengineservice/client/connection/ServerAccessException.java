@@ -1,7 +1,7 @@
-package jacz.peerengineservice.server;
+package jacz.peerengineservice.client.connection;
 
 /**
- * Created by Alberto on 06/11/2015.
+ * Exception accessing the server
  */
 public class ServerAccessException extends Exception {
 

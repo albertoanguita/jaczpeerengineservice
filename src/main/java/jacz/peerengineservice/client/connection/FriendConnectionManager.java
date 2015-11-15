@@ -6,8 +6,6 @@ import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.PeerRelations;
-import jacz.peerengineservice.server.ServerAPI;
-import jacz.peerengineservice.server.ServerAccessException;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.util.concurrency.ThreadUtil;
