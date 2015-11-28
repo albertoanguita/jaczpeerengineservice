@@ -16,6 +16,7 @@ import org.apache.log4j.Logger;
  */
 public class PeerClientActionBridge implements PeerClientAction {
 
+    // todo replace with SLF4J
     final static Logger logger = Logger.getLogger(PeerClientAction.class);
 
     private final PeerClientAction peerClientAction;

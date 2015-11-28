@@ -178,10 +178,10 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
                 int lastTimestamp = request.lastTimestamp != null ? request.lastTimestamp : -1;
                 if (clientDatabaseID == null || !clientDatabaseID.equals(dataAccessor.getDatabaseID())) {
                     // the whole list is required, as database IDs do not match
-                    elementsToSend = dataAccessor.getElements(-1);
+                    elementsToSend = dataAccessor.getElementsFrom(0);
                 } else {
                     // pass the timestamp given by the client, as not the whole list is required
-                    elementsToSend = dataAccessor.getElements(lastTimestamp);
+                    elementsToSend = dataAccessor.getElementsFrom(lastTimestamp + 1);
                 }
                 elementToSendIndex = 0;
                 elementsPerMessage = Math.max(dataAccessor.elementsPerMessage(), 1);

@@ -91,9 +91,9 @@ public class TestData_0 implements DataAccessor {
     }
 
     @Override
-    public List<? extends Serializable> getElements(int latestClientTimestamp) throws DataAccessException {
+    public List<? extends Serializable> getElementsFrom(int fromTimestamp) throws DataAccessException {
         List<Movie> orderedMovies =  getOrderedMovies();
-        while (!orderedMovies.isEmpty() && orderedMovies.get(0).timestamp <= latestClientTimestamp) {
+        while (!orderedMovies.isEmpty() && orderedMovies.get(0).timestamp < fromTimestamp) {
             orderedMovies.remove(0);
         }
         return orderedMovies;

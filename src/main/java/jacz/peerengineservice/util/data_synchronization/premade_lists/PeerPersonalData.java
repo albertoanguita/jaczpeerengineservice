@@ -74,7 +74,7 @@ public class PeerPersonalData implements DataAccessor {
     }
 
     @Override
-    public List<Serializable> getElements(int latestClientTimestamp) throws DataAccessException {
+    public List<Serializable> getElementsFrom(int fromTimestamp) throws DataAccessException {
         List<Serializable> elements = new ArrayList<>();
         elements.add(getNick());
         return elements;

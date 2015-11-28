@@ -63,12 +63,12 @@ public interface DataAccessor {
      * <p/>
      * This method is only invoked in server mode.
      *
-     * @param latestClientTimestamp the most recent timestamp held by the client. Elements must be provided
-     *                              with newer timestamps, order by timestamp
-     *                              If -1, all elements are requested
+     * @param fromTimestamp the minimum timestamp required. Elements must be provided
+     *                      with equal or newer timestamps, order by timestamp
+     *                      If 0, all elements are requested
      * @return an object representing the required element. This element must implement the Serializable interface
      */
-    List<? extends Serializable> getElements(int latestClientTimestamp) throws DataAccessException;
+    List<? extends Serializable> getElementsFrom(int fromTimestamp) throws DataAccessException;
 
     int elementsPerMessage();
 
