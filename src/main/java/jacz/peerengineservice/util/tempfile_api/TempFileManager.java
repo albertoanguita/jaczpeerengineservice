@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.tempfile_api;
 
+import jacz.util.concurrency.concurrency_controller.ConcurrencyController;
 import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWrite;
-import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWriteBasic;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
 import jacz.util.files.FileUtil;
@@ -90,7 +90,7 @@ public class TempFileManager {
      * <p/>
      * This object also provides a way to store all active temp files
      */
-    private final Map<String, ConcurrencyControllerReadWriteBasic> concurrencyControllers;
+    private final Map<String, ConcurrencyController> concurrencyControllers;
 
     /**
      * Constructor of the temporary file manager. A path to an existing directory is received. All files will be
@@ -407,9 +407,9 @@ public class TempFileManager {
         writerTask.checkCorrectResult();
     }
 
-    private ConcurrencyControllerReadWriteBasic accessTempFileConcurrencyController(String tempFileName) {
+    private ConcurrencyController accessTempFileConcurrencyController(String tempFileName) {
         if (!concurrencyControllers.containsKey(tempFileName)) {
-            concurrencyControllers.put(tempFileName, new ConcurrencyControllerReadWriteBasic());
+            concurrencyControllers.put(tempFileName, new ConcurrencyController(new ConcurrencyControllerReadWrite()));
         }
         return concurrencyControllers.get(tempFileName);
     }
