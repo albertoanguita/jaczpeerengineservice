@@ -175,8 +175,10 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
                 // send the server database ID
                 ccp.write(outgoingChannel, dataAccessor.getDatabaseID(), false);
                 String clientDatabaseID = request.databaseID;
+                String serverDatabaseID = dataAccessor.getDatabaseID();
                 int lastTimestamp = request.lastTimestamp != null ? request.lastTimestamp : -1;
-                if (clientDatabaseID == null || !clientDatabaseID.equals(dataAccessor.getDatabaseID())) {
+                if ((clientDatabaseID == null && serverDatabaseID != null) ||
+                        (clientDatabaseID != null && !clientDatabaseID.equals(serverDatabaseID))) {
                     // the whole list is required, as database IDs do not match
                     elementsToSend = dataAccessor.getElementsFrom(0);
                 } else {

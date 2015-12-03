@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface DataAccessor {
 
-    public enum Mode {
+    enum Mode {
         CLIENT,
         SERVER;
 
@@ -34,7 +34,7 @@ public interface DataAccessor {
     void beginSynchProcess(Mode mode);
 
     /**
-     * The database id (for the server only)
+     * The database id (for both client and server)
      *
      * @return a String with the database ID. If null, no ID is considered for synching
      */
