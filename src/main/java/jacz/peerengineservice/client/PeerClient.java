@@ -9,7 +9,10 @@ import jacz.peerengineservice.client.connection.*;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.peerengineservice.util.ForeignStoreShare;
-import jacz.peerengineservice.util.data_synchronization.*;
+import jacz.peerengineservice.util.data_synchronization.DataAccessorContainer;
+import jacz.peerengineservice.util.data_synchronization.DataSynchServerFSM;
+import jacz.peerengineservice.util.data_synchronization.DataSynchServerFSMFactory;
+import jacz.peerengineservice.util.data_synchronization.DataSynchronizer;
 import jacz.peerengineservice.util.datatransfer.*;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
@@ -106,7 +109,6 @@ public class PeerClient {
             TransferStatistics transferStatistics,
             PeerRelations peerRelations,
             Map<String, PeerFSMFactory> customFSMs,
-            DataSynchEvents dataSynchEvents,
             DataAccessorContainer dataAccessorContainer) {
         this.ownPeerID = peerClientData.getOwnPeerID();
         this.generalEvents = new GeneralEventsBridge(generalEvents);
@@ -128,7 +130,7 @@ public class PeerClient {
                 peerRelations);
         resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
-        dataSynchronizer = new DataSynchronizer(this, dataSynchEvents, dataAccessorContainer);
+        dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer);
         // add custom FSMs for list synchronizing service, in case the client uses it
         addOwnCustomFSMs(this.customFSMs);
         registerErrorLog();
@@ -142,7 +144,6 @@ public class PeerClient {
      */
     public void stop() {
         resourceStreamingManager.stop();
-        dataSynchronizer.stop();
         peerClientConnectionManager.stop();
         connectedPeers.stop();
         generalEvents.stop();

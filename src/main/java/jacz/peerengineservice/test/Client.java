@@ -74,7 +74,7 @@ public class Client {
         } catch (IOException | VersionedSerializationException e) {
             transferStatistics = new TransferStatistics();
         }
-        peerClient = new PeerClient(peerClientData, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, new DataSynchEventsImpl(), testListContainer);
+        peerClient = new PeerClient(peerClientData, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, testListContainer);
 
         tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
     }
