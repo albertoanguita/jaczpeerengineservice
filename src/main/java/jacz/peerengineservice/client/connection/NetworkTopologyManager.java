@@ -100,9 +100,9 @@ public class NetworkTopologyManager implements DaemonAction {
     private PeerClientConnectionManager peerClientConnectionManager;
 
     /**
-     * Actions to invoke by the PeerClientConnectionManager in order to communicate with the PeerClient which owns us
+     * Actions to invoke upon certain events
      */
-    private final PeerClientPrivateInterface peerClientPrivateInterface;
+    private final ConnectionEventsBridge connectionEvents;
 
     private String localAddress;
 
@@ -123,9 +123,9 @@ public class NetworkTopologyManager implements DaemonAction {
 
     public NetworkTopologyManager(
             PeerClientConnectionManager peerClientConnectionManager,
-            PeerClientPrivateInterface peerClientPrivateInterface) {
+            ConnectionEventsBridge connectionEvents) {
         this.peerClientConnectionManager = peerClientConnectionManager;
-        this.peerClientPrivateInterface = peerClientPrivateInterface;
+        this.connectionEvents = connectionEvents;
         localAddress = null;
         externalAddress = null;
         stateDaemon = new Daemon(this);
@@ -165,7 +165,7 @@ public class NetworkTopologyManager implements DaemonAction {
 
             case NO_DATA:
                 // fetch the local address
-                peerClientPrivateInterface.initializingConnection();
+                connectionEvents.initializingConnection();
                 return fetchLocalAddress();
 
             case LOCAL_ADDRESS_FETCHED:
@@ -186,13 +186,13 @@ public class NetworkTopologyManager implements DaemonAction {
             // local address has changed
             localAddress = newLocalAddress;
             networkTopologyState = State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED;
-            peerClientPrivateInterface.localAddressFetched(getLocalAddress(), networkTopologyState);
+            connectionEvents.localAddressFetched(getLocalAddress(), networkTopologyState);
             return false;
         } else if (newLocalAddress == null) {
             // error fetching local address
             networkTopologyState = State.NetworkTopologyState.WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH;
             localAddressChecker.mustSearchSoon();
-            peerClientPrivateInterface.couldNotFetchLocalAddress(networkTopologyState);
+            connectionEvents.couldNotFetchLocalAddress(networkTopologyState);
             peerClientConnectionManager.networkNotAvailable();
             return true;
         } else {
@@ -202,16 +202,16 @@ public class NetworkTopologyManager implements DaemonAction {
     }
 
     private synchronized boolean fetchExternalAddress() {
-        peerClientPrivateInterface.tryingToFetchExternalAddress(networkTopologyState);
+        connectionEvents.tryingToFetchExternalAddress(networkTopologyState);
         externalAddress = ExternalIPService.detectExternalAddress();
         if (externalAddress != null) {
             // external address successfully fetched
             networkTopologyState = State.NetworkTopologyState.ALL_FETCHED;
-            peerClientPrivateInterface.externalAddressFetched(getExternalAddress(), hasGateway(), networkTopologyState);
+            connectionEvents.externalAddressFetched(getExternalAddress(), hasGateway(), networkTopologyState);
             return true;
         } else {
             // error fetching the external address (maybe there is no internet available)
-            peerClientPrivateInterface.couldNotFetchExternalAddress(networkTopologyState);
+            connectionEvents.couldNotFetchExternalAddress(networkTopologyState);
             return false;
         }
     }

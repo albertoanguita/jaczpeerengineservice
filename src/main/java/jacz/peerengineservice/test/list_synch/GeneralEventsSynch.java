@@ -1,23 +1,19 @@
 package jacz.peerengineservice.test.list_synch;
 
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.test.SimplePeerClientActionImpl;
+import jacz.peerengineservice.test.GeneralEventsImpl;
 import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.util.concurrency.ThreadUtil;
 
 /**
- * Created with IntelliJ IDEA.
- * User: Alberto
- * Date: 31/05/14
- * Time: 16:36
- * To change this template use File | Settings | File Templates.
+ * Created by Alberto on 10/12/2015.
  */
-public class SimplePeerClientActionSynch extends SimplePeerClientActionImpl {
+public class GeneralEventsSynch extends GeneralEventsImpl {
 
     private final DataAccessor dataAccessor;
 
-    public SimplePeerClientActionSynch(DataAccessor dataAccessor) {
+    public GeneralEventsSynch(DataAccessor dataAccessor) {
         this.dataAccessor = dataAccessor;
     }
 

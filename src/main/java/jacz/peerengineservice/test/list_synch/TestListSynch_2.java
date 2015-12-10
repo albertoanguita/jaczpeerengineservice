@@ -4,9 +4,7 @@ import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
-import jacz.peerengineservice.test.Client;
-import jacz.peerengineservice.test.PeerClientConfigSerializer;
-import jacz.peerengineservice.test.SimplePeerClientActionImpl;
+import jacz.peerengineservice.test.*;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.util.lists.Triple;
 
@@ -34,18 +32,18 @@ public class TestListSynch_2 {
 
         Triple<Map<String, DataAccessor>, Map<String, DataAccessor>, DataAccessor> lists = readingWritingListsTest0();
 
-        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImpl(), new HashMap<String, PeerFSMFactory>(), lists.element1, lists.element2);
+        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new GeneralEventsSynch(lists.element3), new ConnectionEventsImpl(), new ResourceTransferEventsImpl(), new HashMap<String, PeerFSMFactory>(), lists.element1, lists.element2);
         client.startClient();
     }
 
 
     private static Triple<Map<String, DataAccessor>, Map<String, DataAccessor>, DataAccessor> readingWritingListsTest0() {
         Set<TestData_0.Movie> movies = new HashSet<>();
-        movies.add(new TestData_0.Movie("0", false, 6, "aaa", TestListSynch_1.actors("a1", "aa2", "aa3")));
-        movies.add(new TestData_0.Movie("1", false, 7, "bbb", TestListSynch_1.actors("bb1", "bb2", "bb3")));
-        movies.add(new TestData_0.Movie("2", false, 8, "ccc", TestListSynch_1.actors("c1")));
-        movies.add(new TestData_0.Movie("3", false, 9, "ddd", TestListSynch_1.actors("d1", "d2")));
-        movies.add(new TestData_0.Movie("4", true, 10, null, null));
+        movies.add(new TestData_0.Movie("0", false, 6L, "aaa", TestListSynch_1.actors("a1", "aa2", "aa3")));
+        movies.add(new TestData_0.Movie("1", false, 7L, "bbb", TestListSynch_1.actors("bb1", "bb2", "bb3")));
+        movies.add(new TestData_0.Movie("2", false, 8L, "ccc", TestListSynch_1.actors("c1")));
+        movies.add(new TestData_0.Movie("3", false, 9L, "ddd", TestListSynch_1.actors("d1", "d2")));
+        movies.add(new TestData_0.Movie("4", true, 10L, null, null));
         DataAccessor testData_0 = new TestData_0("2", movies);
 
         Map<String, DataAccessor> readingLists = new HashMap<>();

@@ -53,7 +53,7 @@ public interface DataAccessor {
      * @return the last value of the timestamp of the requested data, or NULL/negative if the whole list is requested
      * @throws DataAccessException error accessing the data
      */
-    Integer getLastTimestamp() throws DataAccessException;
+    Long getLastTimestamp() throws DataAccessException;
 
     /**
      * This method retrieves an element in object mode. It is only invoked if for the given level, the OBJECT
@@ -68,7 +68,7 @@ public interface DataAccessor {
      *                      If 0, all elements are requested
      * @return an object representing the required element. This element must implement the Serializable interface
      */
-    List<? extends Serializable> getElementsFrom(int fromTimestamp) throws DataAccessException;
+    List<? extends Serializable> getElementsFrom(long fromTimestamp) throws DataAccessException;
 
     int elementsPerMessage();
 

@@ -1,9 +1,7 @@
 package jacz.peerengineservice.test;
 
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.util.datatransfer.ResourceRequest;
-import jacz.peerengineservice.util.datatransfer.ResourceStoreResponse;
-import jacz.peerengineservice.util.datatransfer.ResourceTransferEvents;
+import jacz.peerengineservice.util.datatransfer.*;
 
 /**
  * Created by Alberto on 13/10/2015.
@@ -86,6 +84,16 @@ public class ResourceTransferEventsImpl implements ResourceTransferEvents {
 
     @Override
     public void deniedResourceRequest(ResourceRequest request, ResourceStoreResponse response) {
+
+    }
+
+    @Override
+    public void periodicDownloadsNotification(DownloadsManager downloadsManager) {
+
+    }
+
+    @Override
+    public void periodicUploadsNotification(UploadsManager uploadsManager) {
 
     }
 }

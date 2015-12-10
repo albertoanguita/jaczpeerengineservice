@@ -199,6 +199,28 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
         });
     }
 
+    @Override
+    public void periodicDownloadsNotification(final DownloadsManager downloadsManager) {
+        // no log of active downloads
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                resourceTransferEvents.periodicDownloadsNotification(downloadsManager);
+            }
+        });
+    }
+
+    @Override
+    public void periodicUploadsNotification(final UploadsManager uploadsManager) {
+        // no log of active uploads
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                resourceTransferEvents.periodicUploadsNotification(uploadsManager);
+            }
+        });
+    }
+
     public void stop() {
         logger.info("STOP");
         sequentialTaskExecutor.stopAndWaitForFinalization();

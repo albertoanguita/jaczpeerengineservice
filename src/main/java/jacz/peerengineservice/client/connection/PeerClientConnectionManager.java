@@ -39,9 +39,9 @@ public class PeerClientConnectionManager implements DaemonAction {
     }
 
     /**
-     * Actions to invoke by the PeerClientConnectionManager in order to communicate with the PeerClient which owns us
+     * Actions to invoke upon certain events
      */
-    private PeerClientPrivateInterface peerClientPrivateInterface;
+    private final ConnectionEventsBridge connectionEvents;
 
     /**
      * Clients wish for us to connect or not to the peer server and open the server for peer connections (altogether) (can be dynamically set)
@@ -80,13 +80,14 @@ public class PeerClientConnectionManager implements DaemonAction {
 
 
     public PeerClientConnectionManager(
+            ConnectionEvents connectionEvents,
             PeerClientPrivateInterface peerClientPrivateInterface,
             ConnectedPeers connectedPeers,
             PeerID ownPeerID,
             int localPort,
             int defaultExternalPort,
             PeerRelations peerRelations) {
-        this.peerClientPrivateInterface = peerClientPrivateInterface;
+        this.connectionEvents = new ConnectionEventsBridge(connectionEvents, this);
 
         clientsWishForConnection = ClientsWishForConnection.NEGATIVE;
         wishedConnectionInformation = new ConnectionInformation();
@@ -94,11 +95,21 @@ public class PeerClientConnectionManager implements DaemonAction {
 
         stateDaemon = new Daemon(this);
 
-        networkTopologyManager = new NetworkTopologyManager(this, peerClientPrivateInterface);
-        peerServerManager = new PeerServerManager(ownPeerID, this, peerClientPrivateInterface, networkTopologyManager);
+        networkTopologyManager = new NetworkTopologyManager(this, this.connectionEvents);
+        peerServerManager = new PeerServerManager(ownPeerID, this, networkTopologyManager, this.connectionEvents);
         friendConnectionManager = new FriendConnectionManager(ownPeerID, connectedPeers, peerClientPrivateInterface, this, peerRelations);
-        localServerManager = new LocalServerManager(ownPeerID, defaultExternalPort, networkTopologyManager, friendConnectionManager, peerClientPrivateInterface, wishedConnectionInformation);
+        localServerManager = new LocalServerManager(
+                ownPeerID,
+                defaultExternalPort,
+                networkTopologyManager,
+                friendConnectionManager,
+                wishedConnectionInformation,
+                this.connectionEvents);
         peerServerManager.setLocalServerManager(localServerManager);
+    }
+
+    public State getConnectionState() {
+        return connectionEvents.getState();
     }
 
     /**
@@ -139,7 +150,7 @@ public class PeerClientConnectionManager implements DaemonAction {
      */
     public synchronized void setListeningPort(int port) {
         if (wishedConnectionInformation.setListeningPort(port)) {
-            peerClientPrivateInterface.listeningPortModified(port);
+            connectionEvents.listeningPortModified(port);
         }
         peerServerManager.updatedState();
         localServerManager.updatedState();
@@ -242,7 +253,7 @@ public class PeerClientConnectionManager implements DaemonAction {
      * notify client
      */
     void unrecognizedServerMessage() {
-        peerClientPrivateInterface.unrecognizedMessageFromServer(peerServerManager.getConnectionToServerStatus());
+        connectionEvents.unrecognizedMessageFromServer(peerServerManager.getConnectionToServerStatus());
         setWishForConnection(false);
         updatedState();
     }

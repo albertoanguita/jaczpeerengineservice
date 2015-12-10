@@ -44,11 +44,7 @@ public class ProvideFilesFSM implements PeerTimedFSMAction<ProvideFilesFSM.State
 //                objectListWrapper.getObjects().add("ccc");
 //                objectListWrapper.getObjects().add("ddd");
                 byte[] data = new byte[0];
-                try {
-                    data = Serializer.serializeObject(objectListWrapper);
-                } catch (IOException e) {
-                    // ignore
-                }
+                data = Serializer.serializeObject(objectListWrapper);
                 data = new byte[1];
                 data[0] = 5;
                 System.out.println("sending data of length: " + data.length);

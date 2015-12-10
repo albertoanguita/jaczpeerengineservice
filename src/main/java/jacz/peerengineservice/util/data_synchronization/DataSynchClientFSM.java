@@ -55,9 +55,9 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
         final String databaseID;
 
-        final Integer lastTimestamp;
+        final Long lastTimestamp;
 
-        SynchRequest(String dataAccessorName, String databaseID, Integer lastTimestamp) {
+        SynchRequest(String dataAccessorName, String databaseID, Long lastTimestamp) {
             this.dataAccessorName = dataAccessorName;
             this.databaseID = databaseID;
             this.lastTimestamp = lastTimestamp;
@@ -214,6 +214,9 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
     @Override
     public State init(ChannelConnectionPoint ccp) {
         try {
+            if (progress != null) {
+                progress.beginTask();
+            }
             ccp.write(outgoingChannel, new SynchRequest(dataAccessorName, dataAccessor.getDatabaseID(), dataAccessor.getLastTimestamp()));
             return State.WAITING_FOR_REQUEST_ANSWER;
         } catch (DataAccessException e) {

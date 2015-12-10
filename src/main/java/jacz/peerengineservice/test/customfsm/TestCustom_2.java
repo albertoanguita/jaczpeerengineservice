@@ -4,9 +4,7 @@ import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
-import jacz.peerengineservice.test.Client;
-import jacz.peerengineservice.test.PeerClientConfigSerializer;
-import jacz.peerengineservice.test.PersonalData;
+import jacz.peerengineservice.test.*;
 import jacz.util.lists.Triple;
 
 import java.util.HashMap;
@@ -26,7 +24,7 @@ public class TestCustom_2 {
         Map<String, PeerFSMFactory> customFSMs = new HashMap<>();
         customFSMs.put(ProvideFilesFSM.SERVER_FSM, new ProvideFilesFSMFactory());
 
-        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImplCustom(), customFSMs);
+        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), customFSMs);
         client.startClient();
     }
 }

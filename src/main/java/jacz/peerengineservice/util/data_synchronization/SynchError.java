@@ -6,7 +6,6 @@ package jacz.peerengineservice.util.data_synchronization;
 public class SynchError {
 
     public enum Type {
-        PEER_CLIENT_BUSY,
         DISCONNECTED,
         SERVER_BUSY,
         ERROR_IN_PROTOCOL,

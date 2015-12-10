@@ -4,7 +4,6 @@ import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClient;
-import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.connection.ConnectedPeersMessenger;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.ForeignStoreShare;
@@ -603,7 +602,6 @@ public class ResourceStreamingManager {
             PeerID ownPeerID,
             ResourceTransferEvents resourceTransferEvents,
             ConnectedPeersMessenger connectedPeersMessenger,
-            PeerClientPrivateInterface peerClientPrivateInterface,
             TransferStatistics transferStatistics,
             double accuracy) {
         this.ownPeerID = ownPeerID;
@@ -615,9 +613,8 @@ public class ResourceStreamingManager {
         localShareManager = new LocalShareManager();
         foreignShareManager = new ForeignShareManager(this);
         activeDownloadSet = new ActiveDownloadSet(this);
-        downloadsManager = new DownloadsManager(peerClientPrivateInterface);
-        uploadsManager = new UploadsManager(peerClientPrivateInterface);
-        //badRequestsManager = new BadRequestsManager(FAILED_REQUEST_RESUBMIT_DELAY, FAILED_REQUEST_RESUBMIT_FACTOR, this);
+        downloadsManager = new DownloadsManager(this.resourceTransferEventsBridge);
+        uploadsManager = new UploadsManager(this.resourceTransferEventsBridge);
         uploadPriorityManager = new GenericPriorityManager(true);
         downloadPriorityManager = new GenericPriorityManager(true);
         this.transferStatistics = transferStatistics;

@@ -2,6 +2,7 @@ package jacz.peerengineservice.test;
 
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.data_synchronization.DataSynchEvents;
+import jacz.peerengineservice.util.data_synchronization.DataSynchronizer;
 import jacz.peerengineservice.util.data_synchronization.SynchError;
 import jacz.util.identifier.UniqueIdentifier;
 
@@ -16,7 +17,7 @@ public class DataSynchEventsImpl implements DataSynchEvents {
     }
 
     @Override
-    public void clientSynchRequestFailedToInitiate(PeerID serverPeer, String dataAccessorName, long timeout, SynchError synchError) {
+    public void clientSynchRequestFailedToInitiate(PeerID serverPeer, String dataAccessorName, long timeout, DataSynchronizer.SynchRequestResult synchRequestResult) {
 
     }
 

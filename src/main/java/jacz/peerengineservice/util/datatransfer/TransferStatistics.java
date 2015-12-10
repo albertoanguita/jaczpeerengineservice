@@ -196,20 +196,15 @@ public class TransferStatistics implements VersionedObject {
 
     @Override
     public Map<String, Serializable> serialize() {
-        try {
-            Map<String, Serializable> attributes = new HashMap<>();
-            attributes.put("creationDate", creationDate);
-            attributes.put("globalTransfer", VersionedObjectSerializer.serialize(globalTransfer));
-            FragmentedByteArray fragmentedByteArray = new FragmentedByteArray();
-            for (Map.Entry<PeerID, BytesTransferred> entry : peerTransfers.entrySet()) {
-                fragmentedByteArray.addArrays(Serializer.serialize(entry.getKey().toByteArray()), VersionedObjectSerializer.serialize(entry.getValue()));
-            }
-            attributes.put("peerTransfers", fragmentedByteArray.generateArray());
-            return attributes;
-        } catch (IOException e) {
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Cannot serialize transfer statistics", creationDate, globalTransfer, peerTransfers);
-            return new HashMap<>();
+        Map<String, Serializable> attributes = new HashMap<>();
+        attributes.put("creationDate", creationDate);
+        attributes.put("globalTransfer", VersionedObjectSerializer.serialize(globalTransfer));
+        FragmentedByteArray fragmentedByteArray = new FragmentedByteArray();
+        for (Map.Entry<PeerID, BytesTransferred> entry : peerTransfers.entrySet()) {
+            fragmentedByteArray.addArrays(Serializer.serialize(entry.getKey().toByteArray()), VersionedObjectSerializer.serialize(entry.getValue()));
         }
+        attributes.put("peerTransfers", fragmentedByteArray.generateArray());
+        return attributes;
     }
 
     @Override

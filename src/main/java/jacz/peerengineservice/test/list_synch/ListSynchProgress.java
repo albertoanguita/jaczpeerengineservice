@@ -50,6 +50,11 @@ public class ListSynchProgress implements ProgressNotificationWithError<Integer,
     }
 
     @Override
+    public void beginTask() {
+        System.out.println("Synchronization of " + listName + " began...");
+    }
+
+    @Override
     public void addNotification(Integer message) {
         System.out.println("Progress of " + listName + ": " + message + "---------------------------------------------------------------------");
     }

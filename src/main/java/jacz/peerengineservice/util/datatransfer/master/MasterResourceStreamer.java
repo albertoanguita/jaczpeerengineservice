@@ -491,6 +491,11 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             try {
                 hashFunction.update(file, new ProgressNotification<Integer>() {
                     @Override
+                    public void beginTask() {
+                        // do nothing
+                    }
+
+                    @Override
                     public void addNotification(Integer message) {
                         downloadReports.reportCheckingTotalHash(message);
                     }

@@ -5,7 +5,6 @@ import jacz.commengine.clientserver.server.ServerAction;
 import jacz.commengine.clientserver.server.ServerModule;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.concurrency.timer.SimpleTimerAction;
@@ -32,7 +31,8 @@ public class LocalServerManager implements DaemonAction {
 
         private final FriendConnectionManager friendConnectionManager;
 
-        private final PeerClientPrivateInterface peerClientPrivateInterface;
+        private final ConnectionEventsBridge connectionEvents;
+
 
         /**
          * Class constructor
@@ -41,9 +41,9 @@ public class LocalServerManager implements DaemonAction {
          */
         public PeerClientServerActionImpl(
                 FriendConnectionManager friendConnectionManager,
-                PeerClientPrivateInterface peerClientPrivateInterface) {
+                ConnectionEventsBridge connectionEvents) {
             this.friendConnectionManager = friendConnectionManager;
-            this.peerClientPrivateInterface = peerClientPrivateInterface;
+            this.connectionEvents = connectionEvents;
         }
 
         @Override
@@ -78,12 +78,12 @@ public class LocalServerManager implements DaemonAction {
 
         @Override
         public void newConnectionError(Exception e, IP4Port ip4Port) {
-            peerClientPrivateInterface.peerCouldNotConnectToUs(e, ip4Port);
+            connectionEvents.peerCouldNotConnectToUs(e, ip4Port);
         }
 
         @Override
         public void TCPServerError(Exception e) {
-            peerClientPrivateInterface.localServerError(e);
+            connectionEvents.localServerError(e);
         }
     }
 
@@ -131,7 +131,10 @@ public class LocalServerManager implements DaemonAction {
 
     private final FriendConnectionManager friendConnectionManager;
 
-    private final PeerClientPrivateInterface peerClientPrivateInterface;
+    /**
+     * Actions to invoke upon certain events
+     */
+    private final ConnectionEventsBridge connectionEvents;
 
     /**
      * ServerModule object employed to receive connections from friend peers
@@ -168,14 +171,14 @@ public class LocalServerManager implements DaemonAction {
             int defaultExternalPort,
             NetworkTopologyManager networkTopologyManager,
             FriendConnectionManager friendConnectionManager,
-            PeerClientPrivateInterface peerClientPrivateInterface,
-            ConnectionInformation wishedConnectionInformation) {
+            ConnectionInformation wishedConnectionInformation,
+            ConnectionEventsBridge connectionEvents) {
         this.ownPeerID = ownPeerID;
         this.defaultExternalPort = defaultExternalPort;
         externalPort = -1;
         this.networkTopologyManager = networkTopologyManager;
         this.friendConnectionManager = friendConnectionManager;
-        this.peerClientPrivateInterface = peerClientPrivateInterface;
+        this.connectionEvents = connectionEvents;
         serverModule = null;
         wishForConnect = false;
         stateDaemon = new Daemon(this);
@@ -251,7 +254,7 @@ public class LocalServerManager implements DaemonAction {
                         // we can move to LISTENING state
                         localServerConnectionsState = State.LocalServerConnectionsState.LISTENING;
                         externalPort = wishedConnectionInformation.getLocalPort();
-                        peerClientPrivateInterface.listeningConnectionsWithoutNATRule(externalPort, listeningPort, localServerConnectionsState);
+                        connectionEvents.listeningConnectionsWithoutNATRule(externalPort, listeningPort, localServerConnectionsState);
                         return false;
                     }
                 case WAITING_FOR_OPENING_TRY:
@@ -299,15 +302,15 @@ public class LocalServerManager implements DaemonAction {
 
     private void openPeerConnectionsServer() {
         try {
-            peerClientPrivateInterface.tryingToOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.OPENING);
+            connectionEvents.tryingToOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.OPENING);
             listeningPort = wishedConnectionInformation.getLocalPort();
-            serverModule = new ServerModule(listeningPort, new PeerClientServerActionImpl(friendConnectionManager, peerClientPrivateInterface), PeerClientConnectionManager.generateConcurrentChannelSets());
+            serverModule = new ServerModule(listeningPort, new PeerClientServerActionImpl(friendConnectionManager, connectionEvents), PeerClientConnectionManager.generateConcurrentChannelSets());
             serverModule.startListeningConnections();
             localServerConnectionsState = State.LocalServerConnectionsState.OPEN;
-            peerClientPrivateInterface.localServerOpen(getActualListeningPort(), localServerConnectionsState);
+            connectionEvents.localServerOpen(getActualListeningPort(), localServerConnectionsState);
         } catch (IOException e) {
             // the server could not be opened
-            peerClientPrivateInterface.couldNotOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY);
+            connectionEvents.couldNotOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY);
             localServerConnectionsState = State.LocalServerConnectionsState.CLOSED;
             retryReminder.mustRetryConnection();
         }
@@ -315,31 +318,31 @@ public class LocalServerManager implements DaemonAction {
 
     private int createGatewayForwardingRule(int defaultExternalPort) {
         try {
-            peerClientPrivateInterface.tryingToCreateNATRule(defaultExternalPort, getActualListeningPort(), State.LocalServerConnectionsState.CREATING_NAT_RULE);
+            connectionEvents.tryingToCreateNATRule(defaultExternalPort, getActualListeningPort(), State.LocalServerConnectionsState.CREATING_NAT_RULE);
             GatewayDevice gatewayDevice = UpnpAPI.fetchGatewayDevice(networkTopologyManager.getExternalAddress());
             int externalPort = UpnpAPI.mapPortFrom(gatewayDevice, generateNATRuleDescription(), defaultExternalPort, getActualListeningPort(), true);
             localServerConnectionsState = State.LocalServerConnectionsState.LISTENING;
-            peerClientPrivateInterface.NATRuleCreated(externalPort, getActualListeningPort(), localServerConnectionsState);
+            connectionEvents.NATRuleCreated(externalPort, getActualListeningPort(), localServerConnectionsState);
             return externalPort;
         } catch (UpnpAPI.NoGatewayException e) {
-            peerClientPrivateInterface.couldNotFetchUPNPGateway(externalPort, getActualListeningPort(), localServerConnectionsState);
+            connectionEvents.couldNotFetchUPNPGateway(externalPort, getActualListeningPort(), localServerConnectionsState);
             retryReminder.mustRetryConnection();
             return -1;
         } catch (UpnpAPI.UpnpException e) {
-            peerClientPrivateInterface.errorCreatingNATRule(externalPort, getActualListeningPort(), localServerConnectionsState);
+            connectionEvents.errorCreatingNATRule(externalPort, getActualListeningPort(), localServerConnectionsState);
             retryReminder.mustRetryConnection();
             return -1;
         }
     }
 
     private void destroyGatewayForwardingRule(int externalPort) {
-        peerClientPrivateInterface.tryingToDestroyNATRule(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.DESTROYING_NAT_RULE);
+        connectionEvents.tryingToDestroyNATRule(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.DESTROYING_NAT_RULE);
         try {
             GatewayDevice gatewayDevice = UpnpAPI.fetchGatewayDevice(networkTopologyManager.getExternalAddress());
             UpnpAPI.unmapPort(gatewayDevice, externalPort);
-            peerClientPrivateInterface.NATRuleDestroyed(externalPort, getActualListeningPort(), localServerConnectionsState);
+            connectionEvents.NATRuleDestroyed(externalPort, getActualListeningPort(), localServerConnectionsState);
         } catch (UpnpAPI.NoGatewayException | UpnpAPI.UpnpException e) {
-            peerClientPrivateInterface.couldNotDestroyNATRule(externalPort, getActualListeningPort(), localServerConnectionsState);
+            connectionEvents.couldNotDestroyNATRule(externalPort, getActualListeningPort(), localServerConnectionsState);
         }
     }
 
@@ -350,10 +353,10 @@ public class LocalServerManager implements DaemonAction {
 
     private void closePeerConnectionsServer() {
         if (serverModule != null) {
-            peerClientPrivateInterface.tryingToCloseLocalServer(getActualListeningPort(), State.LocalServerConnectionsState.CLOSING);
+            connectionEvents.tryingToCloseLocalServer(getActualListeningPort(), State.LocalServerConnectionsState.CLOSING);
             serverModule.stopListeningConnections();
         }
         localServerConnectionsState = State.LocalServerConnectionsState.CLOSED;
-        peerClientPrivateInterface.localServerClosed(listeningPort, localServerConnectionsState);
+        connectionEvents.localServerClosed(listeningPort, localServerConnectionsState);
     }
 }

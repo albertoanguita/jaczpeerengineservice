@@ -4,8 +4,7 @@ import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
-import jacz.peerengineservice.test.Client;
-import jacz.peerengineservice.test.PeerClientConfigSerializer;
+import jacz.peerengineservice.test.*;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.util.lists.Triple;
 
@@ -30,7 +29,7 @@ public class TestListSynch_1 {
 
         Triple<Map<String, DataAccessor>, Map<String, DataAccessor>, DataAccessor> lists = readingWritingListsTest0();
 
-        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionSynch(lists.element3), new HashMap<String, PeerFSMFactory>(), lists.element1, lists.element2);
+        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new GeneralEventsSynch(lists.element3), new ConnectionEventsImpl(), new ResourceTransferEventsImpl(), new HashMap<String, PeerFSMFactory>(), lists.element1, lists.element2);
         client.startClient();
 
     }
@@ -38,8 +37,8 @@ public class TestListSynch_1 {
 
     private static Triple<Map<String, DataAccessor>, Map<String, DataAccessor>, DataAccessor> readingWritingListsTest0() {
         Set<TestData_0.Movie> movies = new HashSet<>();
-        movies.add(new TestData_0.Movie("0", false, 1, "aaa", actors("a1", "a2")));
-        movies.add(new TestData_0.Movie("4", false, 5, "eee", actors("e1", "e3")));
+        movies.add(new TestData_0.Movie("0", false, 1L, "aaa", actors("a1", "a2")));
+        movies.add(new TestData_0.Movie("4", false, 5L, "eee", actors("e1", "e3")));
         DataAccessor testData_0 = new TestData_0("1", movies);
 
         Map<String, DataAccessor> readingLists = new HashMap<>();

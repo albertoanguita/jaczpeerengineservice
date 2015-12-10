@@ -1,17 +1,13 @@
 package jacz.peerengineservice.test.transfer;
 
-import jacz.peerengineservice.test.SimplePeerClientActionImpl;
+import jacz.peerengineservice.test.ResourceTransferEventsImpl;
 import jacz.peerengineservice.util.datatransfer.DownloadsManager;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 
 /**
- * Class description
- * <p/>
- * User: Alberto<br>
- * Date: 5/05/12<br>
- * Last Modified: 5/05/12
+ * Created by Alberto on 10/12/2015.
  */
-public class SimplePeerClientActionImplTransfer extends SimplePeerClientActionImpl {
+public class ResourceTransferEventsPlus extends ResourceTransferEventsImpl {
 
     @Override
     public void periodicDownloadsNotification(DownloadsManager downloadsManager) {

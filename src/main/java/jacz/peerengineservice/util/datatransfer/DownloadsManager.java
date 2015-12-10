@@ -1,6 +1,5 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.util.identifier.UniqueIdentifier;
 
@@ -17,16 +16,16 @@ public class DownloadsManager extends TransfersManager<DownloadManager> {
     /**
      * This class can periodically notify the client, using this ProgressNotification
      */
-    private PeerClientPrivateInterface peerClientPrivateInterface;
+    private final ResourceTransferEvents resourceTransferEvents;
 
     /**
      * Class constructor
      *
-     * @param peerClientPrivateInterface peer client action implementation for periodically notifying downloads
+     * @param resourceTransferEvents peer client action implementation for periodically notifying downloads
      */
-    public DownloadsManager(PeerClientPrivateInterface peerClientPrivateInterface) {
+    public DownloadsManager(ResourceTransferEvents resourceTransferEvents) {
         super("DownloadsManager");
-        this.peerClientPrivateInterface = peerClientPrivateInterface;
+        this.resourceTransferEvents = resourceTransferEvents;
     }
 
     /**
@@ -67,6 +66,6 @@ public class DownloadsManager extends TransfersManager<DownloadManager> {
 
     @Override
     protected void notifyClient() {
-        peerClientPrivateInterface.periodicDownloadsNotification(this);
+        resourceTransferEvents.periodicDownloadsNotification(this);
     }
 }

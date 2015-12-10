@@ -13,7 +13,6 @@ import jacz.util.log.ErrorLog;
 import jacz.util.notification.ProgressNotificationWithError;
 import jacz.util.numeric.NumericUtil;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -176,7 +175,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
                 ccp.write(outgoingChannel, dataAccessor.getDatabaseID(), false);
                 String clientDatabaseID = request.databaseID;
                 String serverDatabaseID = dataAccessor.getDatabaseID();
-                int lastTimestamp = request.lastTimestamp != null ? request.lastTimestamp : -1;
+                long lastTimestamp = request.lastTimestamp != null ? request.lastTimestamp : -1;
                 if ((clientDatabaseID == null && serverDatabaseID != null) ||
                         (clientDatabaseID != null && !clientDatabaseID.equals(serverDatabaseID))) {
                     // the whole list is required, as database IDs do not match
@@ -225,11 +224,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
         }
         elementToSendIndex += packetSize;
         byte[] bytePacket = new byte[0];
-        try {
-            bytePacket = Serializer.serializeObject(new ElementPacket(packet, elementToSendIndex, elementsToSend.size()));
-        } catch (IOException e) {
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Cannot serialize ElementPacket", fsmID, clientPeerID, dataAccessorName, elementsToSend, elementToSendIndex);
-        }
+        bytePacket = Serializer.serializeObject(new ElementPacket(packet, elementToSendIndex, elementsToSend.size()));
         bytePacket = CRC.addCRC(bytePacket, CRCBytes, true);
         ccp.write(outgoingChannel, bytePacket);
         if (progress != null) {
@@ -246,6 +241,9 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
     @Override
     public State init(ChannelConnectionPoint ccp) {
         // initially we wait for the original request from the client peer
+        if (progress != null) {
+            progress.beginTask();
+        }
         return State.WAITING_FOR_REQUEST;
     }
 

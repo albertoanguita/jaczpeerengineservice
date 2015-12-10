@@ -29,9 +29,9 @@ public final class PeerEncryption implements VersionedObject {
         }
     }
 
-    private static final String VERSION = "0.1";
+    private static final String VERSION_0_1 = "0.1";
 
-    private static final String CURRENT_VERSION = VERSION;
+    private static final String CURRENT_VERSION = VERSION_0_1;
 
     private static final String ALGORITHM = "RSA";
 

@@ -1,6 +1,7 @@
 package jacz.peerengineservice.client.connection;
 
 import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
@@ -8,6 +9,7 @@ import jacz.util.concurrency.timer.SimpleTimerAction;
 import jacz.util.concurrency.timer.Timer;
 
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * Manager class for handling connection to server
@@ -111,9 +113,9 @@ public class PeerServerManager implements DaemonAction {
     private PeerClientConnectionManager peerClientConnectionManager;
 
     /**
-     * Actions to invoke by the PeerClientConnectionManager in order to communicate with the PeerClient which owns us
+     * Actions to invoke upon certain events
      */
-    private final PeerClientPrivateInterface peerClientPrivateInterface;
+    private final ConnectionEventsBridge connectionEvents;
 
     /**
      * Server session ID when we are connected. Used to refresh the connection to avoid timeout
@@ -128,13 +130,7 @@ public class PeerServerManager implements DaemonAction {
     /**
      * Collection of all information related to connection to the server (what we are currently using)
      */
-//    private final ConnectionInformation connectionInformation;
     private final ActualConnectionData actualConnectionData;
-
-    /**
-     * Collection of all information related to connection to the server, as provided by the user
-     */
-//    private final ConnectionInformation wishedConnectionInformation;
 
     private NetworkTopologyManager networkTopologyManager;
 
@@ -158,11 +154,11 @@ public class PeerServerManager implements DaemonAction {
     public PeerServerManager(
             PeerID ownPeerID,
             PeerClientConnectionManager peerClientConnectionManager,
-            PeerClientPrivateInterface peerClientPrivateInterface,
-            NetworkTopologyManager networkTopologyManager) {
+            NetworkTopologyManager networkTopologyManager,
+            ConnectionEventsBridge connectionEvents) {
         this.ownPeerID = ownPeerID;
         this.peerClientConnectionManager = peerClientConnectionManager;
-        this.peerClientPrivateInterface = peerClientPrivateInterface;
+        this.connectionEvents = connectionEvents;
 
         peerServerSessionID = "";
         serverConnectionMaintainer = new ServerConnectionMaintainer(this);
@@ -280,7 +276,7 @@ public class PeerServerManager implements DaemonAction {
     }
 
     private void registerWithPeerServer() {
-        peerClientPrivateInterface.tryingToRegisterWithServer(State.ConnectionToServerState.REGISTERING);
+        connectionEvents.tryingToRegisterWithServer(State.ConnectionToServerState.REGISTERING);
         try {
             ServerAPI.RegistrationResponse registrationResponse =
                     ServerAPI.register(new ServerAPI.RegistrationRequest(ownPeerID));
@@ -288,11 +284,11 @@ public class PeerServerManager implements DaemonAction {
 
                 case OK:
                     connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
-                    peerClientPrivateInterface.registrationSuccessful(connectionToServerStatus);
+                    connectionEvents.registrationSuccessful(connectionToServerStatus);
                     break;
                 case ALREADY_REGISTERED:
                     connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
-                    peerClientPrivateInterface.alreadyRegistered(connectionToServerStatus);
+                    connectionEvents.alreadyRegistered(connectionToServerStatus);
                     break;
                 default:
                     unrecognizedServerMessage();
@@ -301,7 +297,7 @@ public class PeerServerManager implements DaemonAction {
         } catch (IOException | ServerAccessException e) {
             // failed to connect to server or error in the request -> try again later
             connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
-            peerClientPrivateInterface.unableToConnectToServer(connectionToServerStatus);
+            connectionEvents.unableToConnectToServer(connectionToServerStatus);
             retryConnectionReminder.mustRetryConnection();
         } catch (IllegalArgumentException e) {
             // response from server not understandable
@@ -313,7 +309,7 @@ public class PeerServerManager implements DaemonAction {
         actualConnectionData.localAddress = networkTopologyManager.getLocalAddress();
         actualConnectionData.localPort = localServerManager.getActualListeningPort();
         actualConnectionData.externalPort = localServerManager.getExternalListeningPort();
-        peerClientPrivateInterface.tryingToConnectToServer(State.ConnectionToServerState.CONNECTING);
+        connectionEvents.tryingToConnectToServer(State.ConnectionToServerState.CONNECTING);
         try {
             ServerAPI.ConnectionResponse connectionResponse =
                     ServerAPI.connect(
@@ -330,14 +326,14 @@ public class PeerServerManager implements DaemonAction {
                     connectionToServerStatus = State.ConnectionToServerState.CONNECTED;
                     peerServerSessionID = connectionResponse.getSessionID();
                     serverConnectionMaintainer.connectionToServerEstablished(connectionResponse.getMinReminderTime(), connectionResponse.getMaxReminderTime());
-                    peerClientPrivateInterface.connectionToServerEstablished(connectionToServerStatus);
+                    connectionEvents.connectionToServerEstablished(connectionToServerStatus);
                     break;
                 case UNREGISTERED_PEER:
                     connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
-                    peerClientPrivateInterface.registrationRequired(connectionToServerStatus);
+                    connectionEvents.registrationRequired(connectionToServerStatus);
                     break;
                 case PEER_MAIN_SERVER_UNREACHABLE:
-                    peerClientPrivateInterface.localServerUnreachable(connectionToServerStatus);
+                    connectionEvents.localServerUnreachable(connectionToServerStatus);
                     break;
                 case PEER_REST_SERVER_UNREACHABLE:
                     // ignore
@@ -353,7 +349,7 @@ public class PeerServerManager implements DaemonAction {
         } catch (IOException | ServerAccessException e) {
             // failed to connect to server or error in the request -> try again later
             connectionToServerStatus = State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY;
-            peerClientPrivateInterface.unableToConnectToServer(connectionToServerStatus);
+            connectionEvents.unableToConnectToServer(connectionToServerStatus);
             retryConnectionReminder.mustRetryConnection();
         } catch (IllegalArgumentException e) {
             // response from server not understandable
@@ -370,7 +366,7 @@ public class PeerServerManager implements DaemonAction {
             // either if we succeed or fail, we consider that we disconnected ok (if not, we will eventually timeout)
             connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
             serverConnectionMaintainer.disconnectedFromServer();
-            peerClientPrivateInterface.disconnectedFromServer(connectionToServerStatus);
+            connectionEvents.disconnectedFromServer(connectionToServerStatus);
         }
     }
 
@@ -411,7 +407,7 @@ public class PeerServerManager implements DaemonAction {
 
     private void refreshFailed() {
         connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
-        peerClientPrivateInterface.failedToRefreshServerConnection(connectionToServerStatus);
+        connectionEvents.failedToRefreshServerConnection(connectionToServerStatus);
         updatedState();
     }
 }

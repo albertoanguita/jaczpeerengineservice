@@ -4,13 +4,14 @@ import jacz.peerengineservice.PeerID;
 import jacz.util.identifier.UniqueIdentifier;
 
 /**
- * Events related to data synchronization that are notified to clients
+ * Events related to data synchronization that are notified to clients. These notifications are made in addition to
+ * the individual notifications of each synch process made through the respective ProgressNotification implementation
  */
 public interface DataSynchEvents {
 
     void clientSynchRequestInitiated(PeerID serverPeer, String dataAccessorName, long timeout, UniqueIdentifier fsmID);
 
-    void clientSynchRequestFailedToInitiate(PeerID serverPeer, String dataAccessorName, long timeout, SynchError synchError);
+    void clientSynchRequestFailedToInitiate(PeerID serverPeer, String dataAccessorName, long timeout, DataSynchronizer.SynchRequestResult synchRequestResult);
 
     void clientSynchRequestDenied(PeerID serverPeer, String dataAccessorName, UniqueIdentifier fsmID, SynchError synchError);
 

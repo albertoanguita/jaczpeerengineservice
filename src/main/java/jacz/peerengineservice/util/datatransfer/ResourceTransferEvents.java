@@ -39,4 +39,8 @@ public interface ResourceTransferEvents {
     void denyUnavailableSubchannelResourceRequest(final ResourceRequest request, ResourceStoreResponse response);
 
     void deniedResourceRequest(final ResourceRequest request, ResourceStoreResponse response);
+
+    void periodicDownloadsNotification(DownloadsManager downloadsManager);
+
+    void periodicUploadsNotification(UploadsManager uploadsManager);
 }

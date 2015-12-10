@@ -1,35 +1,11 @@
-package jacz.peerengineservice.client;
+package jacz.peerengineservice.client.connection;
 
-import jacz.commengine.communication.CommError;
-import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.connection.State;
-import jacz.peerengineservice.util.ConnectionStatus;
-import jacz.peerengineservice.util.datatransfer.DownloadsManager;
-import jacz.peerengineservice.util.datatransfer.UploadsManager;
 import jacz.util.network.IP4Port;
 
 /**
- * Actions invoked by the peer engine upon different events. Must be implemented by the user
+ * Events related to connection with server or connection with other peers
  */
-public interface PeerClientAction {
-
-    void peerAddedAsFriend(PeerID peerID, PeerRelations peerRelations);
-
-    void peerRemovedAsFriend(PeerID peerID, PeerRelations peerRelations);
-
-    void peerAddedAsBlocked(PeerID peerID, PeerRelations peerRelations);
-
-    void peerRemovedAsBlocked(PeerID peerID, PeerRelations peerRelations);
-
-    void newPeerConnected(PeerID peerID, ConnectionStatus status);
-
-    void newObjectMessage(PeerID peerID, Object message);
-
-    void newPeerNick(PeerID peerID, String nick);
-
-    void peerValidatedUs(PeerID peerID);
-
-    void peerDisconnected(PeerID peerID, CommError error);
+public interface ConnectionEvents {
 
     void listeningPortModified(int port);
 
@@ -93,15 +69,7 @@ public interface PeerClientAction {
 
     void listeningConnectionsWithoutNATRule(State state);
 
-    void undefinedOwnInetAddress();
-
     void peerCouldNotConnectToUs(Exception e, IP4Port ip4Port);
 
     void localServerError(Exception e);
-
-    void periodicDownloadsNotification(DownloadsManager downloadsManager);
-
-    void periodicUploadsNotification(UploadsManager uploadsManager);
-
-    void stop();
 }

@@ -4,9 +4,7 @@ import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
-import jacz.peerengineservice.test.Client;
-import jacz.peerengineservice.test.PeerClientConfigSerializer;
-import jacz.peerengineservice.test.SimplePeerClientActionImpl;
+import jacz.peerengineservice.test.*;
 import jacz.util.io.IOUtil;
 import jacz.util.lists.Triple;
 
@@ -24,7 +22,7 @@ public class TestTransfer_2 {
         PeerClientData peerClientData = data.element2;
         PeerRelations peerRelations = data.element3;
 
-        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new SimplePeerClientActionImpl(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new ResourceTransferEventsPlus(), new HashMap<String, PeerFSMFactory>());
         client.getPeerClient().addLocalResourceStore("files", new ResourceStoreImpl());
 //        client.getPeerClient().setMaxDesiredUploadSpeed(25000f);
         client.startClient();

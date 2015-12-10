@@ -3,8 +3,6 @@ package jacz.peerengineservice.util.data_synchronization;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.PeerClient;
-import jacz.util.concurrency.task_executor.ParallelTask;
-import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.notification.ProgressNotificationWithError;
 
@@ -13,6 +11,12 @@ import jacz.util.notification.ProgressNotificationWithError;
  */
 public class DataSynchronizer {
 
+    public enum SynchRequestResult {
+        OK,
+        PEER_CLIENT_BUSY,
+        DISCONNECTED,
+        UNKNOWN_ACCESSOR,
+    }
 
     static final long SERVER_FSM_TIMEOUT = 15000;
 
@@ -37,11 +41,11 @@ public class DataSynchronizer {
         this.dataAccessorContainer = dataAccessorContainer;
     }
 
-    public synchronized void synchronizeData(PeerID serverPeerID, String dataAccessorName, long timeout) {
-        synchronizeData(serverPeerID, dataAccessorName, timeout, null);
+    public synchronized SynchRequestResult synchronizeData(PeerID serverPeerID, String dataAccessorName, long timeout) {
+        return synchronizeData(serverPeerID, dataAccessorName, timeout, null);
     }
 
-    public synchronized void synchronizeData(PeerID serverPeerID, final String dataAccessorName, long timeout, final ProgressNotificationWithError<Integer, SynchError> progress) {
+    public synchronized SynchRequestResult synchronizeData(PeerID serverPeerID, final String dataAccessorName, long timeout, final ProgressNotificationWithError<Integer, SynchError> progress) {
         try {
             DataAccessor dataAccessor = dataAccessorContainer.getAccessorForReceiving(serverPeerID, dataAccessorName);
             // same for server FSM
@@ -54,37 +58,17 @@ public class DataSynchronizer {
             );
             if (fsmID != null) {
                 dataSynchEventsBridge.clientSynchRequestInitiated(serverPeerID, dataAccessorName, timeout, fsmID);
+                return SynchRequestResult.OK;
             } else {
-                dataSynchEventsBridge.clientSynchRequestFailedToInitiate(serverPeerID, dataAccessorName, timeout, new SynchError(SynchError.Type.PEER_CLIENT_BUSY, null));
-                ParallelTaskExecutor.executeTask(new ParallelTask() {
-                    @Override
-                    public void performTask() {
-                        if (progress != null) {
-                            progress.error(new SynchError(SynchError.Type.PEER_CLIENT_BUSY, null));
-                        }
-                    }
-                });
+                dataSynchEventsBridge.clientSynchRequestFailedToInitiate(serverPeerID, dataAccessorName, timeout, SynchRequestResult.PEER_CLIENT_BUSY);
+                return SynchRequestResult.PEER_CLIENT_BUSY;
             }
         } catch (UnavailablePeerException e) {
-            dataSynchEventsBridge.clientSynchRequestFailedToInitiate(serverPeerID, dataAccessorName, timeout, new SynchError(SynchError.Type.DISCONNECTED, null));
-            ParallelTaskExecutor.executeTask(new ParallelTask() {
-                @Override
-                public void performTask() {
-                    if (progress != null) {
-                        progress.error(new SynchError(SynchError.Type.DISCONNECTED, null));
-                    }
-                }
-            });
+            dataSynchEventsBridge.clientSynchRequestFailedToInitiate(serverPeerID, dataAccessorName, timeout, SynchRequestResult.DISCONNECTED);
+            return SynchRequestResult.DISCONNECTED;
         } catch (AccessorNotFoundException e) {
-            dataSynchEventsBridge.clientSynchRequestFailedToInitiate(serverPeerID, dataAccessorName, timeout, new SynchError(SynchError.Type.UNKNOWN_ACCESSOR, "Unknown accessor name: " + dataAccessorName));
-            ParallelTaskExecutor.executeTask(new ParallelTask() {
-                @Override
-                public void performTask() {
-                    if (progress != null) {
-                        progress.error(new SynchError(SynchError.Type.UNKNOWN_ACCESSOR, "Unknown accessor name: " + dataAccessorName));
-                    }
-                }
-            });
+            dataSynchEventsBridge.clientSynchRequestFailedToInitiate(serverPeerID, dataAccessorName, timeout, SynchRequestResult.UNKNOWN_ACCESSOR);
+            return SynchRequestResult.UNKNOWN_ACCESSOR;
         }
     }
 

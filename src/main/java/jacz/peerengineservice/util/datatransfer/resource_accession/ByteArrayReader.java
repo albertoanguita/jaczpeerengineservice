@@ -88,6 +88,9 @@ public class ByteArrayReader implements ResourceReader {
         offset = 0;
         length = calculateLength(listAccessor, level, indexList);
         this.progress = progress;
+        if (progress != null) {
+            progress.beginTask();
+        }
     }
 
     private static Long calculateLength(DataAccessor listAccessor, int level, List<String> indexList) {

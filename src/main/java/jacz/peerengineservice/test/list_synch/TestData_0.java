@@ -19,17 +19,17 @@ public class TestData_0 implements DataAccessor {
 
         private boolean deleted;
 
-        private Integer timestamp;
+        private Long timestamp;
 
         private String name;
 
         private Set<String> actors;
 
-        public Movie(String id, boolean deleted, Integer timestamp, String name) {
+        public Movie(String id, boolean deleted, Long timestamp, String name) {
             this(id, deleted, timestamp, name, new HashSet<String>());
         }
 
-        public Movie(String id, boolean deleted, Integer timestamp, String name, Set<String> actors) {
+        public Movie(String id, boolean deleted, Long timestamp, String name, Set<String> actors) {
             this.id = id;
             this.deleted = deleted;
             this.timestamp = timestamp;
@@ -85,13 +85,13 @@ public class TestData_0 implements DataAccessor {
     }
 
     @Override
-    public Integer getLastTimestamp() throws DataAccessException {
+    public Long getLastTimestamp() throws DataAccessException {
         List<Movie> orderedMovies = getOrderedMovies();
         return orderedMovies.get(orderedMovies.size() - 1).timestamp;
     }
 
     @Override
-    public List<? extends Serializable> getElementsFrom(int fromTimestamp) throws DataAccessException {
+    public List<? extends Serializable> getElementsFrom(long fromTimestamp) throws DataAccessException {
         List<Movie> orderedMovies =  getOrderedMovies();
         while (!orderedMovies.isEmpty() && orderedMovies.get(0).timestamp < fromTimestamp) {
             orderedMovies.remove(0);

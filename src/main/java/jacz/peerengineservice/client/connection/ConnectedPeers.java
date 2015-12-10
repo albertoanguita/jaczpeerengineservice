@@ -71,7 +71,6 @@ public class ConnectedPeers implements NotificationEmitter {
     private final NotificationProcessor notificationProcessor;
 
 
-
     public ConnectedPeers(Byte... occupiedChannels) {
         connectedPeers = new HashMap<>();
         ccpToPeerID = new HashMap<>();
@@ -116,6 +115,35 @@ public class ConnectedPeers implements NotificationEmitter {
      */
     public synchronized Set<PeerID> getConnectedPeers() {
         return new HashSet<>(connectedPeers.keySet());
+    }
+
+    /**
+     * Returns the next peer with respect to a given one
+     *
+     * @param peerID the given peer id (does not need to be connected)
+     * @return the next peer with respect to peerID that is connected, or null if there are no peers connected
+     */
+    public synchronized PeerID getNextConnectedPeer(PeerID peerID) {
+        PeerID nextPeerID = null;
+        PeerID lowestPeerID = null;
+        for (PeerID connectedPeerID : getConnectedPeers()) {
+            // update lowest peer
+            if (lowestPeerID == null || connectedPeerID.compareTo(lowestPeerID) < 0) {
+                lowestPeerID = connectedPeerID;
+            }
+            // update next peer
+            if ((nextPeerID == null && connectedPeerID.compareTo(peerID) > 0) ||
+                    (nextPeerID != null && connectedPeerID.compareTo(peerID) > 0 && connectedPeerID.compareTo(nextPeerID) < 0)) {
+                nextPeerID = connectedPeerID;
+            }
+        }
+        if (nextPeerID != null) {
+            // found a next peer
+            return nextPeerID;
+        } else {
+            // didn't find a next peer, send the lowest peer (if null, there are no peers)
+            return lowestPeerID;
+        }
     }
 
     /**

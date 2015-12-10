@@ -1,6 +1,5 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
 import jacz.util.identifier.UniqueIdentifier;
 
@@ -14,11 +13,11 @@ public class UploadsManager extends TransfersManager<UploadManager> {
     /**
      * This class can periodically notify the client, using this ProgressNotification
      */
-    private PeerClientPrivateInterface peerClientPrivateInterface;
+    private final ResourceTransferEvents resourceTransferEvents;
 
-    public UploadsManager(PeerClientPrivateInterface peerClientPrivateInterface) {
+    public UploadsManager(ResourceTransferEvents resourceTransferEvents) {
         super("UploadsManager");
-        this.peerClientPrivateInterface = peerClientPrivateInterface;
+        this.resourceTransferEvents = resourceTransferEvents;
     }
 
     /**
@@ -61,6 +60,6 @@ public class UploadsManager extends TransfersManager<UploadManager> {
 
     @Override
     protected void notifyClient() {
-        peerClientPrivateInterface.periodicUploadsNotification(this);
+        resourceTransferEvents.periodicUploadsNotification(this);
     }
 }

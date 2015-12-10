@@ -18,7 +18,6 @@ import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.io.object_serialization.ObjectListWrapper;
 import jacz.util.log.ErrorLog;
-import jacz.util.network.IP4Port;
 
 import java.io.Serializable;
 import java.util.List;
@@ -42,7 +41,6 @@ public class PeerClient {
     public static final int DEFAULT_EXTERNAL_PORT = 37720;
 
 
-
     /**
      * Our own peer ID
      */
@@ -51,7 +49,7 @@ public class PeerClient {
     /**
      * Actions invoked by the PeerClient upon some events (connection of a new peer, new chat message, etc)
      */
-    private final PeerClientAction peerClientAction;
+    private final GeneralEventsBridge generalEvents;
 
     /**
      * Own and other peers personal data (nick)
@@ -93,7 +91,7 @@ public class PeerClient {
      * Class constructor
      *
      * @param peerClientData        data about our own peer. Contains our ID, list of our friend IDs, our personal data, etc
-     * @param peerClientAction      actions invoked upon some events, like the connection with a peer, or receiving a chat
+     * @param connectionEvents      actions invoked upon some events, like the connection with a peer, or receiving a chat
      *                              message
      * @param peerRelations         relations with other peers. This object will be updated during the execution, as we add or reject peers
      * @param customFSMs            list of factories for building custom FSMs, each with a different name
@@ -101,7 +99,8 @@ public class PeerClient {
      */
     public PeerClient(
             PeerClientData peerClientData,
-            PeerClientAction peerClientAction,
+            GeneralEvents generalEvents,
+            ConnectionEvents connectionEvents,
             ResourceTransferEvents resourceTransferEvents,
             PeersPersonalData peersPersonalData,
             TransferStatistics transferStatistics,
@@ -110,7 +109,7 @@ public class PeerClient {
             DataSynchEvents dataSynchEvents,
             DataAccessorContainer dataAccessorContainer) {
         this.ownPeerID = peerClientData.getOwnPeerID();
-        this.peerClientAction = new PeerClientActionBridge(peerClientAction);
+        this.generalEvents = new GeneralEventsBridge(generalEvents);
         this.peersPersonalData = peersPersonalData;
         this.peerRelations = peerRelations;
         this.customFSMs = customFSMs;
@@ -120,13 +119,14 @@ public class PeerClient {
 
         peerClientPrivateInterface = new PeerClientPrivateInterface(this);
         peerClientConnectionManager = new PeerClientConnectionManager(
+                connectionEvents,
                 peerClientPrivateInterface,
                 connectedPeers,
                 peerClientData.getOwnPeerID(),
                 peerClientData.getPort(),
                 DEFAULT_EXTERNAL_PORT,
                 peerRelations);
-        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, peerClientPrivateInterface, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
+        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
         dataSynchronizer = new DataSynchronizer(this, dataSynchEvents, dataAccessorContainer);
         // add custom FSMs for list synchronizing service, in case the client uses it
@@ -144,8 +144,8 @@ public class PeerClient {
         resourceStreamingManager.stop();
         dataSynchronizer.stop();
         peerClientConnectionManager.stop();
-        peerClientAction.stop();
         connectedPeers.stop();
+        generalEvents.stop();
     }
 
     private void addOwnCustomFSMs(Map<String, PeerFSMFactory> customFSMs) {
@@ -197,7 +197,7 @@ public class PeerClient {
     }
 
     public synchronized State getConnectionState() {
-        return peerClientPrivateInterface.getState();
+        return peerClientConnectionManager.getConnectionState();
     }
 
     public synchronized boolean isFriendPeer(PeerID peerID) {
@@ -223,13 +223,13 @@ public class PeerClient {
             connectedPeers.setPeerConnectionStatus(peerID, ConnectionStatus.CORRECT);
             sendObjectMessage(peerID, new ValidationMessage());
         }
-        peerClientAction.peerAddedAsFriend(peerID, peerRelations);
+        generalEvents.peerAddedAsFriend(peerID, peerRelations);
     }
 
     public synchronized void removeFriendPeer(final PeerID peerID) {
         peerRelations.removeFriendPeer(peerID);
         searchFriends();
-        peerClientAction.peerRemovedAsFriend(peerID, peerRelations);
+        generalEvents.peerRemovedAsFriend(peerID, peerRelations);
     }
 
     public synchronized Set<PeerID> getBlockedPeers() {
@@ -239,12 +239,12 @@ public class PeerClient {
     public synchronized void addBlockedPeer(final PeerID peerID) {
         peerRelations.addBlockedPeer(peerID);
         searchFriends();
-        peerClientAction.peerAddedAsBlocked(peerID, peerRelations);
+        generalEvents.peerAddedAsBlocked(peerID, peerRelations);
     }
 
     public synchronized void removeBlockedPeer(final PeerID peerID) {
         peerRelations.removeBlockedPeer(peerID);
-        peerClientAction.peerRemovedAsBlocked(peerID, peerRelations);
+        generalEvents.peerRemovedAsBlocked(peerID, peerRelations);
     }
 
     /**
@@ -445,7 +445,7 @@ public class PeerClient {
     void newPeerConnected(final PeerID peerID, final ChannelConnectionPoint ccp, final ConnectionStatus status) {
         // first notify the resource streaming manager, so it sets up the necessary FSMs for receiving resource data. Then, notify the client
         resourceStreamingManager.newPeerConnected(ccp);
-        peerClientAction.newPeerConnected(peerID, status);
+        generalEvents.newPeerConnected(peerID, status);
         // send the other peer own nick, to ensure he has our latest value
         sendObjectMessage(peerID, new NewNickMessage(peersPersonalData.getOwnNick()));
     }
@@ -594,16 +594,16 @@ public class PeerClient {
                 // validation messages are handled here
                 if (connectedPeers.getPeerConnectionStatus(peerID) == ConnectionStatus.WAITING_FOR_REMOTE_VALIDATION) {
                     connectedPeers.setPeerConnectionStatus(peerID, ConnectionStatus.CORRECT);
-                    peerClientAction.peerValidatedUs(peerID);
+                    generalEvents.peerValidatedUs(peerID);
                 }
             } else if (message instanceof NewNickMessage) {
                 // new nick from other peer received
                 final NewNickMessage newNickMessage = (NewNickMessage) message;
                 if (peersPersonalData.setPeersNicks(peerID, newNickMessage.nick)) {
-                    peerClientAction.newPeerNick(peerID, newNickMessage.nick);
+                    generalEvents.newPeerNick(peerID, newNickMessage.nick);
                 }
             } else {
-                peerClientAction.newObjectMessage(peerID, message);
+                generalEvents.newObjectMessage(peerID, message);
             }
         }
     }
@@ -635,7 +635,7 @@ public class PeerClient {
      * @param error  error that provoked the disconnection (null if no error)
      */
     synchronized void peerDisconnected(PeerID peerID, CommError error) {
-        peerClientAction.peerDisconnected(peerID, error);
+        generalEvents.peerDisconnected(peerID, error);
     }
 
 
@@ -643,148 +643,148 @@ public class PeerClient {
      * ******************************** NOTIFICATIONS FROM THE PEER CLIENT CONNECTION MANAGER ******************************************
      */
 
-    void initializingConnection() {
-        peerClientAction.initializingConnection();
-    }
+//    void initializingConnection() {
+//        peerClientAction.initializingConnection();
+//    }
 
-    void listeningPortModified(int port) {
-        peerClientAction.listeningPortModified(port);
-    }
+//    void listeningPortModified(int port) {
+//        peerClientAction.listeningPortModified(port);
+//    }
+//
+//    void undefinedOwnInetAddress() {
+//        peerClientAction.undefinedOwnInetAddress();
+//    }
 
-    void undefinedOwnInetAddress() {
-        peerClientAction.undefinedOwnInetAddress();
-    }
+//    void localAddressFetched(String localAddress, State state) {
+//        peerClientAction.localAddressFetched(localAddress, state);
+//    }
 
-    void localAddressFetched(String localAddress, State state) {
-        peerClientAction.localAddressFetched(localAddress, state);
-    }
+//    void couldNotFetchLocalAddress(State state) {
+//        peerClientAction.couldNotFetchLocalAddress(state);
+//    }
 
-    void couldNotFetchLocalAddress(State state) {
-        peerClientAction.couldNotFetchLocalAddress(state);
-    }
+//    void tryingToFetchExternalAddress(State state) {
+//        peerClientAction.tryingToFetchExternalAddress(state);
+//    }
 
-    void tryingToFetchExternalAddress(State state) {
-        peerClientAction.tryingToFetchExternalAddress(state);
-    }
+//    void externalAddressFetched(String externalAddress, boolean hasGateway, State state) {
+//        peerClientAction.externalAddressFetched(externalAddress, hasGateway, state);
+//    }
 
-    void externalAddressFetched(String externalAddress, boolean hasGateway, State state) {
-        peerClientAction.externalAddressFetched(externalAddress, hasGateway, state);
-    }
+//    void couldNotFetchExternalAddress(State state) {
+//        peerClientAction.couldNotFetchExternalAddress(state);
+//    }
 
-    void couldNotFetchExternalAddress(State state) {
-        peerClientAction.couldNotFetchExternalAddress(state);
-    }
+//    void unrecognizedMessageFromServer(State state) {
+//        peerClientAction.unrecognizedMessageFromServer(state);
+//    }
 
-    void unrecognizedMessageFromServer(State state) {
-        peerClientAction.unrecognizedMessageFromServer(state);
-    }
+//    void tryingToConnectToServer(State state) {
+//        peerClientAction.tryingToConnectToServer(state);
+//    }
+//
+//    void connectionToServerEstablished(State state) {
+//        peerClientAction.connectionToServerEstablished(state);
+//    }
+//
+//    void registrationRequired(State state) {
+//        peerClientAction.registrationRequired(state);
+//    }
+//
+//    void localServerUnreachable(State state) {
+//        peerClientAction.localServerUnreachable(state);
+//    }
+//
+//    void unableToConnectToServer(State state) {
+//        peerClientAction.unableToConnectToServer(state);
+//    }
+//
+//    void disconnectedFromServer(State state) {
+//        peerClientAction.disconnectedFromServer(state);
+//    }
+//
+//    void failedToRefreshServerConnection(State state) {
+//        peerClientAction.failedToRefreshServerConnection(state);
+//    }
+//
+//    void tryingToRegisterWithServer(State state) {
+//        peerClientAction.tryingToRegisterWithServer(state);
+//    }
+//
+//    void registrationSuccessful(State state) {
+//        peerClientAction.registrationSuccessful(state);
+//    }
+//
+//    void alreadyRegistered(State state) {
+//        peerClientAction.alreadyRegistered(state);
+//    }
 
-    void tryingToConnectToServer(State state) {
-        peerClientAction.tryingToConnectToServer(state);
-    }
+//    void tryingToOpenLocalServer(State state) {
+//        peerClientAction.tryingToOpenLocalServer(state);
+//    }
+//
+//    void localServerOpen(State state) {
+//        peerClientAction.localServerOpen(state);
+//    }
+//
+//    void couldNotOpenLocalServer(State state) {
+//        peerClientAction.couldNotOpenLocalServer(state);
+//    }
+//
+//    void tryingToCloseLocalServer(State state) {
+//        peerClientAction.tryingToCloseLocalServer(state);
+//    }
+//
+//    void localServerClosed(State state) {
+//        peerClientAction.localServerClosed(state);
+//    }
+//
+//    void tryingToCreateNATRule(State state) {
+//        peerClientAction.tryingToCreateNATRule(state);
+//    }
+//
+//    void NATRuleCreated(State state) {
+//        peerClientAction.NATRuleCreated(state);
+//    }
+//
+//    void couldNotFetchUPNPGateway(State state) {
+//        peerClientAction.couldNotFetchUPNPGateway(state);
+//    }
+//
+//    void errorCreatingNATRule(State state) {
+//        peerClientAction.errorCreatingNATRule(state);
+//    }
+//
+//    void tryingToDestroyNATRule(State state) {
+//        peerClientAction.tryingToDestroyNATRule(state);
+//    }
+//
+//    void NATRuleDestroyed(State state) {
+//        peerClientAction.NATRuleDestroyed(state);
+//    }
+//
+//    void couldNotDestroyNATRule(State state) {
+//        peerClientAction.couldNotDestroyNATRule(state);
+//    }
+//
+//    void listeningConnectionsWithoutNATRule(State state) {
+//        peerClientAction.listeningConnectionsWithoutNATRule(state);
+//    }
+//
+//    void peerCouldNotConnectToUs(Exception e, IP4Port ip4Port) {
+//        peerClientAction.peerCouldNotConnectToUs(e, ip4Port);
+//    }
+//
+//    void localServerError(Exception e) {
+//        peerClientAction.localServerError(e);
+//        peerClientConnectionManager.setWishForConnection(false);
+//    }
 
-    void connectionToServerEstablished(State state) {
-        peerClientAction.connectionToServerEstablished(state);
-    }
-
-    void registrationRequired(State state) {
-        peerClientAction.registrationRequired(state);
-    }
-
-    void localServerUnreachable(State state) {
-        peerClientAction.localServerUnreachable(state);
-    }
-
-    void unableToConnectToServer(State state) {
-        peerClientAction.unableToConnectToServer(state);
-    }
-
-    void disconnectedFromServer(State state) {
-        peerClientAction.disconnectedFromServer(state);
-    }
-
-    void failedToRefreshServerConnection(State state) {
-        peerClientAction.failedToRefreshServerConnection(state);
-    }
-
-    void tryingToRegisterWithServer(State state) {
-        peerClientAction.tryingToRegisterWithServer(state);
-    }
-
-    void registrationSuccessful(State state) {
-        peerClientAction.registrationSuccessful(state);
-    }
-
-    void alreadyRegistered(State state) {
-        peerClientAction.alreadyRegistered(state);
-    }
-
-    void tryingToOpenLocalServer(State state) {
-        peerClientAction.tryingToOpenLocalServer(state);
-    }
-
-    void localServerOpen(State state) {
-        peerClientAction.localServerOpen(state);
-    }
-
-    void couldNotOpenLocalServer(State state) {
-        peerClientAction.couldNotOpenLocalServer(state);
-    }
-
-    void tryingToCloseLocalServer(State state) {
-        peerClientAction.tryingToCloseLocalServer(state);
-    }
-
-    void localServerClosed(State state) {
-        peerClientAction.localServerClosed(state);
-    }
-
-    void tryingToCreateNATRule(State state) {
-        peerClientAction.tryingToCreateNATRule(state);
-    }
-
-    void NATRuleCreated(State state) {
-        peerClientAction.NATRuleCreated(state);
-    }
-
-    void couldNotFetchUPNPGateway(State state) {
-        peerClientAction.couldNotFetchUPNPGateway(state);
-    }
-
-    void errorCreatingNATRule(State state) {
-        peerClientAction.errorCreatingNATRule(state);
-    }
-
-    void tryingToDestroyNATRule(State state) {
-        peerClientAction.tryingToDestroyNATRule(state);
-    }
-
-    void NATRuleDestroyed(State state) {
-        peerClientAction.NATRuleDestroyed(state);
-    }
-
-    void couldNotDestroyNATRule(State state) {
-        peerClientAction.couldNotDestroyNATRule(state);
-    }
-
-    void listeningConnectionsWithoutNATRule(State state) {
-        peerClientAction.listeningConnectionsWithoutNATRule(state);
-    }
-
-    void peerCouldNotConnectToUs(Exception e, IP4Port ip4Port) {
-        peerClientAction.peerCouldNotConnectToUs(e, ip4Port);
-    }
-
-    void localServerError(Exception e) {
-        peerClientAction.localServerError(e);
-        peerClientConnectionManager.setWishForConnection(false);
-    }
-
-    void periodicDownloadsNotification(DownloadsManager downloadsManager) {
-        peerClientAction.periodicDownloadsNotification(downloadsManager);
-    }
-
-    void periodicUploadsNotification(UploadsManager uploadsManager) {
-        peerClientAction.periodicUploadsNotification(uploadsManager);
-    }
+//    void periodicDownloadsNotification(DownloadsManager downloadsManager) {
+//        peerClientAction.periodicDownloadsNotification(downloadsManager);
+//    }
+//
+//    void periodicUploadsNotification(UploadsManager uploadsManager) {
+//        peerClientAction.periodicUploadsNotification(uploadsManager);
+//    }
 }

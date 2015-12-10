@@ -36,12 +36,12 @@ public class DataSynchEventsBridge implements DataSynchEvents {
     }
 
     @Override
-    public void clientSynchRequestFailedToInitiate(final PeerID serverPeer, final String dataAccessorName, final long timeout, final SynchError synchError) {
-        logger.info("CLIENT SYNCH REQUEST FAILED TO INITIATE. serverPeer: " + serverPeer + ". dataAccessorName: " + dataAccessorName + ". timeout: " + timeout + ". synchError: " + synchError);
+    public void clientSynchRequestFailedToInitiate(final PeerID serverPeer, final String dataAccessorName, final long timeout, final DataSynchronizer.SynchRequestResult synchRequestResult) {
+        logger.info("CLIENT SYNCH REQUEST FAILED TO INITIATE. serverPeer: " + serverPeer + ". dataAccessorName: " + dataAccessorName + ". timeout: " + timeout + ". synchError: " + synchRequestResult);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
-                dataSynchEvents.clientSynchRequestFailedToInitiate(serverPeer, dataAccessorName, timeout, synchError);
+                dataSynchEvents.clientSynchRequestFailedToInitiate(serverPeer, dataAccessorName, timeout, synchRequestResult);
             }
         });
     }

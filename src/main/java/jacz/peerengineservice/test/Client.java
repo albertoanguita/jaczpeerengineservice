@@ -2,6 +2,7 @@ package jacz.peerengineservice.test;
 
 import jacz.peerengineservice.client.*;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
+import jacz.peerengineservice.util.datatransfer.ResourceTransferEvents;
 import jacz.peerengineservice.util.datatransfer.TransferStatistics;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
@@ -17,17 +18,7 @@ public class Client {
 
     private static final String STATISTICS_PATH = "./statistics.dat";
 
-    private SimplePeerClientActionImpl peerClientActionImpl;
-
-    private PeerClientData peerClientData;
-
-    private PeerRelations peerRelations;
-
-    private Map<String, PeerFSMFactory> customFSMs;
-
     private PeerClient peerClient;
-
-    private TestListContainer testListContainer;
 
     TempFileManager tempFileManager;
 
@@ -37,28 +28,37 @@ public class Client {
             PeersPersonalData peersPersonalData,
             PeerClientData peerClientData,
             PeerRelations peerRelations,
-            SimplePeerClientActionImpl peerClientActionImpl,
+            GeneralEventsImpl generalEvents,
+            ConnectionEventsImpl connectionEvents,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(peersPersonalData, peerClientData, peerRelations, peerClientActionImpl, customFSMs, null, null);
+        this(peersPersonalData, peerClientData, peerRelations, generalEvents, connectionEvents, new ResourceTransferEventsImpl(), customFSMs, null, null);
     }
 
     public Client(
             PeersPersonalData peersPersonalData,
             PeerClientData peerClientData,
             PeerRelations peerRelations,
-            SimplePeerClientActionImpl peerClientActionImpl,
+            GeneralEventsImpl generalEvents,
+            ConnectionEventsImpl connectionEvents,
+            ResourceTransferEvents resourceTransferEvents,
+            Map<String, PeerFSMFactory> customFSMs) throws IOException {
+        this(peersPersonalData, peerClientData, peerRelations, generalEvents, connectionEvents, resourceTransferEvents, customFSMs, null, null);
+    }
+
+    public Client(
+            PeersPersonalData peersPersonalData,
+            PeerClientData peerClientData,
+            PeerRelations peerRelations,
+            GeneralEventsImpl generalEvents,
+            ConnectionEventsImpl connectionEvents,
+            ResourceTransferEvents resourceTransferEvents,
             Map<String, PeerFSMFactory> customFSMs,
             Map<String, DataAccessor> readingLists,
             Map<String, DataAccessor> writingLists) throws IOException {
-        this.peerClientData = peerClientData;
-        this.peerRelations = peerRelations;
-        this.peerClientActionImpl = peerClientActionImpl;
-        this.customFSMs = customFSMs;
-        peerClientActionImpl.init(peerClientData.getOwnPeerID(), this);
+        generalEvents.init(peerClientData.getOwnPeerID(), this);
+        connectionEvents.init(peerClientData.getOwnPeerID(), this);
 
-//        ownData = new PeerPersonalData(peerClientData.getOwnPeerID(), "", PeerPersonalData.State.UNDEFINED, "", peerClientActionImpl);
-//        basicReadingLists.put(PeerPersonalData.getListName(), ownData);
-        testListContainer = new TestListContainer(readingLists, writingLists);
+        TestListContainer testListContainer = new TestListContainer(readingLists, writingLists);
 //        if (FileUtil.isFile("globalDownloads.txt")) {
 //            VersionedObjectSerializer.deserializeVersionedObject(globalDownloadStatistics);
 //            globalDownloadStatistics = new GlobalDownloadStatistics();
@@ -74,7 +74,7 @@ public class Client {
         } catch (IOException | VersionedSerializationException e) {
             transferStatistics = new TransferStatistics();
         }
-        peerClient = new PeerClient(peerClientData, peerClientActionImpl, new ResourceTransferEventsImpl(), peersPersonalData, transferStatistics, peerRelations, customFSMs, new DataSynchEventsImpl(), testListContainer);
+        peerClient = new PeerClient(peerClientData, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, new DataSynchEventsImpl(), testListContainer);
 
         tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
     }
