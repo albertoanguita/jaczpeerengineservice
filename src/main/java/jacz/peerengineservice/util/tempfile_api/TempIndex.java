@@ -1,10 +1,7 @@
 package jacz.peerengineservice.util.tempfile_api;
 
 import jacz.util.files.RandomAccess;
-import jacz.util.io.object_serialization.UnrecognizedVersionException;
-import jacz.util.io.object_serialization.VersionedObject;
-import jacz.util.io.object_serialization.VersionedObjectSerializer;
-import jacz.util.io.object_serialization.VersionedSerializationException;
+import jacz.util.io.object_serialization.*;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.numeric.range.LongRangeList;
 
@@ -130,8 +127,8 @@ class TempIndex implements VersionedObject {
     }
 
     @Override
-    public String getCurrentVersion() {
-        return CURRENT_VERSION;
+    public VersionStack getCurrentVersion() {
+        return new VersionStack(CURRENT_VERSION);
     }
 
     @Override
@@ -146,16 +143,15 @@ class TempIndex implements VersionedObject {
     }
 
     @Override
-    public void deserialize(Map<String, Object> attributes) {
-        tempDataFilePath = (String) attributes.get("tempDataFilePath");
-        totalResourceSize = (Long) attributes.get("totalResourceSize");
-        userDictionary = (HashMap<String, Serializable>) attributes.get("userDictionary");
-        systemDictionary = (HashMap<String, Serializable>) attributes.get("systemDictionary");
-        data = (LongRangeList) attributes.get("data");
-    }
-
-    @Override
-    public void deserializeOldVersion(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
-        throw new UnrecognizedVersionException();
+    public void deserialize(String version, Map<String, Object> attributes, VersionStack parentVersions) throws UnrecognizedVersionException {
+        if (version.equals(CURRENT_VERSION)) {
+            tempDataFilePath = (String) attributes.get("tempDataFilePath");
+            totalResourceSize = (Long) attributes.get("totalResourceSize");
+            userDictionary = (HashMap<String, Serializable>) attributes.get("userDictionary");
+            systemDictionary = (HashMap<String, Serializable>) attributes.get("systemDictionary");
+            data = (LongRangeList) attributes.get("data");
+        } else {
+            throw new UnrecognizedVersionException();
+        }
     }
 }

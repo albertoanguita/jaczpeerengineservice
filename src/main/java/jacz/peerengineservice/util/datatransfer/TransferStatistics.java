@@ -1,10 +1,8 @@
 package jacz.peerengineservice.util.datatransfer;
 
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.PeerClient;
 import jacz.util.date_time.SpeedRegistry;
 import jacz.util.io.object_serialization.*;
-import jacz.util.log.ErrorLog;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -99,8 +97,8 @@ public class TransferStatistics implements VersionedObject {
         }
 
         @Override
-        public String getCurrentVersion() {
-            return CURRENT_VERSION;
+        public VersionStack getCurrentVersion() {
+            return new VersionStack(CURRENT_VERSION);
         }
 
         @Override
@@ -112,15 +110,14 @@ public class TransferStatistics implements VersionedObject {
         }
 
         @Override
-        public void deserialize(Map<String, Object> attributes) {
-            bytesUploaded = (long) attributes.get("bytesUploaded");
-            bytesDownloaded = (long) attributes.get("bytesDownloaded");
-            initSpeedRegistries();
-        }
-
-        @Override
-        public void deserializeOldVersion(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
-            throw new UnrecognizedVersionException();
+        public void deserialize(String version, Map<String, Object> attributes, VersionStack parentVersions) throws UnrecognizedVersionException {
+            if (version.equals(CURRENT_VERSION)) {
+                bytesUploaded = (long) attributes.get("bytesUploaded");
+                bytesDownloaded = (long) attributes.get("bytesDownloaded");
+                initSpeedRegistries();
+            } else {
+                throw new UnrecognizedVersionException();
+            }
         }
     }
 
@@ -141,8 +138,8 @@ public class TransferStatistics implements VersionedObject {
         reset();
     }
 
-    public TransferStatistics(String path) throws VersionedSerializationException, IOException {
-        VersionedObjectSerializer.deserialize(this, path);
+    public TransferStatistics(String path, String... backupPaths) throws VersionedSerializationException, IOException {
+        VersionedObjectSerializer.deserialize(this, path, backupPaths);
     }
 
     public void reset() {
@@ -190,8 +187,8 @@ public class TransferStatistics implements VersionedObject {
     }
 
     @Override
-    public String getCurrentVersion() {
-        return CURRENT_VERSION;
+    public VersionStack getCurrentVersion() {
+        return new VersionStack(CURRENT_VERSION);
     }
 
     @Override
@@ -201,37 +198,36 @@ public class TransferStatistics implements VersionedObject {
         attributes.put("globalTransfer", VersionedObjectSerializer.serialize(globalTransfer));
         FragmentedByteArray fragmentedByteArray = new FragmentedByteArray();
         for (Map.Entry<PeerID, BytesTransferred> entry : peerTransfers.entrySet()) {
-            fragmentedByteArray.addArrays(Serializer.serialize(entry.getKey().toByteArray()), VersionedObjectSerializer.serialize(entry.getValue()));
+            fragmentedByteArray.add(Serializer.serialize(entry.getKey().toByteArray()), VersionedObjectSerializer.serialize(entry.getValue()));
         }
         attributes.put("peerTransfers", fragmentedByteArray.generateArray());
         return attributes;
     }
 
     @Override
-    public void deserialize(Map<String, Object> attributes) {
-        creationDate = (Date) attributes.get("creationDate");
-        try {
-            globalTransfer = new BytesTransferred((byte[]) attributes.get("globalTransfer"));
-        } catch (VersionedSerializationException e) {
-            throw new RuntimeException();
-        }
-        peerTransfers = new HashMap<>();
-        byte[] peerTransfersData = (byte[]) attributes.get("peerTransfers");
-        MutableOffset offset = new MutableOffset();
-        while (offset.value() < peerTransfersData.length) {
-            PeerID peerID = new PeerID(Serializer.deserializeBytes(peerTransfersData, offset));
+    public void deserialize(String version, Map<String, Object> attributes, VersionStack parentVersions) throws UnrecognizedVersionException {
+        if (version.equals(CURRENT_VERSION)) {
+            creationDate = (Date) attributes.get("creationDate");
             try {
-                BytesTransferred bytesTransferred = new BytesTransferred(peerTransfersData, offset);
-                peerTransfers.put(peerID, bytesTransferred);
+                globalTransfer = new BytesTransferred((byte[]) attributes.get("globalTransfer"));
             } catch (VersionedSerializationException e) {
-                stop();
                 throw new RuntimeException();
             }
+            peerTransfers = new HashMap<>();
+            byte[] peerTransfersData = (byte[]) attributes.get("peerTransfers");
+            MutableOffset offset = new MutableOffset();
+            while (offset.value() < peerTransfersData.length) {
+                PeerID peerID = new PeerID(Serializer.deserializeBytes(peerTransfersData, offset));
+                try {
+                    BytesTransferred bytesTransferred = new BytesTransferred(peerTransfersData, offset);
+                    peerTransfers.put(peerID, bytesTransferred);
+                } catch (VersionedSerializationException e) {
+                    stop();
+                    throw new RuntimeException();
+                }
+            }
+        } else {
+            throw new UnrecognizedVersionException();
         }
-    }
-
-    @Override
-    public void deserializeOldVersion(String version, Map<String, Object> attributes) throws UnrecognizedVersionException {
-        throw new UnrecognizedVersionException();
     }
 }

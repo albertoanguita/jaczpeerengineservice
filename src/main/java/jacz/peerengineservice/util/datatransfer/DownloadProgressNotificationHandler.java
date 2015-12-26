@@ -17,7 +17,7 @@ public interface DownloadProgressNotificationHandler {
     /**
      * Possible causes of the cancellation of a download
      */
-    public enum CancellationReason {
+    enum CancellationReason {
         // the cancellation was issued by the user
         USER,
         // the cancellation was due to an IO failure in the resource writer
@@ -31,7 +31,7 @@ public interface DownloadProgressNotificationHandler {
      * @param storeName       name of the resource store from which the resource is being downloaded
      * @param downloadManager download manager associated to this download
      */
-    public void started(String resourceID, String storeName, DownloadManager downloadManager);
+    void started(String resourceID, String storeName, DownloadManager downloadManager);
 
     /**
      * The download obtained the total resource size
@@ -41,7 +41,7 @@ public interface DownloadProgressNotificationHandler {
      * @param downloadManager download manager associated to this download
      * @param resourceSize    the reported resource size in bytes
      */
-    public void resourceSize(String resourceID, String storeName, DownloadManager downloadManager, long resourceSize);
+    void resourceSize(String resourceID, String storeName, DownloadManager downloadManager, long resourceSize);
 
     /**
      * This is invoked every time a provider was added to the download
@@ -51,7 +51,7 @@ public interface DownloadProgressNotificationHandler {
      * @param providerStatistics data about the added provider
      * @param downloadManager    download manager associated to this download
      */
-    public void providerAdded(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerID provider);
+    void providerAdded(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerID provider);
 
     /**
      * This is invoked every time a provider was removed from the download
@@ -61,7 +61,7 @@ public interface DownloadProgressNotificationHandler {
      * @param providerStatistics data about the removed provider
      * @param downloadManager    download manager associated to this download
      */
-    public void providerRemoved(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerID provider);
+    void providerRemoved(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerID provider);
 
     /**
      * One of the active providers reported the part of the resource that he is currently sharing
@@ -72,7 +72,7 @@ public interface DownloadProgressNotificationHandler {
      * @param downloadManager    download manager associated to this download
      * @param sharedPart         part of the resource shared by the provider
      */
-    public void providerReportedSharedPart(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, ResourcePart sharedPart);
+    void providerReportedSharedPart(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, ResourcePart sharedPart);
 
     /**
      * One of the active providers received a new assignment (a segment of the resource) for transferring to us
@@ -83,7 +83,7 @@ public interface DownloadProgressNotificationHandler {
      * @param downloadManager    download manager associated to this download
      * @param assignedSegment    the new assigned segment (the total assignation can be accessed through the included provider statistics)
      */
-    public void providerWasAssignedSegment(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, LongRange assignedSegment);
+    void providerWasAssignedSegment(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, LongRange assignedSegment);
 
     /**
      * The assignation of an active provider was cleared (this can happen in 3 situations: i) the download was paused so all provider's assignation
@@ -95,7 +95,7 @@ public interface DownloadProgressNotificationHandler {
      * @param providerStatistics data about the provider
      * @param downloadManager    download manager associated to this download
      */
-    public void providerWasClearedAssignation(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager);
+    void providerWasClearedAssignation(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager);
 
     /**
      * The download was paused (the user issued it)
@@ -104,7 +104,7 @@ public interface DownloadProgressNotificationHandler {
      * @param storeName       name of the resource store from which the resource is being downloaded
      * @param downloadManager download manager associated to this download
      */
-    public void paused(String resourceID, String storeName, DownloadManager downloadManager);
+    void paused(String resourceID, String storeName, DownloadManager downloadManager);
 
     /**
      * The download was resumed (the user issued it)
@@ -113,7 +113,7 @@ public interface DownloadProgressNotificationHandler {
      * @param storeName       name of the resource store from which the resource is being downloaded
      * @param downloadManager download manager associated to this download
      */
-    public void resumed(String resourceID, String storeName, DownloadManager downloadManager);
+    void resumed(String resourceID, String storeName, DownloadManager downloadManager);
 
     /**
      * Successfully checked an intermediate hash
@@ -123,38 +123,7 @@ public interface DownloadProgressNotificationHandler {
      * @param segment         downloaded segment
      * @param downloadManager download manager associated to this download
      */
-    public void downloadedSegment(String resourceID, String storeName, LongRange segment, DownloadManager downloadManager);
-
-    /**
-     * Successfully checked an intermediate hash
-     *
-     * @param resourceID      id of the corresponding downloaded resource
-     * @param storeName       name of the resource store from which the resource is being downloaded
-     * @param range           range of the checked intermediate hash
-     * @param downloadManager download manager associated to this download
-     */
-    public void successIntermediateHash(String resourceID, String storeName, LongRange range, DownloadManager downloadManager);
-
-    /**
-     * Failed when checking an intermediate hash. The part will be downloaded again
-     *
-     * @param resourceID      id of the corresponding downloaded resource
-     * @param storeName       name of the resource store from which the resource is being downloaded
-     * @param range           range of the checked intermediate hash
-     * @param downloadManager download manager associated to this download
-     */
-    public void failedIntermediateHash(String resourceID, String storeName, LongRange range, DownloadManager downloadManager);
-
-    /**
-     * The system cannot check an intermediate hash due to a not valid hash algorithm
-     *
-     * @param resourceID      id of the corresponding downloaded resource
-     * @param storeName       name of the resource store from which the resource is being downloaded
-     * @param range           range of the checked intermediate hash
-     * @param hashAlgorithm   invalid hash algorithm
-     * @param downloadManager download manager associated to this download
-     */
-    public void invalidIntermediateHashAlgorithm(String resourceID, String storeName, LongRange range, String hashAlgorithm, DownloadManager downloadManager);
+    void downloadedSegment(String resourceID, String storeName, LongRange segment, DownloadManager downloadManager);
 
     /**
      * The total hash is currently being checked for the downloaded resource. Percentage values are not repeated
@@ -165,7 +134,7 @@ public interface DownloadProgressNotificationHandler {
      *                        and the last is always 100
      * @param downloadManager download manager associated to this download
      */
-    public void checkingTotalHash(String resourceID, String storeName, int percentage, DownloadManager downloadManager);
+    void checkingTotalHash(String resourceID, String storeName, int percentage, DownloadManager downloadManager);
 
     /**
      * The total hash was successfully checked on the downloaded resource. The completed method will be invoked next
@@ -174,7 +143,7 @@ public interface DownloadProgressNotificationHandler {
      * @param storeName       name of the resource store from which the resource is being downloaded
      * @param downloadManager download manager associated to this download
      */
-    public void successTotalHash(String resourceID, String storeName, DownloadManager downloadManager);
+    void successTotalHash(String resourceID, String storeName, DownloadManager downloadManager);
 
     /**
      * The total hash failed when checking. The download will not start again, since the resource writer was already completed. The user must
@@ -184,7 +153,7 @@ public interface DownloadProgressNotificationHandler {
      * @param storeName       name of the resource store from which the resource is being downloaded
      * @param downloadManager download manager associated to this download
      */
-    public void failedTotalHash(String resourceID, String storeName, DownloadManager downloadManager);
+    void failedTotalHash(String resourceID, String storeName, DownloadManager downloadManager);
 
     /**
      * The system cannot check the total hash due to a not valid hash algorithm
@@ -194,7 +163,7 @@ public interface DownloadProgressNotificationHandler {
      * @param hashAlgorithm   invalid hash algorithm
      * @param downloadManager download manager associated to this download
      */
-    public void invalidTotalHashAlgorithm(String resourceID, String storeName, String hashAlgorithm, DownloadManager downloadManager);
+    void invalidTotalHashAlgorithm(String resourceID, String storeName, String hashAlgorithm, DownloadManager downloadManager);
 
     /**
      * The download was completed. The corresponding resource writer already completed its own "complete" operation,
@@ -205,7 +174,7 @@ public interface DownloadProgressNotificationHandler {
      * @param resourceWriter  the resource writer in charge of writing the downloaded resource
      * @param downloadManager download manager associated to this download
      */
-    public void completed(String resourceID, String storeName, ResourceWriter resourceWriter, DownloadManager downloadManager);
+    void completed(String resourceID, String storeName, ResourceWriter resourceWriter, DownloadManager downloadManager);
 
     /**
      * This is invoked when the download process was cancelled (no possibility of resuming). This can be caused by
@@ -216,7 +185,7 @@ public interface DownloadProgressNotificationHandler {
      * @param reason          reason of this cancellation
      * @param downloadManager download manager associated to this download
      */
-    public void cancelled(String resourceID, String storeName, CancellationReason reason, DownloadManager downloadManager);
+    void cancelled(String resourceID, String storeName, CancellationReason reason, DownloadManager downloadManager);
 
     /**
      * This is invoked when the download process was stopped by the user (with the intention of backing up the
@@ -226,5 +195,5 @@ public interface DownloadProgressNotificationHandler {
      * @param storeName       name of the resource store from which the resource is being downloaded
      * @param downloadManager download manager associated to this download
      */
-    public void stopped(String resourceID, String storeName, DownloadManager downloadManager);
+    void stopped(String resourceID, String storeName, DownloadManager downloadManager);
 }

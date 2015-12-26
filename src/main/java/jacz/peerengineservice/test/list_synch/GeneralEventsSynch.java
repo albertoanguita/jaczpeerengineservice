@@ -20,8 +20,12 @@ public class GeneralEventsSynch extends GeneralEventsImpl {
     @Override
     public void newPeerConnected(PeerID peerID, ConnectionStatus status) {
         super.newPeerConnected(peerID, status);
-        client.getPeerClient().getDataSynchronizer().synchronizeData(peerID, "list0", 10000, new ListSynchProgress(peerID, "list0", true, dataAccessor));
-        ThreadUtil.safeSleep(5000);
-        client.getPeerClient().getDataSynchronizer().synchronizeData(peerID, "list0", 10000, new ListSynchProgress(peerID, "list0", true, dataAccessor));
+        try {
+            client.getPeerClient().getDataSynchronizer().synchronizeData(peerID, dataAccessor, 10000, new ListSynchProgress(peerID, "list0", true, dataAccessor));
+            ThreadUtil.safeSleep(5000);
+            client.getPeerClient().getDataSynchronizer().synchronizeData(peerID, dataAccessor, 10000, new ListSynchProgress(peerID, "list0", true, dataAccessor));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

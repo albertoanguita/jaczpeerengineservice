@@ -1,12 +1,11 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.concurrency.timer.SimpleTimerAction;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.io.http.HttpClient;
-import jacz.util.lists.Duple;
+import jacz.util.lists.tuple.Duple;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

@@ -72,21 +72,6 @@ public class DownloadProgressNotificationHandlerImpl implements DownloadProgress
     }
 
     @Override
-    public void successIntermediateHash(String resourceID, String storeName, LongRange range, DownloadManager downloadManager) {
-//        System.out.println(initMessage + "OK intermediate hash for resource " + resourceID + ". " + range);
-    }
-
-    @Override
-    public void failedIntermediateHash(String resourceID, String storeName, LongRange range, DownloadManager downloadManager) {
-        System.out.println(initMessage + "FAIL intermediate hash for resource " + resourceID + ". " + range);
-    }
-
-    @Override
-    public void invalidIntermediateHashAlgorithm(String resourceID, String storeName, LongRange range, String hashAlgorithm, DownloadManager downloadManager) {
-        System.out.println(initMessage + "invalid intermediate hash algorithm for resource " + resourceID + ". " + range + ". " + hashAlgorithm);
-    }
-
-    @Override
     public void checkingTotalHash(String resourceID, String storeName, int percentage, DownloadManager downloadManager) {
         System.out.println(initMessage + "checking total hash for resource " + resourceID + ". " + percentage + "%");
     }

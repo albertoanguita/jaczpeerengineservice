@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.util.io.http.HttpClient;
-import jacz.util.lists.Duple;
+import jacz.util.lists.tuple.Duple;
 import jacz.util.log.ErrorLog;
 
 import java.io.IOException;

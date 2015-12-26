@@ -3,7 +3,8 @@ package jacz.peerengineservice.test.list_synch;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.data_synchronization.DataAccessException;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
-import jacz.peerengineservice.util.data_synchronization.ServerSynchRequestAnswer;
+import jacz.peerengineservice.util.data_synchronization.SynchError;
+import jacz.util.notification.ProgressNotificationWithError;
 
 import java.io.Serializable;
 import java.util.*;
@@ -67,6 +68,11 @@ public class TestData_0 implements DataAccessor {
         List<Movie> orderedMovies = new ArrayList<>(movies);
         Collections.sort(orderedMovies);
         return orderedMovies;
+    }
+
+    @Override
+    public String getName() {
+        return "list0";
     }
 
     @Override
@@ -136,7 +142,7 @@ public class TestData_0 implements DataAccessor {
     }
 
     @Override
-    public ServerSynchRequestAnswer initiateListSynchronizationAsServer(PeerID clientPeerID) {
-        return new ServerSynchRequestAnswer(ServerSynchRequestAnswer.Type.OK, new ListSynchProgress(clientPeerID, "TestList_0", false));
+    public ProgressNotificationWithError<Integer, SynchError> getServerSynchProgress(PeerID clientPeerID) {
+        return new ListSynchProgress(clientPeerID, "TestList_0", false);
     }
 }

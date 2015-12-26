@@ -1,15 +1,16 @@
 package jacz.peerengineservice.test.transfer;
 
-import jacz.peerengineservice.client.PeerClientData;
+import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
+import jacz.peerengineservice.client.connection.NetworkConfiguration;
 import jacz.peerengineservice.test.*;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.datatransfer.resource_accession.TempFileWriter;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 import jacz.util.concurrency.ThreadUtil;
-import jacz.util.lists.Triple;
+import jacz.util.lists.tuple.Four_Tuple;
 
 import java.util.HashMap;
 
@@ -20,12 +21,13 @@ public class TestTransfer_1_Temp_Recover {
 
     public static void main(String args[]) throws Exception {
         String config = "./etc/tests/clientConf_1_new.xml";
-        Triple<PeersPersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
-        PeersPersonalData peersPersonalData = data.element1;
-        PeerClientData peerClientData = data.element2;
-        PeerRelations peerRelations = data.element3;
+        Four_Tuple<PeerID, NetworkConfiguration, PeersPersonalData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
+        PeerID ownPeerID = data.element1;
+        NetworkConfiguration networkConfiguration = data.element2;
+        PeersPersonalData peersPersonalData = data.element3;
+        PeerRelations peerRelations = data.element4;
 
-        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new ResourceTransferEventsPlus(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(ownPeerID, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new ResourceTransferEventsPlus(), new HashMap<String, PeerFSMFactory>());
         ForeignStoreShare foreignStoreShare = new ForeignStoreShare(client.getPeerClient());
         foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_2", PeerIDGenerator.peerID(2));

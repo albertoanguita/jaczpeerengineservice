@@ -84,14 +84,13 @@ public class PeerClientConnectionManager implements DaemonAction {
             PeerClientPrivateInterface peerClientPrivateInterface,
             ConnectedPeers connectedPeers,
             PeerID ownPeerID,
-            int localPort,
-            int defaultExternalPort,
+            NetworkConfiguration networkConfiguration,
             PeerRelations peerRelations) {
         this.connectionEvents = new ConnectionEventsBridge(connectionEvents, this);
 
         clientsWishForConnection = ClientsWishForConnection.NEGATIVE;
         wishedConnectionInformation = new ConnectionInformation();
-        wishedConnectionInformation.setListeningPort(localPort);
+        wishedConnectionInformation.setListeningPort(networkConfiguration.getLocalPort());
 
         stateDaemon = new Daemon(this);
 
@@ -100,7 +99,7 @@ public class PeerClientConnectionManager implements DaemonAction {
         friendConnectionManager = new FriendConnectionManager(ownPeerID, connectedPeers, peerClientPrivateInterface, this, peerRelations);
         localServerManager = new LocalServerManager(
                 ownPeerID,
-                defaultExternalPort,
+                networkConfiguration.getExternalPort(),
                 networkTopologyManager,
                 friendConnectionManager,
                 wishedConnectionInformation,

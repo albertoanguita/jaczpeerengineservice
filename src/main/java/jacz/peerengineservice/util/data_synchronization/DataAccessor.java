@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.data_synchronization;
 
 import jacz.peerengineservice.PeerID;
-import jacz.util.lists.Duple;
+import jacz.util.notification.ProgressNotificationWithError;
 
 import java.io.Serializable;
 import java.util.List;
@@ -23,6 +23,15 @@ public interface DataAccessor {
             return !isClient();
         }
     }
+
+    /**
+     * Retrieves the name of this accessor. For logging, and sending accessor name to the server peer
+     * <p/>
+     * Only used in client mode
+     *
+     * @return the name of this data accessor
+     */
+    String getName();
 
     /**
      * This method simply notifies the accessor that the synch process begins. It indicates the list accessor if the process is in client or
@@ -109,5 +118,5 @@ public interface DataAccessor {
      * to the given implementation, with values from 0 to 10000, and a completeTask() invocation will be
      * done after the process is complete. Returning a null value means that no progress monitoring is required.
      */
-    ServerSynchRequestAnswer initiateListSynchronizationAsServer(PeerID clientPeerID);
+    ProgressNotificationWithError<Integer, SynchError> getServerSynchProgress(PeerID clientPeerID);
 }

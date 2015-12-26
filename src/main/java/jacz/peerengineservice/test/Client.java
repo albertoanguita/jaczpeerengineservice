@@ -1,6 +1,9 @@
 package jacz.peerengineservice.test;
 
+import jacz.peerengineservice.PeerEncryption;
+import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.*;
+import jacz.peerengineservice.client.connection.NetworkConfiguration;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.datatransfer.ResourceTransferEvents;
 import jacz.peerengineservice.util.datatransfer.TransferStatistics;
@@ -25,29 +28,33 @@ public class Client {
     private TransferStatistics transferStatistics;
 
     public Client(
+            PeerID ownPeerID,
+            NetworkConfiguration networkConfiguration,
             PeersPersonalData peersPersonalData,
-            PeerClientData peerClientData,
             PeerRelations peerRelations,
             GeneralEventsImpl generalEvents,
             ConnectionEventsImpl connectionEvents,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(peersPersonalData, peerClientData, peerRelations, generalEvents, connectionEvents, new ResourceTransferEventsImpl(), customFSMs, null, null);
+        this(ownPeerID, networkConfiguration, peersPersonalData, peerRelations, generalEvents, connectionEvents, new ResourceTransferEventsImpl(), customFSMs);
     }
 
     public Client(
+            PeerID ownPeerID,
+            NetworkConfiguration networkConfiguration,
             PeersPersonalData peersPersonalData,
-            PeerClientData peerClientData,
             PeerRelations peerRelations,
             GeneralEventsImpl generalEvents,
             ConnectionEventsImpl connectionEvents,
             ResourceTransferEvents resourceTransferEvents,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(peersPersonalData, peerClientData, peerRelations, generalEvents, connectionEvents, resourceTransferEvents, customFSMs, null, null);
+        this(ownPeerID, null, networkConfiguration, peersPersonalData, peerRelations, generalEvents, connectionEvents, resourceTransferEvents, customFSMs, null, null);
     }
 
     public Client(
+            PeerID ownPeerID,
+            PeerEncryption peerEncryption,
+            NetworkConfiguration networkConfiguration,
             PeersPersonalData peersPersonalData,
-            PeerClientData peerClientData,
             PeerRelations peerRelations,
             GeneralEventsImpl generalEvents,
             ConnectionEventsImpl connectionEvents,
@@ -55,8 +62,8 @@ public class Client {
             Map<String, PeerFSMFactory> customFSMs,
             Map<String, DataAccessor> readingLists,
             Map<String, DataAccessor> writingLists) throws IOException {
-        generalEvents.init(peerClientData.getOwnPeerID(), this);
-        connectionEvents.init(peerClientData.getOwnPeerID(), this);
+        generalEvents.init(ownPeerID, this);
+        connectionEvents.init(ownPeerID, this);
 
         TestListContainer testListContainer = new TestListContainer(readingLists, writingLists);
 //        if (FileUtil.isFile("globalDownloads.txt")) {
@@ -74,7 +81,7 @@ public class Client {
         } catch (IOException | VersionedSerializationException e) {
             transferStatistics = new TransferStatistics();
         }
-        peerClient = new PeerClient(peerClientData, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, testListContainer);
+        peerClient = new PeerClient(ownPeerID, peerEncryption, networkConfiguration, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, testListContainer);
 
         tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
     }

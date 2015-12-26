@@ -22,21 +22,30 @@ public class TempFileWriter implements ResourceWriter {
 
     private String finalPath;
 
+    /**
+     * New temporary download
+     *
+     * @param tempFileManager temp file manager to handle this temp download
+     * @param userDictionary  user terms to store in the dictionary
+     * @throws IOException
+     */
     public TempFileWriter(TempFileManager tempFileManager, HashMap<String, Serializable> userDictionary) throws IOException {
         this.tempFileManager = tempFileManager;
         this.tempFile = tempFileManager.createNewTempFile(userDictionary);
         this.userDictionary = userDictionary;
     }
 
+    /**
+     * Constructor for recovering an old download
+     *
+     * @param tempFileManager temp file manager to handle this temp download
+     * @param tempFile        existing temp file
+     * @throws IOException
+     */
     public TempFileWriter(TempFileManager tempFileManager, String tempFile) throws IOException {
         this.tempFileManager = tempFileManager;
         this.tempFile = tempFile;
         userDictionary = tempFileManager.getUserDictionary(tempFile);
-//        if (customGroup != null) {
-//            customDictionary = tempFileManager.getCustomGroup(tempFile, customGroup);
-//        } else {
-//            customDictionary = null;
-//        }
     }
 
     public String getTempFile() {

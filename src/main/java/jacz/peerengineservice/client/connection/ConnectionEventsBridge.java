@@ -162,7 +162,7 @@ public class ConnectionEventsBridge {
 
     public synchronized void connectionToServerEstablished(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
-        logger.info("CONNECTION TO SERVER ESTABLISHED. Server: \" + peerServerData + \". State: " + buildState());
+        logger.info("CONNECTION TO SERVER ESTABLISHED. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {

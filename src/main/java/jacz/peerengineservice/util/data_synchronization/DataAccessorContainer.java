@@ -8,7 +8,11 @@ import jacz.peerengineservice.UnavailablePeerException;
  */
 public interface DataAccessorContainer {
 
-    DataAccessor getAccessorForTransmitting(PeerID peerID, String dataAccessorName) throws UnavailablePeerException, AccessorNotFoundException;
+    void peerConnected(PeerID peerID);
 
-    DataAccessor getAccessorForReceiving(PeerID peerID, String dataAccessorName) throws UnavailablePeerException, AccessorNotFoundException;
+    void peerDisconnected(PeerID peerID);
+
+    DataAccessor getAccessorForTransmitting(PeerID peerID, String dataAccessorName) throws AccessorNotFoundException, ServerBusyException;
+
+//    DataAccessor getAccessorForReceiving(PeerID peerID, String dataAccessorName) throws AccessorNotFoundException;
 }

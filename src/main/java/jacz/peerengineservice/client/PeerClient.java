@@ -3,6 +3,7 @@ package jacz.peerengineservice.client;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.NotAliveException;
+import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.connection.*;
@@ -40,8 +41,6 @@ public class PeerClient {
     public static final String ERROR_LOG = "PEER_CLIENT_ERROR_LOG";
 
     public static final String MANUAL_REMOVE_BAG = "PEER_CLIENT_MANUAL_REMOVE_BAG";
-
-    public static final int DEFAULT_EXTERNAL_PORT = 37720;
 
 
     /**
@@ -93,7 +92,6 @@ public class PeerClient {
     /**
      * Class constructor
      *
-     * @param peerClientData        data about our own peer. Contains our ID, list of our friend IDs, our personal data, etc
      * @param connectionEvents      actions invoked upon some events, like the connection with a peer, or receiving a chat
      *                              message
      * @param peerRelations         relations with other peers. This object will be updated during the execution, as we add or reject peers
@@ -101,7 +99,9 @@ public class PeerClient {
      * @param dataAccessorContainer container for sharing lists of data with peers using the provided list synchronization methods (optional, null if not used)
      */
     public PeerClient(
-            PeerClientData peerClientData,
+            PeerID ownPeerID,
+            PeerEncryption peerEncryption,
+            NetworkConfiguration networkConfiguration,
             GeneralEvents generalEvents,
             ConnectionEvents connectionEvents,
             ResourceTransferEvents resourceTransferEvents,
@@ -110,7 +110,7 @@ public class PeerClient {
             PeerRelations peerRelations,
             Map<String, PeerFSMFactory> customFSMs,
             DataAccessorContainer dataAccessorContainer) {
-        this.ownPeerID = peerClientData.getOwnPeerID();
+        this.ownPeerID = ownPeerID;
         this.generalEvents = new GeneralEventsBridge(generalEvents);
         this.peersPersonalData = peersPersonalData;
         this.peerRelations = peerRelations;
@@ -124,11 +124,10 @@ public class PeerClient {
                 connectionEvents,
                 peerClientPrivateInterface,
                 connectedPeers,
-                peerClientData.getOwnPeerID(),
-                peerClientData.getPort(),
-                DEFAULT_EXTERNAL_PORT,
+                ownPeerID,
+                networkConfiguration,
                 peerRelations);
-        resourceStreamingManager = new ResourceStreamingManager(peerClientData.getOwnPeerID(), resourceTransferEvents, connectedPeersMessenger, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
+        resourceStreamingManager = new ResourceStreamingManager(ownPeerID, resourceTransferEvents, connectedPeersMessenger, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
         dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer);
         // add custom FSMs for list synchronizing service, in case the client uses it
@@ -246,6 +245,10 @@ public class PeerClient {
     public synchronized void removeBlockedPeer(final PeerID peerID) {
         peerRelations.removeBlockedPeer(peerID);
         generalEvents.peerRemovedAsBlocked(peerID, peerRelations);
+    }
+
+    public PeerID getNextConnectedPeer(PeerID peerID) {
+        return connectedPeers.getNextConnectedPeer(peerID);
     }
 
     /**
@@ -445,6 +448,7 @@ public class PeerClient {
 
     void newPeerConnected(final PeerID peerID, final ChannelConnectionPoint ccp, final ConnectionStatus status) {
         // first notify the resource streaming manager, so it sets up the necessary FSMs for receiving resource data. Then, notify the client
+        dataSynchronizer.getDataAccessorContainer().peerConnected(peerID);
         resourceStreamingManager.newPeerConnected(ccp);
         generalEvents.newPeerConnected(peerID, status);
         // send the other peer own nick, to ensure he has our latest value
@@ -636,6 +640,7 @@ public class PeerClient {
      * @param error  error that provoked the disconnection (null if no error)
      */
     synchronized void peerDisconnected(PeerID peerID, CommError error) {
+        dataSynchronizer.getDataAccessorContainer().peerDisconnected(peerID);
         generalEvents.peerDisconnected(peerID, error);
     }
 

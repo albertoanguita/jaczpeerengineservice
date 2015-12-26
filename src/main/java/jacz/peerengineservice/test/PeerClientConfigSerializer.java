@@ -1,15 +1,12 @@
 package jacz.peerengineservice.test;
 
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.PeerClientData;
 import jacz.peerengineservice.client.PeerRelations;
-import jacz.peerengineservice.client.PeerServerData;
 import jacz.peerengineservice.client.PeersPersonalData;
+import jacz.peerengineservice.client.connection.NetworkConfiguration;
 import jacz.util.io.object_serialization.StrCast;
-import jacz.util.io.object_serialization.XMLReader;
-import jacz.util.io.xml.Element;
-import jacz.util.lists.Triple;
-import jacz.util.network.IP4Port;
+import jacz.util.io.xml.XMLReader;
+import jacz.util.lists.tuple.Four_Tuple;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.FileNotFoundException;
@@ -19,17 +16,14 @@ import java.io.FileNotFoundException;
  */
 public class PeerClientConfigSerializer {
 
-    public static Triple<PeersPersonalData, PeerClientData, PeerRelations> readPeerClientData(String path) throws FileNotFoundException, XMLStreamException, IllegalArgumentException, NumberFormatException {
+    public static Four_Tuple<PeerID, NetworkConfiguration, PeersPersonalData, PeerRelations> readPeerClientData(String path) throws FileNotFoundException, XMLStreamException, IllegalArgumentException, NumberFormatException {
         XMLReader xmlReader = new XMLReader(path);
 
+        PeerID ownPeerID = new PeerID(xmlReader.getFieldValue("peer-id"));
+        NetworkConfiguration networkConfiguration = new NetworkConfiguration(
+                StrCast.asInteger(xmlReader.getFieldValue("port")),
+                StrCast.asInteger(xmlReader.getFieldValue("external-port")));
         PeersPersonalData peersPersonalData = new PeersPersonalData("UNNAMED_PEER", xmlReader.getFieldValue("nick"));
-
-        xmlReader.getStruct("peer-server-data");
-        String ip = xmlReader.getFieldValue("ip");
-        int port = StrCast.asInteger(xmlReader.getFieldValue("port"));
-        PeerServerData peerServerData = new PeerServerData(new IP4Port(ip, port));
-        xmlReader.gotoParent();
-        PeerClientData peerClientData = new PeerClientData(new PeerID(xmlReader.getFieldValue("peer-id")), StrCast.asInteger(xmlReader.getFieldValue("port")), peerServerData);
 
         PeerRelations peerRelations = new PeerRelations();
         xmlReader.getStruct("friend-peers");
@@ -50,6 +44,6 @@ public class PeerClientConfigSerializer {
             peerRelations.addBlockedPeer(peerID);
             xmlReader.gotoParent();
         }
-        return new Triple<>(peersPersonalData, peerClientData, peerRelations);
+        return new Four_Tuple<>(ownPeerID, networkConfiguration, peersPersonalData, peerRelations);
     }
 }

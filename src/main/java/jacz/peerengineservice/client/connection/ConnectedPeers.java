@@ -9,10 +9,7 @@ import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.sets.availableelements.AvailableElementsByte;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This class stores the relation of connected peers. Information can be modified and retrieved in a thread-safe manner
@@ -124,25 +121,36 @@ public class ConnectedPeers implements NotificationEmitter {
      * @return the next peer with respect to peerID that is connected, or null if there are no peers connected
      */
     public synchronized PeerID getNextConnectedPeer(PeerID peerID) {
-        PeerID nextPeerID = null;
-        PeerID lowestPeerID = null;
-        for (PeerID connectedPeerID : getConnectedPeers()) {
-            // update lowest peer
-            if (lowestPeerID == null || connectedPeerID.compareTo(lowestPeerID) < 0) {
-                lowestPeerID = connectedPeerID;
+        if (peerID == null) {
+            // any connected peer is a valid result, return the first one, if any
+            Iterator<PeerID> it = getConnectedPeers().iterator();
+            if (it.hasNext()) {
+                return it.next();
+            } else {
+                // there are no connected peers
+                return null;
             }
-            // update next peer
-            if ((nextPeerID == null && connectedPeerID.compareTo(peerID) > 0) ||
-                    (nextPeerID != null && connectedPeerID.compareTo(peerID) > 0 && connectedPeerID.compareTo(nextPeerID) < 0)) {
-                nextPeerID = connectedPeerID;
-            }
-        }
-        if (nextPeerID != null) {
-            // found a next peer
-            return nextPeerID;
         } else {
-            // didn't find a next peer, send the lowest peer (if null, there are no peers)
-            return lowestPeerID;
+            PeerID nextPeerID = null;
+            PeerID lowestPeerID = null;
+            for (PeerID connectedPeerID : getConnectedPeers()) {
+                // update lowest peer
+                if (lowestPeerID == null || connectedPeerID.compareTo(lowestPeerID) < 0) {
+                    lowestPeerID = connectedPeerID;
+                }
+                // update next peer
+                if ((nextPeerID == null && connectedPeerID.compareTo(peerID) > 0) ||
+                        (nextPeerID != null && connectedPeerID.compareTo(peerID) > 0 && connectedPeerID.compareTo(nextPeerID) < 0)) {
+                    nextPeerID = connectedPeerID;
+                }
+            }
+            if (nextPeerID != null) {
+                // found a next peer
+                return nextPeerID;
+            } else {
+                // didn't find a next peer, send the lowest peer (if null, there are no peers)
+                return lowestPeerID;
+            }
         }
     }
 

@@ -1,12 +1,17 @@
 package jacz.peerengineservice.test.list_synch;
 
-import jacz.peerengineservice.client.PeerClientData;
+import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
-import jacz.peerengineservice.test.*;
+import jacz.peerengineservice.client.connection.NetworkConfiguration;
+import jacz.peerengineservice.test.Client;
+import jacz.peerengineservice.test.ConnectionEventsImpl;
+import jacz.peerengineservice.test.PeerClientConfigSerializer;
+import jacz.peerengineservice.test.ResourceTransferEventsImpl;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
-import jacz.util.lists.Triple;
+import jacz.util.lists.tuple.Four_Tuple;
+import jacz.util.lists.tuple.Triple;
 
 import java.util.*;
 
@@ -22,14 +27,15 @@ public class TestListSynch_1 {
 
     public static void main(String args[]) throws Exception {
         String config = "./etc/tests/clientConf_1_new.xml";
-        Triple<PeersPersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
-        PeersPersonalData peersPersonalData = data.element1;
-        PeerClientData peerClientData = data.element2;
-        PeerRelations peerRelations = data.element3;
+        Four_Tuple<PeerID, NetworkConfiguration, PeersPersonalData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
+        PeerID ownPeerID = data.element1;
+        NetworkConfiguration networkConfiguration = data.element2;
+        PeersPersonalData peersPersonalData = data.element3;
+        PeerRelations peerRelations = data.element4;
 
         Triple<Map<String, DataAccessor>, Map<String, DataAccessor>, DataAccessor> lists = readingWritingListsTest0();
 
-        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new GeneralEventsSynch(lists.element3), new ConnectionEventsImpl(), new ResourceTransferEventsImpl(), new HashMap<String, PeerFSMFactory>(), lists.element1, lists.element2);
+        Client client = new Client(ownPeerID, null, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsSynch(lists.element3), new ConnectionEventsImpl(), new ResourceTransferEventsImpl(), new HashMap<String, PeerFSMFactory>(), lists.element1, lists.element2);
         client.startClient();
 
     }

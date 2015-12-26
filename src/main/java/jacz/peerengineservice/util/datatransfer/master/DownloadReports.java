@@ -134,17 +134,6 @@ class DownloadReports {
         }
     }
 
-    void reportInvalidIntermediateHashAlgorithm(final LongRange segment, final String hashAlgorithm) {
-        if (downloadProgressNotificationHandler != null) {
-            sequentialTaskExecutor.executeTask(new ParallelTask() {
-                @Override
-                public void performTask() {
-                    downloadProgressNotificationHandler.invalidIntermediateHashAlgorithm(resourceID, storeName, segment, hashAlgorithm, downloadManager);
-                }
-            });
-        }
-    }
-
     void reportCheckingTotalHash(final int percentage) {
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.executeTask(new ParallelTask() {

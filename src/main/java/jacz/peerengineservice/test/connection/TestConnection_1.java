@@ -1,11 +1,15 @@
 package jacz.peerengineservice.test.connection;
 
-import jacz.peerengineservice.client.PeerClientData;
+import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
-import jacz.peerengineservice.test.*;
-import jacz.util.lists.Triple;
+import jacz.peerengineservice.client.connection.NetworkConfiguration;
+import jacz.peerengineservice.test.Client;
+import jacz.peerengineservice.test.ConnectionEventsImpl;
+import jacz.peerengineservice.test.GeneralEventsImpl;
+import jacz.peerengineservice.test.PeerClientConfigSerializer;
+import jacz.util.lists.tuple.Four_Tuple;
 
 import java.util.HashMap;
 
@@ -16,12 +20,13 @@ public class TestConnection_1 {
 
     public static void main(String args[]) throws Exception {
         String config = "./etc/tests/clientConf_1_new.xml";
-        Triple<PeersPersonalData, PeerClientData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
-        PeersPersonalData peersPersonalData = data.element1;
-        PeerClientData peerClientData = data.element2;
-        PeerRelations peerRelations = data.element3;
+        Four_Tuple<PeerID, NetworkConfiguration, PeersPersonalData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
+        PeerID ownPeerID = data.element1;
+        NetworkConfiguration networkConfiguration = data.element2;
+        PeersPersonalData peersPersonalData = data.element3;
+        PeerRelations peerRelations = data.element4;
 
-        Client client = new Client(peersPersonalData, peerClientData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(ownPeerID, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new HashMap<String, PeerFSMFactory>());
         client.startClient();
     }
 }

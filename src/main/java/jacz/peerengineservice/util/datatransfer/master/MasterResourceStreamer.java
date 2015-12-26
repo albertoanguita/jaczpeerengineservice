@@ -519,11 +519,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     }
 
     synchronized void reportInvalidHashAlgorithm(LongRange segment, String hashAlgorithm) {
-        if (segment != null) {
-            downloadReports.reportInvalidIntermediateHashAlgorithm(segment, hashAlgorithm);
-        } else {
-            downloadReports.reportInvalidTotalHashAlgorithm(hashAlgorithm);
-        }
+        downloadReports.reportInvalidTotalHashAlgorithm(hashAlgorithm);
     }
 
     /**

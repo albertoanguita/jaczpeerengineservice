@@ -1,22 +1,18 @@
 <peer-client-config>
   <field name="nick">miki265</field>
   <field name="port">10003</field>
+  <field name="external-port">37721</field>
   <field name="peer-id">0000000000000000000000000000000000000000003</field>
-  <str name="peer-server-data">
-    <!--<ip>138.100.11.51</ip>-->
-    <field name="ip">127.0.0.1</field>
-    <field name="port">50000</field>
-  </str>
-  <str name="friend-peers">
-    <str>
+  <struct name="friend-peers">
+    <struct>
       <field name="peer-id">0000000000000000000000000000000000000000001</field>
       <field name="nick">alb</field>
-    </str>
-    <str>
+    </struct>
+    <struct>
       <field name="peer-id">0000000000000000000000000000000000000000002</field>
       <field name="nick">jor</field>
-    </str>
-  </str>
-  <str name="blocked-peers">
-  </str>
+    </struct>
+  </struct>
+  <struct name="blocked-peers">
+  </struct>
 </peer-client-config>

@@ -12,13 +12,6 @@ import org.apache.log4j.Logger;
  */
 public class DataSynchronizer {
 
-    public enum SynchRequestResult {
-        OK,
-        PEER_CLIENT_BUSY,
-        DISCONNECTED,
-        UNKNOWN_ACCESSOR,
-    }
-
     static final long SERVER_FSM_TIMEOUT = 15000;
 
     public static final int PROGRESS_MAX = 100;
@@ -41,38 +34,37 @@ public class DataSynchronizer {
         this.dataAccessorContainer = dataAccessorContainer;
     }
 
-    public synchronized SynchRequestResult synchronizeData(PeerID serverPeerID, String dataAccessorName, long timeout) {
-        return synchronizeData(serverPeerID, dataAccessorName, timeout, null);
+    public synchronized boolean synchronizeData(
+            PeerID serverPeerID,
+            DataAccessor dataAccessor,
+            long timeout) throws UnavailablePeerException, AccessorNotFoundException {
+        return synchronizeData(serverPeerID, dataAccessor, timeout, null);
     }
 
-    public synchronized SynchRequestResult synchronizeData(PeerID serverPeerID, final String dataAccessorName, long timeout, final ProgressNotificationWithError<Integer, SynchError> progress) {
-        try {
-            DataAccessor dataAccessor = dataAccessorContainer.getAccessorForReceiving(serverPeerID, dataAccessorName);
-            // same for server FSM
-            DataSynchClientFSM dataSynchClientFSM = new DataSynchClientFSM(dataAccessor, dataAccessorName, serverPeerID, progress);
-            UniqueIdentifier fsmID = peerClient.registerTimedCustomFSM(
-                    serverPeerID,
-                    dataSynchClientFSM,
-                    DataSynchServerFSM.CUSTOM_FSM_NAME,
-                    timeout
-            );
-            if (fsmID != null) {
-                logger.info("CLIENT SYNCH REQUEST INITIATED. serverPeer: " + serverPeerID + ". dataAccessorName: " + dataAccessorName + ". timeout: " + timeout + ". fsmID: " + fsmID);
-                return SynchRequestResult.OK;
-            } else {
-                logger.info("CLIENT SYNCH REQUEST FAILED TO INITIATE. serverPeer: " + serverPeerID + ". dataAccessorName: " + dataAccessorName + ". timeout: " + timeout + ". synchError: " + SynchRequestResult.PEER_CLIENT_BUSY);
-                return SynchRequestResult.PEER_CLIENT_BUSY;
-            }
-        } catch (UnavailablePeerException e) {
-            logger.info("CLIENT SYNCH REQUEST FAILED TO INITIATE. serverPeer: " + serverPeerID + ". dataAccessorName: " + dataAccessorName + ". timeout: " + timeout + ". synchError: " + SynchRequestResult.DISCONNECTED);
-            return SynchRequestResult.DISCONNECTED;
-        } catch (AccessorNotFoundException e) {
-            logger.info("CLIENT SYNCH REQUEST FAILED TO INITIATE. serverPeer: " + serverPeerID + ". dataAccessorName: " + dataAccessorName + ". timeout: " + timeout + ". synchError: " + SynchRequestResult.UNKNOWN_ACCESSOR);
-            return SynchRequestResult.UNKNOWN_ACCESSOR;
+    public synchronized boolean synchronizeData(
+            PeerID serverPeerID,
+            DataAccessor dataAccessor,
+            long timeout,
+            final ProgressNotificationWithError<Integer, SynchError> progress) throws UnavailablePeerException, AccessorNotFoundException {
+//        DataAccessor dataAccessor = dataAccessorContainer.getAccessorForReceiving(serverPeerID, dataAccessorName);
+        // same for server FSM
+        DataSynchClientFSM dataSynchClientFSM = new DataSynchClientFSM(dataAccessor, serverPeerID, progress);
+        UniqueIdentifier fsmID = peerClient.registerTimedCustomFSM(
+                serverPeerID,
+                dataSynchClientFSM,
+                DataSynchServerFSM.CUSTOM_FSM_NAME,
+                timeout
+        );
+        if (fsmID != null) {
+            logger.info("CLIENT SYNCH REQUEST INITIATED. serverPeer: " + serverPeerID + ". dataAccessorName: " + dataAccessor.getName() + ". timeout: " + timeout + ". fsmID: " + fsmID);
+            return true;
+        } else {
+            logger.info("CLIENT SYNCH REQUEST FAILED TO INITIATE (peer client busy). serverPeer: " + serverPeerID + ". dataAccessorName: " + dataAccessor.getName() + ". timeout: " + timeout);
+            return false;
         }
     }
 
-    DataAccessorContainer getDataAccessorContainer() {
+    public DataAccessorContainer getDataAccessorContainer() {
         return dataAccessorContainer;
     }
 }

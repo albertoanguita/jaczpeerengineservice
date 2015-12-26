@@ -7,7 +7,7 @@ import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
 import jacz.util.files.FileUtil;
 import jacz.util.io.object_serialization.VersionedObjectSerializer;
 import jacz.util.io.object_serialization.VersionedSerializationException;
-import jacz.util.lists.Duple;
+import jacz.util.lists.tuple.Duple;
 import jacz.util.numeric.range.LongRangeList;
 
 import java.io.File;

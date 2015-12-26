@@ -2,12 +2,10 @@ package jacz.peerengineservice;
 
 import jacz.util.hash.SHA_256;
 import jacz.util.io.SixBitSerializer;
-import jacz.util.lists.Duple;
+import jacz.util.lists.tuple.Duple;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.Arrays;
 
 /**
@@ -21,8 +19,9 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
     private final byte[] id;
 
     public PeerID(byte[] id) {
-        if (id.length == KEY_LENGTH) {
-            this.id = id;
+        if (id.length >= KEY_LENGTH) {
+            // truncate the byte array (keep the first KEY_LENGTH bytes)
+            this.id = Arrays.copyOf(id, KEY_LENGTH);
         } else {
             throw new IllegalArgumentException("Incorrect peer id. Received: " + Arrays.toString(id));
         }
@@ -40,10 +39,9 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
         return new PeerID(new SHA_256().digest(randomBytes));
     }
 
-    public static Duple<PeerID, PeerEncryption> generateIdAndEncryptionKeys(byte[] randomBytes) throws NoSuchProviderException, NoSuchAlgorithmException {
-        PeerEncryption peerEncryption = PeerEncryption.generatePeerEncryption(randomBytes);
-        System.out.println("Generating PeerID...");
-        return new Duple<>(generateRandomPeerId(peerEncryption.getPublicDigest()), peerEncryption);
+    public static Duple<PeerID, PeerEncryption> generateIdAndEncryptionKeys(byte[] randomBytes) {
+        PeerEncryption peerEncryption = new PeerEncryption(randomBytes);
+        return new Duple<>(new PeerID(peerEncryption.getPublicDigest()), peerEncryption);
     }
 
     public static boolean isPeerID(String id) {

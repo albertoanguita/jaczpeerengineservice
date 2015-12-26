@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.data_synchronization;
 
 /**
- * Created by Alberto on 17/09/2015.
+ * A requested data accessor could not be found (either due to wrong accessor name, or not available at that moment)
  */
 public class AccessorNotFoundException extends Exception {
 }

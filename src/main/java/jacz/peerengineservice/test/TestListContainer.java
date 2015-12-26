@@ -23,12 +23,22 @@ public class TestListContainer implements DataAccessorContainer {
     }
 
     @Override
-    public DataAccessor getAccessorForTransmitting(PeerID peerID, String dataAccessorName) throws UnavailablePeerException, AccessorNotFoundException {
-        return transmittingAccessors.get(dataAccessorName);
+    public void peerConnected(PeerID peerID) {
+
     }
 
     @Override
-    public DataAccessor getAccessorForReceiving(PeerID peerID, String dataAccessorName) throws UnavailablePeerException, AccessorNotFoundException {
-        return receivingAccessors.get(dataAccessorName);
+    public void peerDisconnected(PeerID peerID) {
+
     }
+
+    @Override
+    public DataAccessor getAccessorForTransmitting(PeerID peerID, String dataAccessorName) throws AccessorNotFoundException {
+        return transmittingAccessors.get(dataAccessorName);
+    }
+
+//    @Override
+//    public DataAccessor getAccessorForReceiving(PeerID peerID, String dataAccessorName) throws AccessorNotFoundException {
+//        return receivingAccessors.get(dataAccessorName);
+//    }
 }

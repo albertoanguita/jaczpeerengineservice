@@ -2,7 +2,6 @@ package jacz.peerengineservice.util.data_synchronization;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
@@ -157,53 +156,46 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             DataSynchClientFSM.SynchRequest request = (DataSynchClientFSM.SynchRequest) message;
             dataAccessorName = request.dataAccessorName;
             dataAccessor = dataAccessorContainer.getAccessorForTransmitting(clientPeerID, dataAccessorName);
-            ServerSynchRequestAnswer serverSynchRequestAnswer = dataAccessor.initiateListSynchronizationAsServer(clientPeerID);
+            DataSynchronizer.logger.info("SERVER SYNCH REQUEST ACCEPTED. clientPeer: " + clientPeerID + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID);
 
-            if (serverSynchRequestAnswer.type == ServerSynchRequestAnswer.Type.OK) {
-                // valid request -> send ok and start synching
-                DataSynchronizer.logger.info("SERVER SYNCH REQUEST ACCEPTED. clientPeer: " + clientPeerID + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID);
-                dataAccessor.beginSynchProcess(DataAccessor.Mode.SERVER);
-                ccp.write(outgoingChannel, SynchRequestAnswer.OK, false);
-                progress = serverSynchRequestAnswer.progress;
-                if (progress != null) {
-                    progress.addNotification(0);
-                }
-                // send the server database ID
-                ccp.write(outgoingChannel, dataAccessor.getDatabaseID(), false);
-                String clientDatabaseID = request.databaseID;
-                String serverDatabaseID = dataAccessor.getDatabaseID();
-                long lastTimestamp = request.lastTimestamp != null ? request.lastTimestamp : -1;
-                if ((clientDatabaseID == null && serverDatabaseID != null) ||
-                        (clientDatabaseID != null && !clientDatabaseID.equals(serverDatabaseID))) {
-                    // the whole list is required, as database IDs do not match
-                    elementsToSend = dataAccessor.getElementsFrom(0);
-                } else {
-                    // pass the timestamp given by the client, as not the whole list is required
-                    elementsToSend = dataAccessor.getElementsFrom(lastTimestamp + 1);
-                }
-                elementToSendIndex = 0;
-                elementsPerMessage = Math.max(dataAccessor.elementsPerMessage(), 1);
-                CRCBytes = Math.max(dataAccessor.CRCBytes(), 0);
-                return sendElementPack(ccp);
-            } else {
-                synchError = new SynchError(SynchError.Type.SERVER_BUSY, null);
-                ccp.write(outgoingChannel, SynchRequestAnswer.SERVER_BUSY);
-                return State.DENIED;
+            // valid request -> send ok and start synching
+            dataAccessor.beginSynchProcess(DataAccessor.Mode.SERVER);
+            ccp.write(outgoingChannel, SynchRequestAnswer.OK, false);
+            progress = dataAccessor.getServerSynchProgress(clientPeerID);
+            if (progress != null) {
+                progress.addNotification(0);
             }
+            // send the server database ID
+            ccp.write(outgoingChannel, dataAccessor.getDatabaseID(), false);
+            String clientDatabaseID = request.databaseID;
+            String serverDatabaseID = dataAccessor.getDatabaseID();
+            long lastTimestamp = request.lastTimestamp != null ? request.lastTimestamp : -1;
+            if ((clientDatabaseID == null && serverDatabaseID != null) ||
+                    (clientDatabaseID != null && !clientDatabaseID.equals(serverDatabaseID))) {
+                // the whole list is required, as database IDs do not match
+                elementsToSend = dataAccessor.getElementsFrom(0);
+            } else {
+                // pass the timestamp given by the client, as not the whole list is required
+                elementsToSend = dataAccessor.getElementsFrom(lastTimestamp + 1);
+            }
+            elementToSendIndex = 0;
+            elementsPerMessage = Math.max(dataAccessor.elementsPerMessage(), 1);
+            CRCBytes = Math.max(dataAccessor.CRCBytes(), 0);
+            return sendElementPack(ccp);
         } catch (ClassNotFoundException e) {
             // invalid class found, error
             ErrorLog.reportError(PeerClient.ERROR_LOG, e.toString(), clientPeerID, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Invalid request format");
             ccp.write(outgoingChannel, SynchRequestAnswer.INVALID_REQUEST_FORMAT);
             return State.DENIED;
-        } catch (UnavailablePeerException e) {
-            synchError = new SynchError(SynchError.Type.SERVER_BUSY, null);
-            ccp.write(outgoingChannel, SynchRequestAnswer.SERVER_BUSY);
-            return State.DENIED;
         } catch (AccessorNotFoundException e) {
             ErrorLog.reportError(PeerClient.ERROR_LOG, e.toString(), clientPeerID, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.UNKNOWN_ACCESSOR, "Accessor: " + dataAccessorName);
             ccp.write(outgoingChannel, SynchRequestAnswer.UNKNOWN_DATA_ACCESSOR);
+            return State.DENIED;
+        } catch (ServerBusyException e) {
+            synchError = new SynchError(SynchError.Type.SERVER_BUSY, null);
+            ccp.write(outgoingChannel, SynchRequestAnswer.SERVER_BUSY);
             return State.DENIED;
         } catch (DataAccessException e) {
             ErrorLog.reportError(PeerClient.ERROR_LOG, "Data access error in server synch FSM", clientPeerID, dataAccessorName, fsmID);
