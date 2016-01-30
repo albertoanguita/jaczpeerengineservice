@@ -2,14 +2,16 @@ package jacz.peerengineservice.util.tempfile_api;
 
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Created by Alberto on 13/10/2015.
  */
 public class TempFileManagerEventsBridge implements TempFileManagerEvents {
 
-    final static Logger logger = Logger.getLogger(TempFileManagerEvents.class);
+    final static Logger logger = LoggerFactory.getLogger(TempFileManagerEvents.class);
 
     private final TempFileManagerEvents tempFileManagerEvents;
 

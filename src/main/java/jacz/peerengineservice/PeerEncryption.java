@@ -1,6 +1,6 @@
 package jacz.peerengineservice;
 
-import jacz.util.io.object_serialization.*;
+import jacz.util.io.serialization.*;
 
 import java.io.IOException;
 import java.io.Serializable;

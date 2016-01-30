@@ -20,7 +20,9 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWrite
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
 import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.identifier.UniqueIdentifier;
-import jacz.util.io.object_serialization.ObjectListWrapper;
+import jacz.util.io.serialization.ObjectListWrapper;
+import jacz.util.log.ErrorFactory;
+import jacz.util.log.ErrorHandler;
 import jacz.util.log.ErrorLog;
 
 import java.io.Serializable;
@@ -63,7 +65,7 @@ public class PeerClient {
     /**
      * The PeerClientConnectionManager employed by this PeerClient. It will handle the search and connection with friend peers
      */
-    private PeerClientConnectionManager peerClientConnectionManager;
+    private final PeerClientConnectionManager peerClientConnectionManager;
 
     private final ConnectedPeers connectedPeers;
 
@@ -72,9 +74,9 @@ public class PeerClient {
     /**
      * The DataStreamingManager employed by this PeerClient, for taking care of the transfer of files between peers
      */
-    private ResourceStreamingManager resourceStreamingManager;
+    private final ResourceStreamingManager resourceStreamingManager;
 
-    private PeerRelations peerRelations;
+    private final PeerRelations peerRelations;
 
     /**
      * The different factories of custom FSMs that our client wishes to use (custom FSM are defined by the client,
@@ -87,7 +89,9 @@ public class PeerClient {
      * <p/>
      * NULL if not used
      */
-    private DataSynchronizer dataSynchronizer;
+    private final DataSynchronizer dataSynchronizer;
+
+    private static ErrorHandler errorHandler;
 
     /**
      * Class constructor
@@ -109,7 +113,8 @@ public class PeerClient {
             TransferStatistics transferStatistics,
             PeerRelations peerRelations,
             Map<String, PeerFSMFactory> customFSMs,
-            DataAccessorContainer dataAccessorContainer) {
+            DataAccessorContainer dataAccessorContainer,
+            ErrorHandler errorHandler) {
         this.ownPeerID = ownPeerID;
         this.generalEvents = new GeneralEventsBridge(generalEvents);
         this.peersPersonalData = peersPersonalData;
@@ -130,9 +135,9 @@ public class PeerClient {
         resourceStreamingManager = new ResourceStreamingManager(ownPeerID, resourceTransferEvents, connectedPeersMessenger, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
         dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer);
+        PeerClient.errorHandler = new ErrorHandlerBridge(this, errorHandler);
         // add custom FSMs for list synchronizing service, in case the client uses it
         addOwnCustomFSMs(this.customFSMs);
-        registerErrorLog();
     }
 
 
@@ -163,12 +168,12 @@ public class PeerClient {
 //        customFSMs.put(ElementSynchronizerServerFSM.CUSTOM_FSM_NAME, new ElementSynchronizerServerFSMFactory(getListSynchronizer()));
     }
 
-//    public ListSynchronizer getListSynchronizer() {
-//        return listSynchronizer;
-//    }
-
-    private void registerErrorLog() {
-        ErrorLog.registerErrorLog(ERROR_LOG, System.err);
+    public static void reportError(String message, Object... data) {
+        if (errorHandler != null) {
+            ErrorFactory.reportError(errorHandler, message, data);
+        } else {
+            ErrorLog.reportError(ERROR_LOG, message, data);
+        }
     }
 
     public DataSynchronizer getDataSynchronizer() {
@@ -405,6 +410,10 @@ public class PeerClient {
         return resourceStreamingManager.getDownloadsManager().getDownloads(store);
     }
 
+    public List<DownloadManager> getAllDownloads() {
+        return resourceStreamingManager.getDownloadsManager().getAllDownloads();
+    }
+
     /**
      * Set the timer for periodic downloads notifications
      *
@@ -533,7 +542,7 @@ public class PeerClient {
                             UniqueIdentifier id = ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
                             peerFSMAction.setID(id);
                         } catch (Exception e) {
-                            ErrorLog.reportError(PeerClient.ERROR_LOG, "Could not register FSM due to exception", requestFromPeerToPeer, assignedChannel, customFSMs, ccp);
+                            reportError("Could not register FSM due to exception", requestFromPeerToPeer, assignedChannel, customFSMs, ccp);
                             ccp.write(outgoingChannel, new ObjectListWrapper(PeerFSMServerResponse.REQUEST_DENIED, null));
                         }
                     }
@@ -643,154 +652,4 @@ public class PeerClient {
         dataSynchronizer.getDataAccessorContainer().peerDisconnected(peerID);
         generalEvents.peerDisconnected(peerID, error);
     }
-
-
-    /**
-     * ******************************** NOTIFICATIONS FROM THE PEER CLIENT CONNECTION MANAGER ******************************************
-     */
-
-//    void initializingConnection() {
-//        peerClientAction.initializingConnection();
-//    }
-
-//    void listeningPortModified(int port) {
-//        peerClientAction.listeningPortModified(port);
-//    }
-//
-//    void undefinedOwnInetAddress() {
-//        peerClientAction.undefinedOwnInetAddress();
-//    }
-
-//    void localAddressFetched(String localAddress, State state) {
-//        peerClientAction.localAddressFetched(localAddress, state);
-//    }
-
-//    void couldNotFetchLocalAddress(State state) {
-//        peerClientAction.couldNotFetchLocalAddress(state);
-//    }
-
-//    void tryingToFetchExternalAddress(State state) {
-//        peerClientAction.tryingToFetchExternalAddress(state);
-//    }
-
-//    void externalAddressFetched(String externalAddress, boolean hasGateway, State state) {
-//        peerClientAction.externalAddressFetched(externalAddress, hasGateway, state);
-//    }
-
-//    void couldNotFetchExternalAddress(State state) {
-//        peerClientAction.couldNotFetchExternalAddress(state);
-//    }
-
-//    void unrecognizedMessageFromServer(State state) {
-//        peerClientAction.unrecognizedMessageFromServer(state);
-//    }
-
-//    void tryingToConnectToServer(State state) {
-//        peerClientAction.tryingToConnectToServer(state);
-//    }
-//
-//    void connectionToServerEstablished(State state) {
-//        peerClientAction.connectionToServerEstablished(state);
-//    }
-//
-//    void registrationRequired(State state) {
-//        peerClientAction.registrationRequired(state);
-//    }
-//
-//    void localServerUnreachable(State state) {
-//        peerClientAction.localServerUnreachable(state);
-//    }
-//
-//    void unableToConnectToServer(State state) {
-//        peerClientAction.unableToConnectToServer(state);
-//    }
-//
-//    void disconnectedFromServer(State state) {
-//        peerClientAction.disconnectedFromServer(state);
-//    }
-//
-//    void failedToRefreshServerConnection(State state) {
-//        peerClientAction.failedToRefreshServerConnection(state);
-//    }
-//
-//    void tryingToRegisterWithServer(State state) {
-//        peerClientAction.tryingToRegisterWithServer(state);
-//    }
-//
-//    void registrationSuccessful(State state) {
-//        peerClientAction.registrationSuccessful(state);
-//    }
-//
-//    void alreadyRegistered(State state) {
-//        peerClientAction.alreadyRegistered(state);
-//    }
-
-//    void tryingToOpenLocalServer(State state) {
-//        peerClientAction.tryingToOpenLocalServer(state);
-//    }
-//
-//    void localServerOpen(State state) {
-//        peerClientAction.localServerOpen(state);
-//    }
-//
-//    void couldNotOpenLocalServer(State state) {
-//        peerClientAction.couldNotOpenLocalServer(state);
-//    }
-//
-//    void tryingToCloseLocalServer(State state) {
-//        peerClientAction.tryingToCloseLocalServer(state);
-//    }
-//
-//    void localServerClosed(State state) {
-//        peerClientAction.localServerClosed(state);
-//    }
-//
-//    void tryingToCreateNATRule(State state) {
-//        peerClientAction.tryingToCreateNATRule(state);
-//    }
-//
-//    void NATRuleCreated(State state) {
-//        peerClientAction.NATRuleCreated(state);
-//    }
-//
-//    void couldNotFetchUPNPGateway(State state) {
-//        peerClientAction.couldNotFetchUPNPGateway(state);
-//    }
-//
-//    void errorCreatingNATRule(State state) {
-//        peerClientAction.errorCreatingNATRule(state);
-//    }
-//
-//    void tryingToDestroyNATRule(State state) {
-//        peerClientAction.tryingToDestroyNATRule(state);
-//    }
-//
-//    void NATRuleDestroyed(State state) {
-//        peerClientAction.NATRuleDestroyed(state);
-//    }
-//
-//    void couldNotDestroyNATRule(State state) {
-//        peerClientAction.couldNotDestroyNATRule(state);
-//    }
-//
-//    void listeningConnectionsWithoutNATRule(State state) {
-//        peerClientAction.listeningConnectionsWithoutNATRule(state);
-//    }
-//
-//    void peerCouldNotConnectToUs(Exception e, IP4Port ip4Port) {
-//        peerClientAction.peerCouldNotConnectToUs(e, ip4Port);
-//    }
-//
-//    void localServerError(Exception e) {
-//        peerClientAction.localServerError(e);
-//        peerClientConnectionManager.setWishForConnection(false);
-//    }
-
-//    void periodicDownloadsNotification(DownloadsManager downloadsManager) {
-//        peerClientAction.periodicDownloadsNotification(downloadsManager);
-//    }
-//
-//    void periodicUploadsNotification(UploadsManager uploadsManager) {
-//        peerClientAction.periodicUploadsNotification(uploadsManager);
-//    }
 }

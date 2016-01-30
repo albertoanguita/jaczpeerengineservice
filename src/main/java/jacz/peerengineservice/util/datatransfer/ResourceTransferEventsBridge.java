@@ -3,7 +3,8 @@ package jacz.peerengineservice.util.datatransfer;
 import jacz.peerengineservice.PeerID;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class acts as a bypass of the client's provided ResourceTransferEvents implementation, logging all activity
@@ -12,7 +13,7 @@ import org.apache.log4j.Logger;
  */
 public class ResourceTransferEventsBridge implements ResourceTransferEvents {
 
-    final static Logger logger = Logger.getLogger(ResourceTransferEvents.class);
+    final static Logger logger = LoggerFactory.getLogger(ResourceTransferEvents.class);
 
     private final ResourceTransferEvents resourceTransferEvents;
 

@@ -12,7 +12,7 @@ import jacz.util.concurrency.timer.Timer;
 import jacz.util.date_time.RemainingTimeAction;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.identifier.UniqueIdentifierFactory;
-import jacz.util.io.object_serialization.ObjectListWrapper;
+import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.numeric.range.LongRange;
 
 /**

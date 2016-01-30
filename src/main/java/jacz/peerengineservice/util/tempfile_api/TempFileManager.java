@@ -1,14 +1,17 @@
 package jacz.peerengineservice.util.tempfile_api;
 
+import jacz.peerengineservice.client.connection.ConnectionEvents;
 import jacz.util.concurrency.concurrency_controller.ConcurrencyController;
 import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWrite;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
 import jacz.util.files.FileUtil;
-import jacz.util.io.object_serialization.VersionedObjectSerializer;
-import jacz.util.io.object_serialization.VersionedSerializationException;
+import jacz.util.io.serialization.VersionedObjectSerializer;
+import jacz.util.io.serialization.VersionedSerializationException;
 import jacz.util.lists.tuple.Duple;
 import jacz.util.numeric.range.LongRangeList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;

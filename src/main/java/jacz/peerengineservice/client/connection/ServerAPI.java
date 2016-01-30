@@ -5,7 +5,6 @@ import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.util.io.http.HttpClient;
 import jacz.util.lists.tuple.Duple;
-import jacz.util.log.ErrorLog;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -306,7 +305,7 @@ public class ServerAPI {
             return RegistrationResponse.valueOf(registrationResponseJSON.response);
         } catch (IllegalArgumentException e) {
             // unrecognized value --> log error and re-throw
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Unrecognized register response", result.element2);
+            PeerClient.reportError("Unrecognized register response", result.element2);
             throw e;
         }
     }
@@ -324,7 +323,7 @@ public class ServerAPI {
             return ConnectionResponse.buildConnectionResponse(connectionResponseJSON);
         } catch (IllegalArgumentException e) {
             // unrecognized values --> log error and re-throw
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Unrecognized connect response", result.element2);
+            PeerClient.reportError("Unrecognized connect response", result.element2);
             throw e;
         }
     }
@@ -342,7 +341,7 @@ public class ServerAPI {
             return RefreshResponse.valueOf(updateResponseJSON.response);
         } catch (IllegalArgumentException e) {
             // unrecognized value --> log error and re-throw
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Unrecognized refresh response", result.element2);
+            PeerClient.reportError("Unrecognized refresh response", result.element2);
             throw e;
         }
     }
@@ -360,7 +359,7 @@ public class ServerAPI {
             return DisconnectResponse.valueOf(updateResponseJSON.response);
         } catch (IllegalArgumentException e) {
             // unrecognized value --> log error and re-throw
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Unrecognized disconnect response", result.element2);
+            PeerClient.reportError("Unrecognized disconnect response", result.element2);
             throw e;
         }
     }
@@ -378,14 +377,14 @@ public class ServerAPI {
             return InfoResponse.buildInfoResponse(infoResponseJson);
         } catch (Exception e) {
             // unrecognized values --> log error and re-throw
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Unrecognized refresh response", result.element2);
+            PeerClient.reportError("Unrecognized refresh response", result.element2);
             throw new IOException("Unrecognized refresh response");
         }
     }
 
     private static void checkError(Duple<Integer, String> response) throws ServerAccessException {
         if (response.element1 / 100 == 4) {
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Bad request", response.element2);
+            PeerClient.reportError("Bad request", response.element2);
         }
         if (response.element1 / 100 == 4 || response.element1 / 100 == 5) {
             throw new ServerAccessException(response.element2, response.element1);

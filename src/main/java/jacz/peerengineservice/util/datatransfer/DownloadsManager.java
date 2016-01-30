@@ -60,7 +60,7 @@ public class DownloadsManager extends TransfersManager<DownloadManager> {
      *
      * @return a shallow copy of the active downloads
      */
-    synchronized List<DownloadManager> getAllDownloads() {
+    public synchronized List<DownloadManager> getAllDownloads() {
         return getAllTransfers();
     }
 

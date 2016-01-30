@@ -1,9 +1,9 @@
 package jacz.peerengineservice.util.tempfile_api;
 
-import jacz.peerengineservice.client.PeerClient;
 import jacz.util.concurrency.task_executor.ParallelTask;
-import jacz.util.io.object_serialization.VersionedSerializationException;
-import jacz.util.log.ErrorLog;
+import jacz.util.io.serialization.VersionedSerializationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -11,6 +11,8 @@ import java.io.IOException;
  * Generic parallel task over a temp index file
  */
 public abstract class TempIndexTask implements ParallelTask {
+
+    final static Logger logger = LoggerFactory.getLogger(TempIndexTask.class);
 
     private final TempFileManager tempFileManager;
 
@@ -48,14 +50,14 @@ public abstract class TempIndexTask implements ParallelTask {
 
     protected void checkIOException() throws IOException {
         if (ioException != null) {
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Error reading a temp file", ioException);
+            logger.error("Error reading a temp file" + ioException);
             throw ioException;
         }
     }
 
     protected void checkIndexOutOfBoundsException() throws IndexOutOfBoundsException {
         if (indexOutOfBoundsException != null) {
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Error reading a temp file", indexOutOfBoundsException);
+            logger.error("Error reading a temp file" + indexOutOfBoundsException);
             throw indexOutOfBoundsException;
         }
     }

@@ -39,6 +39,13 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
         return new PeerID(new SHA_256().digest(randomBytes));
     }
 
+    public static PeerID buildTestPeerID(String postID) {
+        while (postID.length() < KEY_LENGTH) {
+            postID = "0" + postID;
+        }
+        return new PeerID(postID);
+    }
+
     public static Duple<PeerID, PeerEncryption> generateIdAndEncryptionKeys(byte[] randomBytes) {
         PeerEncryption peerEncryption = new PeerEncryption(randomBytes);
         return new Duple<>(new PeerID(peerEncryption.getPublicDigest()), peerEncryption);

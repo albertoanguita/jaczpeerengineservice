@@ -1,10 +1,12 @@
 package jacz.peerengineservice.util.datatransfer;
 
 import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.client.PeerClient;
 import jacz.util.date_time.SpeedRegistry;
-import jacz.util.io.object_serialization.*;
+import jacz.util.io.serialization.*;
 
 import java.io.IOException;
+import java.io.NotSerializableException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Date;
@@ -195,10 +197,18 @@ public class TransferStatistics implements VersionedObject {
     public Map<String, Serializable> serialize() {
         Map<String, Serializable> attributes = new HashMap<>();
         attributes.put("creationDate", creationDate);
-        attributes.put("globalTransfer", VersionedObjectSerializer.serialize(globalTransfer));
+        try {
+            attributes.put("globalTransfer", VersionedObjectSerializer.serialize(globalTransfer));
+        } catch (NotSerializableException e) {
+            PeerClient.reportError("Could not serialize the globalTransfer object", globalTransfer);
+        }
         FragmentedByteArray fragmentedByteArray = new FragmentedByteArray();
         for (Map.Entry<PeerID, BytesTransferred> entry : peerTransfers.entrySet()) {
-            fragmentedByteArray.add(Serializer.serialize(entry.getKey().toByteArray()), VersionedObjectSerializer.serialize(entry.getValue()));
+            try {
+                fragmentedByteArray.add(Serializer.serialize(entry.getKey().toByteArray()), VersionedObjectSerializer.serialize(entry.getValue()));
+            } catch (NotSerializableException e) {
+                PeerClient.reportError("Could not serialize a peerTransfers entry", entry);
+            }
         }
         attributes.put("peerTransfers", fragmentedByteArray.generateArray());
         return attributes;

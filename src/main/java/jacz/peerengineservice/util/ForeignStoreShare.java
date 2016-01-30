@@ -107,7 +107,7 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
      * @param peerID peer to remove
      */
     public synchronized void removeResourceProvider(PeerID peerID) {
-        for (String resourceID : remoteResources.keySet()) {
+        for (String resourceID : new HashSet<>(remoteResources.keySet())) {
             removeResourceProvider(resourceID, peerID);
         }
     }
@@ -159,7 +159,11 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
         for (Object o : groupedMessages) {
             affectedPeers.add((PeerID) o);
         }
-        for (Map.Entry<String, Set<PeerID>> remoteResource : remoteResources.entrySet()) {
+        Map<String, Set<PeerID>> remoteResourcesCopy;
+        synchronized (this) {
+            remoteResourcesCopy = new HashMap<>(remoteResources);
+        }
+        for (Map.Entry<String, Set<PeerID>> remoteResource : remoteResourcesCopy.entrySet()) {
             if (CollectionUtils.containsAny(remoteResource.getValue(), affectedPeers)) {
                 notificationProcessor.newEvent(remoteResource.getKey());
             }

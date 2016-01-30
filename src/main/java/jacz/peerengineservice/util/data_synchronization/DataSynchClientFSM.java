@@ -10,9 +10,8 @@ import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.hash.CRC;
 import jacz.util.hash.InvalidCRCException;
 import jacz.util.identifier.UniqueIdentifier;
-import jacz.util.io.object_serialization.MutableOffset;
-import jacz.util.io.object_serialization.Serializer;
-import jacz.util.log.ErrorLog;
+import jacz.util.io.serialization.MutableOffset;
+import jacz.util.io.serialization.Serializer;
 import jacz.util.notification.ProgressNotificationWithError;
 import jacz.util.numeric.NumericUtil;
 
@@ -70,6 +69,8 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
     private final DataAccessor dataAccessor;
 
+    private String dataAccessorDatabaseID;
+
 //    private final String dataAccessorName;
 
     private final PeerID serverPeerID;
@@ -125,28 +126,31 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
                 } catch (ClassNotFoundException e) {
                     // invalid class found, error
-                    ErrorLog.reportError(PeerClient.ERROR_LOG, e.toString(), serverPeerID, dataAccessor.getName(), fsmID);
+                    PeerClient.reportError(e.toString(), serverPeerID, dataAccessor.getName(), fsmID);
                     synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Received request object not recognized in state: " + currentState);
                     return State.ERROR;
                 }
 
             case WAITING_FOR_DATABASE_ID:
                 try {
-                    if (!(message instanceof String)) {
+                    if (!(message instanceof String) && message != null) {
                         // unrecognized class
                         throw new ClassNotFoundException("");
                     }
-                    String databaseID = (String) message;
-                    dataAccessor.setDatabaseID(databaseID);
-                    dataAccessor.beginSynchProcess(DataAccessor.Mode.CLIENT);
-                    if (progress != null) {
-                        progress.addNotification(0);
+                    String receivedDatabaseID = message != null ? (String) message : null;
+                    if ((dataAccessorDatabaseID == null && receivedDatabaseID != null) ||
+                            (dataAccessorDatabaseID != null && !dataAccessorDatabaseID.equals(receivedDatabaseID))) {
+                        dataAccessor.setDatabaseID(receivedDatabaseID);
                     }
+                    dataAccessor.beginSynchProcess(DataAccessor.Mode.CLIENT);
+//                    if (progress != null) {
+//                        progress.addNotification(0);
+//                    }
                     return State.SYNCHING;
 
                 } catch (ClassNotFoundException e) {
                     // invalid class found, error
-                    ErrorLog.reportError(PeerClient.ERROR_LOG, e.toString(), serverPeerID, dataAccessor.getName(), fsmID);
+                    PeerClient.reportError(e.toString(), serverPeerID, dataAccessor.getName(), fsmID);
                     synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Received request object not recognized in state: " + currentState);
                     return State.ERROR;
                 }
@@ -179,7 +183,7 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
                         dataAccessor.setElement(element);
                     }
                     if (progress != null) {
-                        progress.addNotification(NumericUtil.displaceInRange(elementPacket.elementsSent, 0, elementPacket.totalElementsToSend, 0, DataSynchronizer.PROGRESS_MAX));
+                        progress.addNotification(NumericUtil.displaceInRange(elementPacket.elementsSent, 0, elementPacket.totalElementsToSend, 0, DataSynchronizer.PROGRESS_MAX, NumericUtil.AmbiguityBehavior.MAX));
                     }
                     if (elementPacket.elementsSent < elementPacket.totalElementsToSend) {
                         // ask for more elements
@@ -190,11 +194,11 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
                     }
                 } catch (ClassNotFoundException e) {
                     // invalid class found, error
-                    ErrorLog.reportError(PeerClient.ERROR_LOG, e.toString(), serverPeerID, dataAccessor.getName(), fsmID);
+                    PeerClient.reportError(e.toString(), serverPeerID, dataAccessor.getName(), fsmID);
                     synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Received request object not recognized in state: " + currentState);
                     return State.ERROR;
                 } catch (DataAccessException e) {
-                    ErrorLog.reportError(PeerClient.ERROR_LOG, "Data access error in client synch FSM, setting element", serverPeerID, dataAccessor.getName(), fsmID, elementPacket);
+                    PeerClient.reportError("Data access error in client synch FSM, setting element", serverPeerID, dataAccessor.getName(), fsmID, elementPacket);
                     synchError = new SynchError(SynchError.Type.DATA_ACCESS_ERROR, "Error adding element to data accessor");
                     return State.ERROR;
                 } catch (InvalidCRCException e) {
@@ -214,10 +218,11 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
             if (progress != null) {
                 progress.beginTask();
             }
-            ccp.write(outgoingChannel, new SynchRequest(dataAccessor.getName(), dataAccessor.getDatabaseID(), dataAccessor.getLastTimestamp()));
+            dataAccessorDatabaseID = dataAccessor.getDatabaseID();
+            ccp.write(outgoingChannel, new SynchRequest(dataAccessor.getName(), dataAccessorDatabaseID, dataAccessor.getLastTimestamp()));
             return State.WAITING_FOR_REQUEST_ANSWER;
         } catch (DataAccessException e) {
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Data access error in client synch FSM, getting last timestamp", serverPeerID, dataAccessor.getName(), fsmID);
+            PeerClient.reportError("Data access error in client synch FSM, getting last timestamp", serverPeerID, dataAccessor.getName(), fsmID);
             synchError = new SynchError(SynchError.Type.DATA_ACCESS_ERROR, "Could not access last timestamp");
             return State.ERROR;
         }

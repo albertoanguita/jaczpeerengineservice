@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.util.io.object_serialization.MutableOffset;
-import jacz.util.io.object_serialization.Serializer;
+import jacz.util.io.serialization.MutableOffset;
+import jacz.util.io.serialization.Serializer;
 import jacz.util.numeric.range.LongRange;
 
 /**

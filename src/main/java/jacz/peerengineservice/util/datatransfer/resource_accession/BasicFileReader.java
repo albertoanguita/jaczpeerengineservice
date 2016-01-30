@@ -1,12 +1,10 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.concurrency.ThreadUtil;
 import jacz.util.files.FileUtil;
 import jacz.util.files.RandomAccess;
-import jacz.util.io.object_serialization.Serializer;
+import jacz.util.io.serialization.Serializer;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
 
 import java.io.File;
 import java.io.FileNotFoundException;

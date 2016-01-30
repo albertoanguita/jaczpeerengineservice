@@ -5,7 +5,6 @@ import jacz.commengine.channel.TimedChannelFSMAction;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.util.ChannelConstants;
-import jacz.util.log.ErrorLog;
 import jacz.util.network.IP4Port;
 
 import java.io.Serializable;
@@ -104,12 +103,12 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
 
                 default:
                     // log error
-                    ErrorLog.reportError(PeerClient.ERROR_LOG, "Incorrect data received from server peer when establishing connection", state, channel, message, ccp, connectionResult);
+                    PeerClient.reportError("Incorrect data received from server peer when establishing connection", state, channel, message, ccp, connectionResult);
                     return State.ERROR;
             }
         } else {
             // log error
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Incorrect data received from server peer when establishing connection", state, channel, message, ccp);
+            PeerClient.reportError("Incorrect data received from server peer when establishing connection", state, channel, message, ccp);
             return State.ERROR;
         }
     }

@@ -8,8 +8,8 @@ import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.datatransfer.ResourceTransferEvents;
 import jacz.peerengineservice.util.datatransfer.TransferStatistics;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
-import jacz.util.io.object_serialization.VersionedObjectSerializer;
-import jacz.util.io.object_serialization.VersionedSerializationException;
+import jacz.util.io.serialization.VersionedObjectSerializer;
+import jacz.util.io.serialization.VersionedSerializationException;
 
 import java.io.IOException;
 import java.util.Map;
@@ -81,7 +81,7 @@ public class Client {
         } catch (IOException | VersionedSerializationException e) {
             transferStatistics = new TransferStatistics();
         }
-        peerClient = new PeerClient(ownPeerID, peerEncryption, networkConfiguration, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, testListContainer);
+        peerClient = new PeerClient(ownPeerID, peerEncryption, networkConfiguration, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, testListContainer, null);
 
         tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
     }

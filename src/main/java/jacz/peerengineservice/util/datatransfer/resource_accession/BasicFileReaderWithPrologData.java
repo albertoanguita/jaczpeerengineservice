@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.io.object_serialization.Serializer;
+import jacz.util.io.serialization.Serializer;
 import jacz.util.numeric.range.LongRangeList;
 import jacz.util.numeric.range.RangeList;
 

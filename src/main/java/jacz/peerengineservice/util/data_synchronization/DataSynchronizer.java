@@ -5,7 +5,8 @@ import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.notification.ProgressNotificationWithError;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Data Synchronizer
@@ -16,7 +17,7 @@ public class DataSynchronizer {
 
     public static final int PROGRESS_MAX = 100;
 
-    static final Logger logger = Logger.getLogger(DataSynchronizer.class);
+    static final Logger logger = LoggerFactory.getLogger(DataSynchronizer.class);
 
     /**
      * The PeerClient for which this DataSynchronizer works
@@ -37,7 +38,7 @@ public class DataSynchronizer {
     public synchronized boolean synchronizeData(
             PeerID serverPeerID,
             DataAccessor dataAccessor,
-            long timeout) throws UnavailablePeerException, AccessorNotFoundException {
+            long timeout) throws UnavailablePeerException {
         return synchronizeData(serverPeerID, dataAccessor, timeout, null);
     }
 
@@ -45,7 +46,7 @@ public class DataSynchronizer {
             PeerID serverPeerID,
             DataAccessor dataAccessor,
             long timeout,
-            final ProgressNotificationWithError<Integer, SynchError> progress) throws UnavailablePeerException, AccessorNotFoundException {
+            final ProgressNotificationWithError<Integer, SynchError> progress) throws UnavailablePeerException {
 //        DataAccessor dataAccessor = dataAccessorContainer.getAccessorForReceiving(serverPeerID, dataAccessorName);
         // same for server FSM
         DataSynchClientFSM dataSynchClientFSM = new DataSynchClientFSM(dataAccessor, serverPeerID, progress);

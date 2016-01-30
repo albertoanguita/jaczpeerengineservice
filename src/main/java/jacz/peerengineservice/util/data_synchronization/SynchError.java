@@ -15,6 +15,7 @@ public class SynchError {
         SERVER_ERROR,
         TRANSMISSION_ERROR,
         DATA_ACCESS_ERROR,
+        DATA_NOT_SERIALIZABLE,
         UNDEFINED
     }
 

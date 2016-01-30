@@ -3,14 +3,15 @@ package jacz.peerengineservice.client.connection;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
 import jacz.util.network.IP4Port;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Bridge for connection events
  */
 public class ConnectionEventsBridge {
 
-    final static Logger logger = Logger.getLogger(ConnectionEvents.class);
+    final static Logger logger = LoggerFactory.getLogger(ConnectionEvents.class);
 
     private final ConnectionEvents connectionEvents;
 

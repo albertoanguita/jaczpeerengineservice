@@ -5,14 +5,15 @@ import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Bridge for general events
  */
 public class GeneralEventsBridge implements GeneralEvents {
 
-    final static Logger logger = Logger.getLogger(GeneralEvents.class);
+    final static Logger logger = LoggerFactory.getLogger(GeneralEvents.class);
 
     private final GeneralEvents generalEvents;
 

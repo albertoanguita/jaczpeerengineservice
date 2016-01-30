@@ -7,11 +7,11 @@ import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
 import jacz.util.hash.CRC;
 import jacz.util.identifier.UniqueIdentifier;
-import jacz.util.io.object_serialization.Serializer;
-import jacz.util.log.ErrorLog;
+import jacz.util.io.serialization.Serializer;
 import jacz.util.notification.ProgressNotificationWithError;
 import jacz.util.numeric.NumericUtil;
 
+import java.io.NotSerializableException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +55,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
         UNKNOWN_DATA_ACCESSOR,
         REQUEST_DENIED,
         SERVER_BUSY,
+        SERVER_ERROR,
         OK
     }
 
@@ -163,12 +164,15 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             ccp.write(outgoingChannel, SynchRequestAnswer.OK, false);
             progress = dataAccessor.getServerSynchProgress(clientPeerID);
             if (progress != null) {
-                progress.addNotification(0);
+                progress.beginTask();
             }
+//            if (progress != null) {
+//                progress.addNotification(0);
+//            }
             // send the server database ID
-            ccp.write(outgoingChannel, dataAccessor.getDatabaseID(), false);
-            String clientDatabaseID = request.databaseID;
             String serverDatabaseID = dataAccessor.getDatabaseID();
+            ccp.write(outgoingChannel, serverDatabaseID, false);
+            String clientDatabaseID = request.databaseID;
             long lastTimestamp = request.lastTimestamp != null ? request.lastTimestamp : -1;
             if ((clientDatabaseID == null && serverDatabaseID != null) ||
                     (clientDatabaseID != null && !clientDatabaseID.equals(serverDatabaseID))) {
@@ -184,12 +188,12 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             return sendElementPack(ccp);
         } catch (ClassNotFoundException e) {
             // invalid class found, error
-            ErrorLog.reportError(PeerClient.ERROR_LOG, e.toString(), clientPeerID, dataAccessorName, fsmID);
+            PeerClient.reportError(e.toString(), clientPeerID, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Invalid request format");
             ccp.write(outgoingChannel, SynchRequestAnswer.INVALID_REQUEST_FORMAT);
             return State.DENIED;
         } catch (AccessorNotFoundException e) {
-            ErrorLog.reportError(PeerClient.ERROR_LOG, e.toString(), clientPeerID, dataAccessorName, fsmID);
+            PeerClient.reportError(e.toString(), clientPeerID, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.UNKNOWN_ACCESSOR, "Accessor: " + dataAccessorName);
             ccp.write(outgoingChannel, SynchRequestAnswer.UNKNOWN_DATA_ACCESSOR);
             return State.DENIED;
@@ -198,9 +202,9 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             ccp.write(outgoingChannel, SynchRequestAnswer.SERVER_BUSY);
             return State.DENIED;
         } catch (DataAccessException e) {
-            ErrorLog.reportError(PeerClient.ERROR_LOG, "Data access error in server synch FSM", clientPeerID, dataAccessorName, fsmID);
+            PeerClient.reportError("Data access error in server synch FSM", clientPeerID, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.DATA_ACCESS_ERROR, null);
-            ccp.write(outgoingChannel, ElementPacket.generateError());
+            ccp.write(outgoingChannel, SynchRequestAnswer.SERVER_ERROR);
             return State.DENIED;
         }
     }
@@ -212,11 +216,23 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             packet.add(elementsToSend.get(index));
         }
         elementToSendIndex += packetSize;
-        byte[] bytePacket = Serializer.serializeObject(new ElementPacket(packet, elementToSendIndex, elementsToSend.size()));
+        byte[] bytePacket;
+        try {
+            bytePacket = Serializer.serializeObject(new ElementPacket(packet, elementToSendIndex, elementsToSend.size()));
+        } catch (NotSerializableException e) {
+            // elements are not serializable -> finish
+            synchError = new SynchError(SynchError.Type.DATA_NOT_SERIALIZABLE, null);
+            try {
+                ccp.write(outgoingChannel, Serializer.serializeObject(ElementPacket.generateError()), true);
+            } catch (NotSerializableException e1) {
+                // ignore, cannot happen
+            }
+            return State.ERROR;
+        }
         bytePacket = CRC.addCRC(bytePacket, CRCBytes, true);
         ccp.write(outgoingChannel, bytePacket);
         if (progress != null) {
-            progress.addNotification(NumericUtil.displaceInRange(elementToSendIndex, 0, elementsToSend.size(), 0, DataSynchronizer.PROGRESS_MAX));
+            progress.addNotification(NumericUtil.displaceInRange(elementToSendIndex, 0, elementsToSend.size(), 0, DataSynchronizer.PROGRESS_MAX, NumericUtil.AmbiguityBehavior.MAX));
         }
         if (elementToSendIndex < elementsToSend.size()) {
             // not finished yet
@@ -228,10 +244,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
 
     @Override
     public State init(ChannelConnectionPoint ccp) {
-        // initially we wait for the original request from the client peer
-        if (progress != null) {
-            progress.beginTask();
-        }
+        // initially, we wait for the original request from the client peer
         return State.WAITING_FOR_REQUEST;
     }
 

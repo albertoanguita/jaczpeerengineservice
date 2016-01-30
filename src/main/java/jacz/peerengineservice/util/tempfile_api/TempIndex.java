@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.tempfile_api;
 
 import jacz.util.files.RandomAccess;
-import jacz.util.io.object_serialization.*;
+import jacz.util.io.serialization.*;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.numeric.range.LongRangeList;
 

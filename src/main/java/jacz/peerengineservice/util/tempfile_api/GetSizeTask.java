@@ -1,8 +1,5 @@
 package jacz.peerengineservice.util.tempfile_api;
 
-import jacz.util.concurrency.task_executor.ParallelTask;
-import jacz.util.io.object_serialization.VersionedSerializationException;
-
 import java.io.IOException;
 
 /**

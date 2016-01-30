@@ -3,7 +3,7 @@ package jacz.peerengineservice.util.datatransfer.master;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.slave.ResourceChunk;
 import jacz.util.identifier.UniqueIdentifier;
-import jacz.util.io.object_serialization.ObjectListWrapper;
+import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.numeric.ContinuousDegree;
 import jacz.util.numeric.NumericUtil;
 import jacz.util.numeric.range.LongRange;
