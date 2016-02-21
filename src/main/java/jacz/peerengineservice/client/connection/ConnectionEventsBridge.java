@@ -45,25 +45,25 @@ public class ConnectionEventsBridge {
         return new State(networkTopologyState, connectionToServerState, localServerConnectionsState, localPort, externalPort);
     }
 
-    public synchronized State getState() {
+    public State getState() {
         return buildState();
     }
 
-    private void updateNetworkTopologyState(State.NetworkTopologyState networkTopologyState) {
+    private synchronized void updateNetworkTopologyState(State.NetworkTopologyState networkTopologyState) {
         this.networkTopologyState = networkTopologyState;
     }
 
-    private void updateConnectionToServerInfo(State.ConnectionToServerState connectionToServerStatus) {
+    private synchronized void updateConnectionToServerInfo(State.ConnectionToServerState connectionToServerStatus) {
         this.connectionToServerState = connectionToServerStatus;
     }
 
-    private void updateLocalServerInfo(State.LocalServerConnectionsState localServerConnectionsState, int localPort, int externalPort) {
+    private synchronized void updateLocalServerInfo(State.LocalServerConnectionsState localServerConnectionsState, int localPort, int externalPort) {
         this.localServerConnectionsState = localServerConnectionsState;
         this.localPort = localPort;
         this.externalPort = externalPort;
     }
 
-    public synchronized void listeningPortModified(final int port) {
+    public void listeningPortModified(final int port) {
         logger.info("LISTENING PORT MODIFIED. Port: " + port);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
@@ -73,7 +73,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void initializingConnection() {
+    public void initializingConnection() {
         logger.info("INITIALIZING CONNECTION");
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
@@ -83,7 +83,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void localAddressFetched(final String localAddress, final State.NetworkTopologyState networkTopologyState) {
+    public void localAddressFetched(final String localAddress, final State.NetworkTopologyState networkTopologyState) {
         updateNetworkTopologyState(networkTopologyState);
         logger.info("LOCAL ADDRESS FETCHED. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -94,7 +94,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void couldNotFetchLocalAddress(final State.NetworkTopologyState networkTopologyState) {
+    public void couldNotFetchLocalAddress(final State.NetworkTopologyState networkTopologyState) {
         updateNetworkTopologyState(networkTopologyState);
         logger.info("COULD NOT FETCH LOCAL ADDRESS. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -105,7 +105,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void tryingToFetchExternalAddress(final State.NetworkTopologyState networkTopologyState) {
+    public void tryingToFetchExternalAddress(final State.NetworkTopologyState networkTopologyState) {
         updateNetworkTopologyState(networkTopologyState);
         logger.info("TRYING TO FETCH EXTERNAL ADDRESS. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -117,7 +117,7 @@ public class ConnectionEventsBridge {
     }
 
 
-    public synchronized void externalAddressFetched(final String externalAddress, final boolean hasGateway, final State.NetworkTopologyState networkTopologyState) {
+    public void externalAddressFetched(final String externalAddress, final boolean hasGateway, final State.NetworkTopologyState networkTopologyState) {
         updateNetworkTopologyState(networkTopologyState);
         logger.info("EXTERNAL ADDRESS FETCHED. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -128,7 +128,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void couldNotFetchExternalAddress(final State.NetworkTopologyState networkTopologyState) {
+    public void couldNotFetchExternalAddress(final State.NetworkTopologyState networkTopologyState) {
         updateNetworkTopologyState(networkTopologyState);
         logger.info("COULD NOT FETCH EXTERNAL ADDRESS. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -139,7 +139,18 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void unrecognizedMessageFromServer(final State.ConnectionToServerState connectionToServerStatus) {
+    public void connectionParametersChanged(final State.ConnectionToServerState connectionToServerStatus) {
+        updateConnectionToServerInfo(connectionToServerStatus);
+        logger.info("COULD NOT FETCH EXTERNAL ADDRESS. State: " + buildState());
+        sequentialTaskExecutor.executeTask(new ParallelTask() {
+            @Override
+            public void performTask() {
+                connectionEvents.connectionParametersChanged(buildState());
+            }
+        });
+    }
+
+    public void unrecognizedMessageFromServer(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("UNRECOGNIZED MESSAGE FROM SERVER. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -150,7 +161,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void tryingToConnectToServer(final State.ConnectionToServerState connectionToServerStatus) {
+    public void tryingToConnectToServer(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("TRYING TO CONNECT TO SERVER. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -161,7 +172,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void connectionToServerEstablished(final State.ConnectionToServerState connectionToServerStatus) {
+    public void connectionToServerEstablished(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("CONNECTION TO SERVER ESTABLISHED. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -172,7 +183,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void registrationRequired(final State.ConnectionToServerState connectionToServerStatus) {
+    public void registrationRequired(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("REGISTRATION WITH SERVER REQUIRED. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -183,7 +194,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void localServerUnreachable(final State.ConnectionToServerState connectionToServerStatus) {
+    public void localServerUnreachable(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("LOCAL SERVER UNREACHABLE. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -194,7 +205,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void unableToConnectToServer(final State.ConnectionToServerState connectionToServerStatus) {
+    public void unableToConnectToServer(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("UNABLE TO CONNECT TO SERVER. Server: \" + peerServerData + \". State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -205,7 +216,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void disconnectedFromServer(final State.ConnectionToServerState connectionToServerStatus) {
+    public void disconnectedFromServer(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("DISCONNECTED FROM SERVER. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -216,7 +227,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void failedToRefreshServerConnection(final State.ConnectionToServerState connectionToServerStatus) {
+    public void failedToRefreshServerConnection(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("FAILED TO REFRESH SERVER CONNECTION. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -227,7 +238,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void tryingToRegisterWithServer(final State.ConnectionToServerState connectionToServerStatus) {
+    public void tryingToRegisterWithServer(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("TRYING TO REGISTER WITH SERVER. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -238,7 +249,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void registrationSuccessful(final State.ConnectionToServerState connectionToServerStatus) {
+    public void registrationSuccessful(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("REGISTRATION SUCCESSFUL. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -249,7 +260,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void alreadyRegistered(final State.ConnectionToServerState connectionToServerStatus) {
+    public void alreadyRegistered(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("ALREADY REGISTERED. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -260,7 +271,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void tryingToOpenLocalServer(final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void tryingToOpenLocalServer(final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, -1);
         logger.info("TRYING TO OPEN LOCAL SERVER. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -271,7 +282,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void localServerOpen(final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void localServerOpen(final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, -1);
         logger.info("LOCAL SERVER OPEN. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -282,7 +293,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void couldNotOpenLocalServer(final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void couldNotOpenLocalServer(final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, -1);
         logger.info("COULD NOT OPEN LOCAL SERVER. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -293,7 +304,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void tryingToCloseLocalServer(final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void tryingToCloseLocalServer(final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
         logger.info("TRYING TO CLOSE LOCAL SERVER. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -304,7 +315,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void localServerClosed(final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void localServerClosed(final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
         logger.info("LOCAL SERVER CLOSED. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -315,7 +326,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void tryingToCreateNATRule(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void tryingToCreateNATRule(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
         logger.info("TRYING TO CREATE NAT RULE. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -326,7 +337,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void NATRuleCreated(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void NATRuleCreated(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
         logger.info("NAT RULE CREATED. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -337,7 +348,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void couldNotFetchUPNPGateway(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void couldNotFetchUPNPGateway(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
         logger.info("COULD NOT FETCH UPNP GATEWAY. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -348,7 +359,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void errorCreatingNATRule(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void errorCreatingNATRule(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
         logger.info("ERROR CREATING NAT RULE. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -359,7 +370,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void tryingToDestroyNATRule(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void tryingToDestroyNATRule(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
         logger.info("TRYING TO DESTROY NAT RULE. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -370,7 +381,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void NATRuleDestroyed(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void NATRuleDestroyed(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
         logger.info("NAT RULE DESTROYED. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -381,7 +392,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void couldNotDestroyNATRule(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void couldNotDestroyNATRule(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
         logger.info("COULD NOT DESTROY NAT RULE. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {
@@ -392,7 +403,7 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public synchronized void listeningConnectionsWithoutNATRule(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
+    public void listeningConnectionsWithoutNATRule(final int externalPort, final int localPort, final State.LocalServerConnectionsState localServerConnectionsState) {
         updateLocalServerInfo(localServerConnectionsState, localPort, externalPort);
         logger.info("LISTENING CONNECTIONS WITHOUT NAT RULE. State: " + buildState());
         sequentialTaskExecutor.executeTask(new ParallelTask() {

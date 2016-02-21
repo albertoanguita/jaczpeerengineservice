@@ -55,6 +55,14 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
 
     private static final String RESOURCE_WRITER_PRIORITY_FIELD = "MASTER_RESOURCE_STREAMER@PRIORITY_NEED";
 
+    public static final String RESOURCE_WRITER_STORE_NAME_FIELD = "MASTER_RESOURCE_STREAMER@STORE_NAME";
+
+    public static final String RESOURCE_WRITER_RESOURCE_ID_FIELD = "MASTER_RESOURCE_STREAMER@RESOURCE_ID";
+
+    public static final String RESOURCE_WRITER_TOTAL_HASH_FIELD = "MASTER_RESOURCE_STREAMER@TOTAL_HASH";
+
+    public static final String RESOURCE_WRITER_HASH_ALGORITHM_FIELD = "MASTER_RESOURCE_STREAMER@HASH_ALGORITHM";
+
     private static final float DEFAULT_PRIORITY = 10f;
 
     /**
@@ -183,6 +191,12 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 // use the given streaming need and, additionally, store it in the resource writer
                 resourceWriter.setSystemField(RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
                 resourceWriter.setSystemField(RESOURCE_WRITER_PRIORITY_FIELD, priority);
+
+                // in addition, write some information that can be used by the user: store name, resource id and hash info
+                resourceWriter.setSystemField(RESOURCE_WRITER_STORE_NAME_FIELD, storeName);
+                resourceWriter.setSystemField(RESOURCE_WRITER_RESOURCE_ID_FIELD, resourceID);
+                resourceWriter.setSystemField(RESOURCE_WRITER_TOTAL_HASH_FIELD, totalHash);
+                resourceWriter.setSystemField(RESOURCE_WRITER_HASH_ALGORITHM_FIELD, totalHashAlgorithm);
             }
         } catch (IOException e) {
             error = true;

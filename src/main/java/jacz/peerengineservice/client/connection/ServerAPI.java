@@ -39,14 +39,16 @@ public class ServerAPI {
         private final String peerID;
 
         private final String localIPAddress;
+        private final String externalIPAddress;
 
         private final int localMainServerPort;
 
         private final int externalMainServerPort;
 
-        public ConnectionRequest(PeerID peerID, String localIPAddress, int localMainServerPort, int externalMainServerPort) {
+        public ConnectionRequest(PeerID peerID, String localIPAddress, String externalIPAddress, int localMainServerPort, int externalMainServerPort) {
             this.peerID = peerID.toString();
             this.localIPAddress = localIPAddress;
+            this.externalIPAddress = externalIPAddress;
             this.localMainServerPort = localMainServerPort;
             this.externalMainServerPort = externalMainServerPort;
         }
@@ -62,6 +64,8 @@ public class ServerAPI {
 
     public enum ConnectionResponseType {
         OK,
+        // todo: make server return this if the public ip does not match what we are sending to him. Include public ip in connection message
+        PUBLIC_IP_MISMATCH,
         UNREGISTERED_PEER,
         PEER_MAIN_SERVER_UNREACHABLE,
         PEER_REST_SERVER_UNREACHABLE,
@@ -133,6 +137,8 @@ public class ServerAPI {
     public enum RefreshResponse {
 
         OK,
+        // todo: make server return this if the public ip does not match what we are sending to him. Include public ip in connection message
+        PUBLIC_IP_MISMATCH,
         UNRECOGNIZED_SESSION,
         TOO_SOON
     }
@@ -317,6 +323,31 @@ public class ServerAPI {
                 HttpClient.ContentType.JSON,
                 HttpClient.ContentType.JSON,
                 new Gson().toJson(connectionRequest));
+
+        // todo I once got an error connecting: SHOULD BE SOLVED, IT WAS A SIMPLE NOT FOUND ERROR, PROBABLY A CONNECTION ISSUE
+//        ERROR THROWN
+//        ------------
+//        2016/02/17-01:33:19:708
+//
+//        Message: Bad request
+//        Data:
+//        Data 0: Not Found
+//
+//        -------------------------------------------------------
+//        Stack trace:
+//        java.lang.RuntimeException
+//        	at jacz.util.log.ErrorFactory.reportError(ErrorFactory.java:23)
+//        	at jacz.peerengineservice.client.PeerClient.reportError(PeerClient.java:179)
+//        	at jacz.peerengineservice.client.connection.ServerAPI.checkError(ServerAPI.java:387)
+//        	at jacz.peerengineservice.client.connection.ServerAPI.connect(ServerAPI.java:320)
+//        	at jacz.peerengineservice.client.connection.PeerServerManager.connectToPeerServer(PeerServerManager.java:314)
+//        	at jacz.peerengineservice.client.connection.PeerServerManager.solveState(PeerServerManager.java:250)
+//        	at jacz.util.concurrency.daemon.Daemon.executeAction(Daemon.java:123)
+//        	at jacz.util.concurrency.daemon.Daemon.access$000(Daemon.java:14)
+//        	at jacz.util.concurrency.daemon.Daemon$DaemonTask.performTask(Daemon.java:28)
+//        	at jacz.util.concurrency.task_executor.ParallelTaskExecutorThread.run(ParallelTaskExecutorThread.java:91)
+
+
         checkError(result);
         ConnectionResponseJSON connectionResponseJSON = new Gson().fromJson(result.element2, ConnectionResponseJSON.class);
         try {
@@ -383,9 +414,6 @@ public class ServerAPI {
     }
 
     private static void checkError(Duple<Integer, String> response) throws ServerAccessException {
-        if (response.element1 / 100 == 4) {
-            PeerClient.reportError("Bad request", response.element2);
-        }
         if (response.element1 / 100 == 4 || response.element1 / 100 == 5) {
             throw new ServerAccessException(response.element2, response.element1);
         }
@@ -400,7 +428,7 @@ public class ServerAPI {
 //        System.out.println(registrationResponse);
 
 
-        ConnectionResponse connectionResponse = connect(new ConnectionRequest(new PeerID("0000000000000000000000000000000000000000003"), "192.168.1.1", 50000, 50001));
+        ConnectionResponse connectionResponse = connect(new ConnectionRequest(new PeerID("0000000000000000000000000000000000000000003"), "192.168.1.1", "192.168.1.1", 50000, 50001));
         System.out.println(connectionResponse);
 
 //        RefreshResponse refreshResponse = refresh(new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIDvmYoJDA"));

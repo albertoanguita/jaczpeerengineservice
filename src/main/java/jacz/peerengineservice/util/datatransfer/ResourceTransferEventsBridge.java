@@ -102,34 +102,12 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
     }
 
     @Override
-    public void globalDownloadDenied(final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
-        logger.info("GLOBAL DOWNLOAD DENIED: " + "resourceStoreName: " + resourceStoreName + ". resourceID: " + resourceID + ". streamingNeed: " + streamingNeed + ". totalHash: " + totalHash + ". totalHashAlgorithm: " + totalHashAlgorithm);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                resourceTransferEvents.globalDownloadDenied(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
-            }
-        });
-    }
-
-    @Override
     public void peerDownloadInitiated(final PeerID serverPeerID, final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
         logger.info("PEER DOWNLOAD INITIATED: " + "serverPeerID: " + serverPeerID + ". resourceStoreName: " + resourceStoreName + ". resourceID: " + resourceID + ". streamingNeed: " + streamingNeed + ". totalHash: " + totalHash + ". totalHashAlgorithm: " + totalHashAlgorithm);
         sequentialTaskExecutor.executeTask(new ParallelTask() {
             @Override
             public void performTask() {
                 resourceTransferEvents.peerDownloadInitiated(serverPeerID, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
-            }
-        });
-    }
-
-    @Override
-    public void peerDownloadDenied(final PeerID serverPeerID, final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
-        logger.info("PEER DOWNLOAD DENIED: " + "serverPeerID: " + serverPeerID + ". resourceStoreName: " + resourceStoreName + ". resourceID: " + resourceID + ". streamingNeed: " + streamingNeed + ". totalHash: " + totalHash + ". totalHashAlgorithm: " + totalHashAlgorithm);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                resourceTransferEvents.peerDownloadDenied(serverPeerID, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
             }
         });
     }

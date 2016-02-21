@@ -40,7 +40,7 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
     }
 
     public static PeerID buildTestPeerID(String postID) {
-        while (postID.length() < KEY_LENGTH) {
+        while (!isPeerID(postID)) {
             postID = "0" + postID;
         }
         return new PeerID(postID);

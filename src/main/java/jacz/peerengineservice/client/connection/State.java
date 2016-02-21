@@ -13,6 +13,7 @@ public class State {
         NO_DATA,
         WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH,
         LOCAL_ADDRESS_FETCHED,
+        WAITING_FOR_NEXT_EXTERNAL_ADDRESS_FETCH,
         ALL_FETCHED
     }
 

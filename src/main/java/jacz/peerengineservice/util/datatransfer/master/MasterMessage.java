@@ -52,7 +52,7 @@ public class MasterMessage {
         } else if (order != null && order == Order.HARD_THROTTLE) {
             segment = null;
             speed = null;
-            throttle = Serializer.deserializeFloat(data, offset);
+            throttle = Serializer.deserializeFloatValue(data, offset);
         } else {
             segment = null;
             speed = null;

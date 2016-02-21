@@ -63,7 +63,7 @@ public class SlaveMessage {
 
                 case RESOURCE_SIZE_REPORT:
                     resourceChunk = null;
-                    resourceSize = Serializer.deserializeLong(data, offset);
+                    resourceSize = Serializer.deserializeLongValue(data, offset);
                     resourcePart = null;
                     break;
 
@@ -71,7 +71,7 @@ public class SlaveMessage {
                 case SEGMENT_ASSIGNATION_REPORT:
                     resourceChunk = null;
                     resourceSize = null;
-                    int length = Serializer.deserializeInt(data, offset);
+                    int length = Serializer.deserializeIntValue(data, offset);
                     resourcePart = new ResourcePart();
                     for (int i = 0; i < length; i++) {
                         long min = Serializer.deserializeLong(data, offset);

@@ -188,6 +188,10 @@ public class LocalServerManager implements DaemonAction {
         this.retryReminder = new RetryReminder(this);
     }
 
+    public int getDefaultExternalPort() {
+        return defaultExternalPort;
+    }
+
     /**
      * When the local server is open, it returns the port at which this server listens for new connections
      *
@@ -205,7 +209,7 @@ public class LocalServerManager implements DaemonAction {
         boolean mustUpdateState = this.wishForConnect != wishForConnect;
         this.wishForConnect = wishForConnect;
         if (mustUpdateState) {
-            updatedState();
+            updateState();
         }
     }
 
@@ -227,7 +231,7 @@ public class LocalServerManager implements DaemonAction {
         stateDaemon.blockUntilStateIsSolved();
     }
 
-    synchronized void updatedState() {
+    synchronized void updateState() {
         stateDaemon.stateChange();
         stateDaemon.interrupt();
     }
@@ -296,7 +300,7 @@ public class LocalServerManager implements DaemonAction {
         } else if (localServerConnectionsState == State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY) {
             localServerConnectionsState = State.LocalServerConnectionsState.OPEN;
         }
-        updatedState();
+        updateState();
     }
 
 

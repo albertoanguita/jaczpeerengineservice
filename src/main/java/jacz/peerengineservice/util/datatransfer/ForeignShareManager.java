@@ -126,11 +126,7 @@ class ForeignShareManager implements NotificationReceiver {
      * @return foreign store share associated to the given resource store name
      */
     synchronized ForeignStoreShare getResourceProviderShare(String store) {
-        if (storeShares.containsKey(store)) {
-            return storeShares.get(store).foreignStoreShare;
-        } else {
-            return null;
-        }
+        return storeShares.containsKey(store) ? storeShares.get(store).foreignStoreShare : null;
     }
 
     /**
@@ -161,7 +157,7 @@ class ForeignShareManager implements NotificationReceiver {
         synchronized (this) {
             alive = false;
         }
-        for (String store : storeShares.keySet()) {
+        for (String store : new ArrayList<>(storeShares.keySet())) {
             removeStore(store);
         }
     }

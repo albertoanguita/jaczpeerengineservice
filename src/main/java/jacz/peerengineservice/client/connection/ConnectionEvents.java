@@ -21,6 +21,8 @@ public interface ConnectionEvents {
 
     void couldNotFetchExternalAddress(State state);
 
+    void connectionParametersChanged(State state);
+
     void unrecognizedMessageFromServer(State state);
 
     void tryingToConnectToServer(State state);

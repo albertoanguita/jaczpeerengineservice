@@ -1,15 +1,12 @@
 package jacz.peerengineservice.client.connection;
 
 import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.client.PeerClient;
-import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.concurrency.timer.SimpleTimerAction;
 import jacz.util.concurrency.timer.Timer;
 
 import java.io.IOException;
-import java.util.Collection;
 
 /**
  * Manager class for handling connection to server
@@ -90,11 +87,13 @@ public class PeerServerManager implements DaemonAction {
 
     private static final class ActualConnectionData {
         String localAddress;
+        String externalAddress;
         int localPort;
         int externalPort;
 
         public ActualConnectionData() {
             localAddress = "";
+            externalAddress = "";
             localPort = -1;
             externalPort = -1;
         }
@@ -185,7 +184,7 @@ public class PeerServerManager implements DaemonAction {
         boolean mustUpdateState = this.wishForConnect != wishForConnect;
         this.wishForConnect = wishForConnect;
         if (mustUpdateState) {
-            updatedState();
+            updateState();
         }
     }
 
@@ -201,6 +200,7 @@ public class PeerServerManager implements DaemonAction {
     private boolean isCorrectConnectionInformation() {
 //        return connectionInformation.equals(wishedConnectionInformation);
         return actualConnectionData.localAddress.equals(networkTopologyManager.getLocalAddress()) &&
+                actualConnectionData.externalAddress.equals(networkTopologyManager.getExternalAddress()) &&
                 actualConnectionData.localPort == localServerManager.getActualListeningPort() &&
                 actualConnectionData.externalPort == localServerManager.getExternalListeningPort();
     }
@@ -210,20 +210,9 @@ public class PeerServerManager implements DaemonAction {
         retryConnectionReminder.stop();
         setWishForConnect(false);
         stateDaemon.blockUntilStateIsSolved();
-//        // actively wait until the server is closed
-//        boolean mustWait;
-//        synchronized (this) {
-//            mustWait = isInWishedState();
-//        }
-//        while (mustWait) {
-//            ThreadUtil.safeSleep(100L);
-//            synchronized (this) {
-//                mustWait = isInWishedState();
-//            }
-//        }
     }
 
-    synchronized void updatedState() {
+    synchronized void updateState() {
         stateDaemon.stateChange();
         stateDaemon.interrupt();
     }
@@ -271,7 +260,7 @@ public class PeerServerManager implements DaemonAction {
     private void finishWaitForConnectionRetry() {
         if (connectionToServerStatus == State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY) {
             connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
-            updatedState();
+            updateState();
         }
     }
 
@@ -307,6 +296,7 @@ public class PeerServerManager implements DaemonAction {
 
     private void connectToPeerServer() {
         actualConnectionData.localAddress = networkTopologyManager.getLocalAddress();
+        actualConnectionData.externalAddress = networkTopologyManager.getExternalAddress();
         actualConnectionData.localPort = localServerManager.getActualListeningPort();
         actualConnectionData.externalPort = localServerManager.getExternalListeningPort();
         connectionEvents.tryingToConnectToServer(State.ConnectionToServerState.CONNECTING);
@@ -316,6 +306,7 @@ public class PeerServerManager implements DaemonAction {
                             new ServerAPI.ConnectionRequest(
                                     ownPeerID,
                                     actualConnectionData.localAddress,
+                                    actualConnectionData.externalAddress,
                                     actualConnectionData.localPort,
                                     actualConnectionData.externalPort
                             )
@@ -327,6 +318,10 @@ public class PeerServerManager implements DaemonAction {
                     peerServerSessionID = connectionResponse.getSessionID();
                     serverConnectionMaintainer.connectionToServerEstablished(connectionResponse.getMinReminderTime(), connectionResponse.getMaxReminderTime());
                     connectionEvents.connectionToServerEstablished(connectionToServerStatus);
+                    break;
+                case PUBLIC_IP_MISMATCH:
+                    connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
+                    peerClientConnectionManager.publicIPMismatch(connectionToServerStatus);
                     break;
                 case UNREGISTERED_PEER:
                     connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
@@ -370,7 +365,7 @@ public class PeerServerManager implements DaemonAction {
         }
     }
 
-    synchronized boolean refreshConnection() {
+    private synchronized boolean refreshConnection() {
         if (connectionToServerStatus == State.ConnectionToServerState.CONNECTED) {
             try {
                 ServerAPI.RefreshResponse refreshResponse =
@@ -379,11 +374,18 @@ public class PeerServerManager implements DaemonAction {
 
                     case OK:
                         return true;
+
+                    case PUBLIC_IP_MISMATCH:
+                        connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
+                        peerClientConnectionManager.publicIPMismatch(connectionToServerStatus);
+                        return false;
+
                     case UNRECOGNIZED_SESSION:
                     case TOO_SOON:
                         // refresh did not succeed, we are now disconnected
                         refreshFailed();
                         return false;
+
                     default:
                         unrecognizedServerMessage();
                         return false;
@@ -408,6 +410,6 @@ public class PeerServerManager implements DaemonAction {
     private void refreshFailed() {
         connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
         connectionEvents.failedToRefreshServerConnection(connectionToServerStatus);
-        updatedState();
+        updateState();
     }
 }

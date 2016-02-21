@@ -17,7 +17,7 @@ import java.util.Map;
 public abstract class TransfersManager<T> implements SimpleTimerAction {
 
     /**
-     * Active uploads, indexed by store name and slave resource streamer id
+     * Active uploads, indexed by store name and resource streamer id (slave id or master id)
      */
     private Map<String, Map<UniqueIdentifier, T>> activeTransfers;
 
@@ -27,7 +27,7 @@ public abstract class TransfersManager<T> implements SimpleTimerAction {
     private final Timer timer;
 
     public TransfersManager(String threadName) {
-        activeTransfers = new HashMap<String, Map<UniqueIdentifier, T>>();
+        activeTransfers = new HashMap<>();
         timer = new Timer(1, this, false, threadName);
     }
 
@@ -51,16 +51,7 @@ public abstract class TransfersManager<T> implements SimpleTimerAction {
      * @param id    id of the download to remove
      */
     synchronized T removeTransfer(String store, UniqueIdentifier id) {
-//        try {
-            return activeTransfers.get(store).remove(id);
-//        } catch (NullPointerException e) {
-//            System.out.println("NULL REMOVE TRANSFER");
-//            for (Map.Entry<String, Map<UniqueIdentifier, T>> entry : activeTransfers.entrySet()) {
-//                System.out.println(entry.getKey());
-//                System.out.println(entry.getValue());
-//            }
-//            throw e;
-//        }
+        return activeTransfers.get(store).remove(id);
     }
 
     /**
@@ -70,7 +61,7 @@ public abstract class TransfersManager<T> implements SimpleTimerAction {
      */
     protected synchronized List<T> getTransfers(String store) {
         if (activeTransfers.containsKey(store)) {
-            return new ArrayList<T>(activeTransfers.get(store).values());
+            return new ArrayList<>(activeTransfers.get(store).values());
         } else {
             return new ArrayList<>();
         }
@@ -82,7 +73,7 @@ public abstract class TransfersManager<T> implements SimpleTimerAction {
      * @return a shallow copy of the active downloads
      */
     protected synchronized List<T> getAllTransfers() {
-        ArrayList<T> result = new ArrayList<T>();
+        ArrayList<T> result = new ArrayList<>();
         for (String store : activeTransfers.keySet()) {
             result.addAll(getTransfers(store));
         }

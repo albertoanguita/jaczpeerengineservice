@@ -7,6 +7,7 @@ import jacz.peerengineservice.client.PeersPersonalData;
 import jacz.peerengineservice.client.connection.NetworkConfiguration;
 import jacz.peerengineservice.test.*;
 import jacz.peerengineservice.util.ForeignStoreShare;
+import jacz.peerengineservice.util.datatransfer.master.MasterResourceStreamer;
 import jacz.peerengineservice.util.datatransfer.resource_accession.TempFileWriter;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 import jacz.util.concurrency.ThreadUtil;
@@ -57,7 +58,12 @@ public class TestTransfer_1_Temp_Recover {
             System.out.println(tempFile);
             System.out.println("to download recovered file...");
             System.out.println(tempFileWriter.getUserDictionary());
-            client.getPeerClient().downloadResource("files", "file_1", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, (String) tempFileWriter.getUserDictionary().get("hash"), "MD5");
+            String storeName = (String) tempFileWriter.getSystemDictionary().get(MasterResourceStreamer.RESOURCE_WRITER_STORE_NAME_FIELD);
+            String resourceId = (String) tempFileWriter.getSystemDictionary().get(MasterResourceStreamer.RESOURCE_WRITER_RESOURCE_ID_FIELD);
+            String totalHash = (String) tempFileWriter.getSystemDictionary().get(MasterResourceStreamer.RESOURCE_WRITER_TOTAL_HASH_FIELD);
+            String hashAlgorithm = (String) tempFileWriter.getSystemDictionary().get(MasterResourceStreamer.RESOURCE_WRITER_HASH_ALGORITHM_FIELD);
+//            client.getPeerClient().downloadResource("files", "file_1", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, (String) tempFileWriter.getUserDictionary().get("hash"), "MD5");
+            client.getPeerClient().downloadResource(storeName, resourceId, tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, totalHash, hashAlgorithm);
         }
 
 

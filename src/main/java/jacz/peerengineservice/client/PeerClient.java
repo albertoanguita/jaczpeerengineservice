@@ -51,6 +51,11 @@ public class PeerClient {
     private final PeerID ownPeerID;
 
     /**
+     * Peer encryption object that defines the authentication information for this peer. Not currently used.
+     */
+    private final PeerEncryption peerEncryption;
+
+    /**
      * Actions invoked by the PeerClient upon some events (connection of a new peer, new chat message, etc)
      */
     private final GeneralEventsBridge generalEvents;
@@ -116,6 +121,7 @@ public class PeerClient {
             DataAccessorContainer dataAccessorContainer,
             ErrorHandler errorHandler) {
         this.ownPeerID = ownPeerID;
+        this.peerEncryption = peerEncryption;
         this.generalEvents = new GeneralEventsBridge(generalEvents);
         this.peersPersonalData = peersPersonalData;
         this.peerRelations = peerRelations;
@@ -193,6 +199,18 @@ public class PeerClient {
         return ownPeerID;
     }
 
+    public PeerEncryption getPeerEncryption() {
+        return peerEncryption;
+    }
+
+    public synchronized NetworkConfiguration getNetworkConfiguration() {
+        return peerClientConnectionManager.buildNetworkConfiguration();
+    }
+
+    public synchronized PeersPersonalData getPeersPersonalData() {
+        return peersPersonalData;
+    }
+
     public synchronized int getListeningPort() {
         return peerClientConnectionManager.getListeningPort();
     }
@@ -203,6 +221,10 @@ public class PeerClient {
 
     public synchronized State getConnectionState() {
         return peerClientConnectionManager.getConnectionState();
+    }
+
+    public synchronized PeerRelations getPeerRelations() {
+        return peerRelations;
     }
 
     public synchronized boolean isFriendPeer(PeerID peerID) {

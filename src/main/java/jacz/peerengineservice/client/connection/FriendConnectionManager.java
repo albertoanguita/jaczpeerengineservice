@@ -14,10 +14,7 @@ import jacz.util.concurrency.timer.Timer;
 import jacz.util.network.IP4Port;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Class in charge of managing the connections to friend peers
@@ -117,7 +114,7 @@ public class FriendConnectionManager {
         this.peerClientConnectionManager = peerClientConnectionManager;
         this.peerRelations = peerRelations;
         this.connectedPeers = connectedPeers;
-        ongoingClientConnections = new HashSet<>();
+        ongoingClientConnections = Collections.synchronizedSet(new HashSet<PeerID>());
         wishForFriendSearch = false;
         friendSearchReminder = new FriendSearchReminder(this);
     }
@@ -132,30 +129,37 @@ public class FriendConnectionManager {
         }
     }
 
+    private synchronized boolean isWishForFriendSearch() {
+        return wishForFriendSearch;
+    }
+
     void stop() {
         setWishForFriendSearch(false);
         disconnectAllPeers();
         // actively wait until there are zero peers connected
-        boolean mustWait;
-        synchronized (this) {
-            mustWait = connectedPeers.connectedPeersCount() > 0;
-        }
-        while (mustWait) {
+        while (connectedPeers.connectedPeersCount() > 0) {
             ThreadUtil.safeSleep(100L);
-            synchronized (this) {
-                mustWait = connectedPeers.connectedPeersCount() > 0;
-            }
         }
+//        boolean mustWait;
+//        synchronized (this) {
+//            mustWait = connectedPeers.connectedPeersCount() > 0;
+//        }
+//        while (mustWait) {
+//            ThreadUtil.safeSleep(100L);
+//            synchronized (this) {
+//                mustWait = connectedPeers.connectedPeersCount() > 0;
+//            }
+//        }
     }
 
     /**
      * Performs a connected friend search. Searches are performed periodically, but the user can force a search using this method. If we are not
      * connected to the server, this method will have no effect
      */
-    synchronized void searchFriends() {
+    void searchFriends() {
         // check if there are friends to which we are not connected yet
         // we can assume that we are connected to the server
-        if (wishForFriendSearch) {
+        if (isWishForFriendSearch()) {
             // we must perform a friend search
             Set<PeerID> friendPeers = peerRelations.getFriendPeers();
             List<PeerID> disconnectedFriends = buildDisconnectedFriendsSet(friendPeers, connectedPeers, ongoingClientConnections);
@@ -187,13 +191,14 @@ public class FriendConnectionManager {
         // the disconnected friends are the total friend set, minus the connected friends, minus the friends with ongoing connections
         List<PeerID> disconnectedFriends = new ArrayList<>(friendPeerIDs);
         disconnectedFriends.removeAll(connectedPeers.getConnectedPeers());
-        for (PeerID ongoingConnection : ongoingConnections) {
-            disconnectedFriends.remove(ongoingConnection);
-        }
+        disconnectedFriends.removeAll(ongoingConnections);
+//        for (PeerID ongoingConnection : ongoingConnections) {
+//            disconnectedFriends.remove(ongoingConnection);
+//        }
         return disconnectedFriends;
     }
 
-    synchronized void disconnectAllPeers() {
+    void disconnectAllPeers() {
         connectedPeers.disconnectAllPeers();
     }
 
@@ -208,7 +213,7 @@ public class FriendConnectionManager {
      *
      * @param infoResponse the list of found friends in the peer server
      */
-    synchronized void reportConnectedFriendsData(ServerAPI.InfoResponse infoResponse) {
+    void reportConnectedFriendsData(ServerAPI.InfoResponse infoResponse) {
         for (ServerAPI.PeerIDInfo peerIDInfo : infoResponse.getPeerIDInfoList()) {
             tryToConnectToAPeer(peerIDInfo);
         }
@@ -225,21 +230,13 @@ public class FriendConnectionManager {
         }
 
         IP4Port ip4Port = new IP4Port(peerIDInfo.getExternalIPAddress(), peerIDInfo.getExternalMainServerPort());
-//        ClientModule friendClientModule = new ClientModule(ip4Port, new PeerClientConnectionToClientChannelActionImpl(this), PeerClientConnectionManager.generateConcurrentChannelSets());
         try {
             // first try public connection
-//            ChannelConnectionPoint ccp = friendClientModule.connect();
-//            contactWithPeerAchieved(ccp, true, peerIDInfo.getPeerID(), new IP4Port(peerIDInfo.getLocalIPAddress(), peerIDInfo.getLocalMainServerPort()));
-//            friendClientModule.start();
             tryConnection(ip4Port, peerIDInfo.getPeerID(), new IP4Port(peerIDInfo.getLocalIPAddress(), peerIDInfo.getLocalMainServerPort()));
         } catch (IOException e) {
             // if this didn't work, try local connection (if exists)
             IP4Port localIP4Port = new IP4Port(peerIDInfo.getLocalIPAddress(), peerIDInfo.getLocalMainServerPort());
-//            friendClientModule = new ClientModule(localIP4Port, new PeerClientConnectionToClientChannelActionImpl(this), PeerClientConnectionManager.generateConcurrentChannelSets());
             try {
-//                ChannelConnectionPoint ccp = friendClientModule.connect();
-//                contactWithPeerAchieved(ccp, true, peerIDInfo.getPeerID(), null);
-//                friendClientModule.start();
                 tryConnection(localIP4Port, peerIDInfo.getPeerID(), null);
             } catch (IOException e2) {
                 // peer not available or wrong peer data received, repeat soon
@@ -256,7 +253,7 @@ public class FriendConnectionManager {
         friendClientModule.start();
     }
 
-    synchronized void reportClientConnectedToOurPeerServer(ChannelConnectionPoint ccp) {
+    void reportClientConnectedToOurPeerServer(ChannelConnectionPoint ccp) {
         contactWithPeerAchieved(ccp, false, null, null);
     }
 
@@ -274,11 +271,11 @@ public class FriendConnectionManager {
         }
     }
 
-    synchronized ConnectionEstablishmentServerFSM.ConnectionResult newRequestConnectionAsServer(PeerID remotePeerID, ChannelConnectionPoint ccp) {
+    ConnectionEstablishmentServerFSM.ConnectionResult newRequestConnectionAsServer(PeerID remotePeerID, ChannelConnectionPoint ccp) {
         // the server invokes this one. This PeerClient didn't know about this connection, so it must be confirmed
         // if we have higher priority in the connection process, check that we are not already trying to connect to
         // this same peer as clients
-        if (!wishForFriendSearch) {
+        if (!isWishForFriendSearch()) {
             // check we are disconnected
             return null;
         } else if (connectedPeers.isConnectedPeer(remotePeerID)) {
@@ -312,11 +309,11 @@ public class FriendConnectionManager {
      * @param validated true if the server peer validated this connection (he acknowledge our friendship),
      *                  false if the server has not acknowledge friendship but accepts the connection
      */
-    synchronized void connectionAsClientCompleted(PeerID peerID, ChannelConnectionPoint ccp, boolean validated) {
+    void connectionAsClientCompleted(PeerID peerID, ChannelConnectionPoint ccp, boolean validated) {
         // the client invokes this one. This PeerClient itself asked for it, so no confirmation is returned
         // if something is wrong, the PeerClient must deal with it itself, since connection is already established
         ongoingClientConnections.remove(peerID);
-        if (!wishForFriendSearch) {
+        if (!isWishForFriendSearch()) {
             ccp.disconnect();
         } else if (connectedPeers.isConnectedPeer(peerID)) {
             // check already connected
@@ -336,16 +333,12 @@ public class FriendConnectionManager {
      *
      * @param peerID the ID of the friend whose ongoing connection process has finished
      */
-    synchronized void connectionAsClientFailed(PeerID peerID, IP4Port secondaryIP4Port, PeerID serverPeerID) {
+    void connectionAsClientFailed(PeerID peerID, IP4Port secondaryIP4Port, PeerID serverPeerID) {
         // if the connection was not successful, disconnect from the other peer (only for client role)
         ongoingClientConnections.remove(peerID);
         // if there is a secondary address available, try it
         if (secondaryIP4Port != null) {
-//            ClientModule friendClientModule = new ClientModule(secondaryIP4Port, new PeerClientConnectionToClientChannelActionImpl(this), PeerClientConnectionManager.generateConcurrentChannelSets());
             try {
-//                ChannelConnectionPoint ccp = friendClientModule.connect();
-//                contactWithPeerAchieved(ccp, true, serverPeerID, null);
-//                friendClientModule.start();
                 tryConnection(secondaryIP4Port, serverPeerID, null);
             } catch (IOException e) {
                 // peer not available or wrong peer data received, repeat soon
@@ -363,7 +356,7 @@ public class FriendConnectionManager {
      * @param ccp    ChannelConnectionPoint object of the peer to which we connected
      * @param status the connection status to give to this new peer connection
      */
-    private synchronized void newConnection(PeerID peerID, ChannelConnectionPoint ccp, ConnectionStatus status) {
+    private void newConnection(PeerID peerID, ChannelConnectionPoint ccp, ConnectionStatus status) {
         // the request dispatcher for this connections is registered, the connection manager is notified, and the
         // peer is marked in the list of connected peers
         // also our client is informed of this new connection
@@ -402,7 +395,7 @@ public class FriendConnectionManager {
         }
     }
 
-    public synchronized static byte[] getConcurrentChannelsExceptConnection() {
+    public static byte[] getConcurrentChannelsExceptConnection() {
         byte[] concurrentChannels = new byte[2];
         concurrentChannels[0] = ChannelConstants.REQUEST_DISPATCHER_CHANNEL;
         concurrentChannels[1] = ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL;
@@ -419,19 +412,19 @@ public class FriendConnectionManager {
      * @param ccp     the ChannelConnectionPoint that has freed some channels
      * @param channel the freed channel
      */
-    synchronized void channelFreed(ChannelConnectionPoint ccp, byte channel) {
+    void channelFreed(ChannelConnectionPoint ccp, byte channel) {
         // the PeerClient must be informed of the freed channels, through the PeerClientPrivateInterface
         connectedPeers.channelFreed(ccp, channel);
     }
 
-    synchronized void peerDisconnected(ChannelConnectionPoint ccp) {
+    void peerDisconnected(ChannelConnectionPoint ccp) {
         PeerID peerID = connectedPeers.peerDisconnected(ccp);
         if (peerID != null) {
             peerClientPrivateInterface.peerDisconnected(peerID);
         }
     }
 
-    synchronized void peerError(ChannelConnectionPoint ccp, CommError error) {
+    void peerError(ChannelConnectionPoint ccp, CommError error) {
         PeerID peerID = connectedPeers.peerDisconnected(ccp);
         if (peerID != null) {
             peerClientPrivateInterface.peerError(peerID, error);

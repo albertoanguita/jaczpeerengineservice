@@ -3,6 +3,7 @@ package jacz.peerengineservice.util.datatransfer;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.util.identifier.UniqueIdentifier;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -62,6 +63,25 @@ public class DownloadsManager extends TransfersManager<DownloadManager> {
      */
     public synchronized List<DownloadManager> getAllDownloads() {
         return getAllTransfers();
+    }
+
+    public synchronized List<DownloadManager> getDownloadsForResource(String resourceId) {
+        List<DownloadManager> downloadManagers = new ArrayList<>();
+        for (DownloadManager downloadManager : getAllDownloads()) {
+            if (downloadManager.getResourceID().equals(resourceId)) {
+                downloadManagers.add(downloadManager);
+            }
+        }
+        return downloadManagers;
+    }
+
+    public synchronized DownloadManager getFirstDownloadForResource(String resourceId) {
+        for (DownloadManager downloadManager : getAllDownloads()) {
+            if (downloadManager.getResourceID().equals(resourceId)) {
+                return downloadManager;
+            }
+        }
+        return null;
     }
 
     @Override

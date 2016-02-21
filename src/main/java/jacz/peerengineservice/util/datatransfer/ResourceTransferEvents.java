@@ -22,11 +22,7 @@ public interface ResourceTransferEvents {
 
     void globalDownloadInitiated(String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm);
 
-    void globalDownloadDenied(String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm);
-
     void peerDownloadInitiated(PeerID serverPeerID, String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm);
-
-    void peerDownloadDenied(PeerID serverPeerID, String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm);
 
     void setMaxDesiredDownloadSpeed(Float totalMaxDesiredSpeed);
 

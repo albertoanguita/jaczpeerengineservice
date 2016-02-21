@@ -804,7 +804,6 @@ public class ResourceStreamingManager {
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
             return masterResourceStreamer.getDownloadManager();
         } else {
-            resourceTransferEventsBridge.globalDownloadDenied(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
             throw new NotAliveException();
         }
     }
@@ -854,7 +853,6 @@ public class ResourceStreamingManager {
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
             return masterResourceStreamer.getDownloadManager();
         } else {
-            resourceTransferEventsBridge.peerDownloadDenied(serverPeerID, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
             throw new NotAliveException();
         }
     }

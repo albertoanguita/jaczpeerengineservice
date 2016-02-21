@@ -43,17 +43,7 @@ public class ResourceTransferEventsImpl implements ResourceTransferEvents {
     }
 
     @Override
-    public void globalDownloadDenied(String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm) {
-
-    }
-
-    @Override
     public void peerDownloadInitiated(PeerID serverPeerID, String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm) {
-
-    }
-
-    @Override
-    public void peerDownloadDenied(PeerID serverPeerID, String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm) {
 
     }
 

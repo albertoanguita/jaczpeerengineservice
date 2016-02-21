@@ -5,8 +5,6 @@ import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.client.connection.RequestFromPeerToPeer;
 import jacz.peerengineservice.util.ConnectionStatus;
-import jacz.peerengineservice.util.datatransfer.DownloadsManager;
-import jacz.peerengineservice.util.datatransfer.UploadsManager;
 
 /**
  * This class handles the messages that the PeerClientConnectionManager send to its corresponding PeerClient. It is

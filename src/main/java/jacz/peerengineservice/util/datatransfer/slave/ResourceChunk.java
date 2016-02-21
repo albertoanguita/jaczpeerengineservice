@@ -20,7 +20,7 @@ public class ResourceChunk {
     }
 
     public ResourceChunk(byte[] serializedChunk, MutableOffset mutableOffset) {
-        firstByte = Serializer.deserializeLong(serializedChunk, mutableOffset);
+        firstByte = Serializer.deserializeLongValue(serializedChunk, mutableOffset);
         data = Serializer.deserializeRest(serializedChunk, mutableOffset);
     }
 

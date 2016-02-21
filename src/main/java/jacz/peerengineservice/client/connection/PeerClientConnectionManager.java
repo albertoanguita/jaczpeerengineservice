@@ -38,6 +38,12 @@ public class PeerClientConnectionManager implements DaemonAction {
         NEGATIVE
     }
 
+//    public enum WishState {
+//        NO,
+//        YES,
+//        NO_BUT_WAITING
+//    }
+
     /**
      * Actions to invoke upon certain events
      */
@@ -111,6 +117,10 @@ public class PeerClientConnectionManager implements DaemonAction {
         return connectionEvents.getState();
     }
 
+    public NetworkConfiguration buildNetworkConfiguration() {
+        return new NetworkConfiguration(getListeningPort(), localServerManager.getDefaultExternalPort());
+    }
+
     /**
      * This method sets the necessity of connecting to the stored peer server, or disconnecting from it. After this invocation, the peer client
      * connection manager will do its best to connect to the specified server. The method returns immediately, the connection procedure is performed
@@ -124,7 +134,7 @@ public class PeerClientConnectionManager implements DaemonAction {
         } else {
             clientsWishForConnection = ClientsWishForConnection.NEGATIVE;
         }
-        updatedState();
+        updateState();
     }
 
     /**
@@ -151,15 +161,21 @@ public class PeerClientConnectionManager implements DaemonAction {
         if (wishedConnectionInformation.setListeningPort(port)) {
             connectionEvents.listeningPortModified(port);
         }
-        peerServerManager.updatedState();
-        localServerManager.updatedState();
-        updatedState();
+        peerServerManager.updateState();
+        localServerManager.updateState();
+        updateState();
     }
 
-    synchronized void networkNotAvailable() {
+    void networkProblem() {
         // the local address is not available due to some problem in the local network
         // the user has been notified. Disconnect services until we have connection.
-        updatedState();
+        updateState();
+    }
+
+    void publicIPMismatch(State.ConnectionToServerState connectionToServerStatus) {
+        connectionEvents.connectionParametersChanged(connectionToServerStatus);
+        networkTopologyManager.publicIPMismatch();
+        updateState();
     }
 
     private void disconnectServices() {
@@ -167,9 +183,10 @@ public class PeerClientConnectionManager implements DaemonAction {
         peerServerManager.setWishForConnect(false);
         friendConnectionManager.disconnectAllPeers();
         localServerManager.setWishForConnect(false);
+        networkTopologyManager.setWishForConnect(false);
     }
 
-    private void updatedState() {
+    private void updateState() {
         stateDaemon.stateChange();
         stateDaemon.interrupt();
     }
@@ -191,30 +208,49 @@ public class PeerClientConnectionManager implements DaemonAction {
     @Override
     public synchronized boolean solveState() {
         // in any case, solve the network topology first
-        if (!networkTopologyManager.isInWishedState()) {
-            disconnectServices();
-            longDelay();
-            return false;
-        }
+//        if (!networkTopologyManager.isInWishedState()) {
+//        switch (networkTopologyManager.isInWishedState()) {
+//            case NO:
+//                disconnectServices();
+//                longDelay();
+//                return false;
+//
+//            case NO_BUT_WAITING:
+//                return true;
+//        }
 
         if (clientsWishForConnection == ClientsWishForConnection.POSITIVE) {
-            // first open the server for listening to incoming peer connections, then connect to the peer server
+            // first, connect the network topology manager
+            networkTopologyManager.setWishForConnect(true);
+            if (!networkTopologyManager.isInWishedState()) {
+                    // disconnect next services and wait
+                    localServerManager.setWishForConnect(false);
+                    peerServerManager.setWishForConnect(false);
+                    friendConnectionManager.setWishForFriendSearch(false);
+                    longDelay();
+                    return false;
+            }
+
+            // second, open the server for listening to incoming peer connections, then connect to the peer server
             localServerManager.setWishForConnect(true);
             if (!localServerManager.isInWishedState()) {
-                localServerManager.updatedState();
+//                localServerManager.updateState();
+                peerServerManager.setWishForConnect(false);
+                friendConnectionManager.setWishForFriendSearch(false);
                 shortDelay();
                 return false;
             }
 
-            // second, connect to the peer server
+            // third, connect to the peer server
             peerServerManager.setWishForConnect(true);
             if (!peerServerManager.isInWishedState()) {
-                peerServerManager.updatedState();
+//                peerServerManager.updateState();
+                friendConnectionManager.setWishForFriendSearch(false);
                 longDelay();
                 return false;
             }
 
-            // third, activate the friend search
+            // fourth, activate the friend search
             friendConnectionManager.setWishForFriendSearch(true);
 
         } else {
@@ -222,12 +258,17 @@ public class PeerClientConnectionManager implements DaemonAction {
             disconnectServices();
 
             if (!peerServerManager.isInWishedState()) {
-                peerServerManager.updatedState();
+                peerServerManager.updateState();
                 longDelay();
                 return false;
             }
 
             if (!localServerManager.isInWishedState()) {
+                shortDelay();
+                return false;
+            }
+
+            if (!networkTopologyManager.isInWishedState()) {
                 shortDelay();
                 return false;
             }
@@ -254,7 +295,7 @@ public class PeerClientConnectionManager implements DaemonAction {
     void unrecognizedServerMessage() {
         connectionEvents.unrecognizedMessageFromServer(peerServerManager.getConnectionToServerStatus());
         setWishForConnection(false);
-        updatedState();
+        updateState();
     }
 
     static Set<Set<Byte>> generateConcurrentChannelSets() {
