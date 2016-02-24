@@ -66,6 +66,11 @@ public class FriendConnectionManager {
      */
     private final PeerID ownPeerID;
 
+    /**
+     * URL (including version) of the server
+     */
+    private final String serverURL;
+
     private final PeerClientPrivateInterface peerClientPrivateInterface;
 
     private final PeerClientConnectionManager peerClientConnectionManager;
@@ -105,11 +110,13 @@ public class FriendConnectionManager {
 
     FriendConnectionManager(
             PeerID ownPeerID,
+            String serverURL,
             ConnectedPeers connectedPeers,
             PeerClientPrivateInterface peerClientPrivateInterface,
             PeerClientConnectionManager peerClientConnectionManager,
             PeerRelations peerRelations) {
         this.ownPeerID = ownPeerID;
+        this.serverURL = serverURL;
         this.peerClientPrivateInterface = peerClientPrivateInterface;
         this.peerClientConnectionManager = peerClientConnectionManager;
         this.peerRelations = peerRelations;
@@ -168,7 +175,7 @@ public class FriendConnectionManager {
                 // this code simply sets up the FSM in charge of asking the peer server for connected friends. Only friends to which we are not
                 // still connected are searched
                 try {
-                    ServerAPI.InfoResponse infoResponse = ServerAPI.info(new ServerAPI.InfoRequest(disconnectedFriends));
+                    ServerAPI.InfoResponse infoResponse = ServerAPI.info(serverURL, new ServerAPI.InfoRequest(disconnectedFriends));
                     reportConnectedFriendsData(infoResponse);
                 } catch (IOException | ServerAccessException e) {
                     // could not connect with server -> ignore and repeat search soon

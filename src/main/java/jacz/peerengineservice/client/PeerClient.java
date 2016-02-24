@@ -65,8 +65,6 @@ public class PeerClient {
      */
     private final PeersPersonalData peersPersonalData;
 
-    private final PeerClientPrivateInterface peerClientPrivateInterface;
-
     /**
      * The PeerClientConnectionManager employed by this PeerClient. It will handle the search and connection with friend peers
      */
@@ -109,6 +107,7 @@ public class PeerClient {
      */
     public PeerClient(
             PeerID ownPeerID,
+            String serverURL,
             PeerEncryption peerEncryption,
             NetworkConfiguration networkConfiguration,
             GeneralEvents generalEvents,
@@ -130,12 +129,13 @@ public class PeerClient {
         connectedPeers = new ConnectedPeers(ChannelConstants.REQUEST_DISPATCHER_CHANNEL, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL);
         connectedPeersMessenger = new ConnectedPeersMessenger(connectedPeers, ChannelConstants.REQUEST_DISPATCHER_CHANNEL);
 
-        peerClientPrivateInterface = new PeerClientPrivateInterface(this);
+        PeerClientPrivateInterface peerClientPrivateInterface = new PeerClientPrivateInterface(this);
         peerClientConnectionManager = new PeerClientConnectionManager(
                 connectionEvents,
                 peerClientPrivateInterface,
                 connectedPeers,
                 ownPeerID,
+                serverURL,
                 networkConfiguration,
                 peerRelations);
         resourceStreamingManager = new ResourceStreamingManager(ownPeerID, resourceTransferEvents, connectedPeersMessenger, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);

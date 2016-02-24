@@ -238,10 +238,4 @@ public class NetworkTopologyManager implements DaemonAction {
             return true;
         }
     }
-
-    synchronized void publicIPMismatch() {
-        // the detected IP is no longer valid. Move back the state and recalculate
-        networkTopologyState = State.NetworkTopologyState.NO_DATA;
-        updateState();
-    }
 }

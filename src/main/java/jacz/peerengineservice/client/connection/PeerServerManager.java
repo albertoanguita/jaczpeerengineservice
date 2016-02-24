@@ -104,12 +104,17 @@ public class PeerServerManager implements DaemonAction {
     /**
      * Our own ID. Cannot be modified after construction time
      */
-    private PeerID ownPeerID;
+    private final PeerID ownPeerID;
+
+    /**
+     * URL (including version) of the server
+     */
+    private final String serverURL;
 
     /**
      * The PeerClientConnectionManager that created us
      */
-    private PeerClientConnectionManager peerClientConnectionManager;
+    private final PeerClientConnectionManager peerClientConnectionManager;
 
     /**
      * Actions to invoke upon certain events
@@ -131,7 +136,7 @@ public class PeerServerManager implements DaemonAction {
      */
     private final ActualConnectionData actualConnectionData;
 
-    private NetworkTopologyManager networkTopologyManager;
+    private final NetworkTopologyManager networkTopologyManager;
 
     private LocalServerManager localServerManager;
 
@@ -152,10 +157,12 @@ public class PeerServerManager implements DaemonAction {
 
     public PeerServerManager(
             PeerID ownPeerID,
+            String serverURL,
             PeerClientConnectionManager peerClientConnectionManager,
             NetworkTopologyManager networkTopologyManager,
             ConnectionEventsBridge connectionEvents) {
         this.ownPeerID = ownPeerID;
+        this.serverURL = serverURL;
         this.peerClientConnectionManager = peerClientConnectionManager;
         this.connectionEvents = connectionEvents;
 
@@ -268,7 +275,7 @@ public class PeerServerManager implements DaemonAction {
         connectionEvents.tryingToRegisterWithServer(State.ConnectionToServerState.REGISTERING);
         try {
             ServerAPI.RegistrationResponse registrationResponse =
-                    ServerAPI.register(new ServerAPI.RegistrationRequest(ownPeerID));
+                    ServerAPI.register(serverURL, new ServerAPI.RegistrationRequest(ownPeerID));
             switch (registrationResponse) {
 
                 case OK:
@@ -303,10 +310,10 @@ public class PeerServerManager implements DaemonAction {
         try {
             ServerAPI.ConnectionResponse connectionResponse =
                     ServerAPI.connect(
+                            serverURL,
                             new ServerAPI.ConnectionRequest(
                                     ownPeerID,
                                     actualConnectionData.localAddress,
-                                    actualConnectionData.externalAddress,
                                     actualConnectionData.localPort,
                                     actualConnectionData.externalPort
                             )
@@ -318,10 +325,6 @@ public class PeerServerManager implements DaemonAction {
                     peerServerSessionID = connectionResponse.getSessionID();
                     serverConnectionMaintainer.connectionToServerEstablished(connectionResponse.getMinReminderTime(), connectionResponse.getMaxReminderTime());
                     connectionEvents.connectionToServerEstablished(connectionToServerStatus);
-                    break;
-                case PUBLIC_IP_MISMATCH:
-                    connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
-                    peerClientConnectionManager.publicIPMismatch(connectionToServerStatus);
                     break;
                 case UNREGISTERED_PEER:
                     connectionToServerStatus = State.ConnectionToServerState.UNREGISTERED;
@@ -354,7 +357,7 @@ public class PeerServerManager implements DaemonAction {
 
     private void disconnectFromPeerServer() {
         try {
-            ServerAPI.disconnect(new ServerAPI.UpdateRequest(peerServerSessionID));
+            ServerAPI.disconnect(serverURL, new ServerAPI.UpdateRequest(peerServerSessionID));
         } catch (Exception e) {
             // ignore
         } finally {
@@ -369,16 +372,11 @@ public class PeerServerManager implements DaemonAction {
         if (connectionToServerStatus == State.ConnectionToServerState.CONNECTED) {
             try {
                 ServerAPI.RefreshResponse refreshResponse =
-                        ServerAPI.refresh(new ServerAPI.UpdateRequest(peerServerSessionID));
+                        ServerAPI.refresh(serverURL, new ServerAPI.UpdateRequest(peerServerSessionID));
                 switch (refreshResponse) {
 
                     case OK:
                         return true;
-
-                    case PUBLIC_IP_MISMATCH:
-                        connectionToServerStatus = State.ConnectionToServerState.DISCONNECTED;
-                        peerClientConnectionManager.publicIPMismatch(connectionToServerStatus);
-                        return false;
 
                     case UNRECOGNIZED_SESSION:
                     case TOO_SOON:

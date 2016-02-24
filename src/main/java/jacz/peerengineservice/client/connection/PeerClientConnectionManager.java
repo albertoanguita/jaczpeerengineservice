@@ -90,6 +90,7 @@ public class PeerClientConnectionManager implements DaemonAction {
             PeerClientPrivateInterface peerClientPrivateInterface,
             ConnectedPeers connectedPeers,
             PeerID ownPeerID,
+            String serverURL,
             NetworkConfiguration networkConfiguration,
             PeerRelations peerRelations) {
         this.connectionEvents = new ConnectionEventsBridge(connectionEvents, this);
@@ -101,8 +102,8 @@ public class PeerClientConnectionManager implements DaemonAction {
         stateDaemon = new Daemon(this);
 
         networkTopologyManager = new NetworkTopologyManager(this, this.connectionEvents);
-        peerServerManager = new PeerServerManager(ownPeerID, this, networkTopologyManager, this.connectionEvents);
-        friendConnectionManager = new FriendConnectionManager(ownPeerID, connectedPeers, peerClientPrivateInterface, this, peerRelations);
+        peerServerManager = new PeerServerManager(ownPeerID, serverURL, this, networkTopologyManager, this.connectionEvents);
+        friendConnectionManager = new FriendConnectionManager(ownPeerID, serverURL, connectedPeers, peerClientPrivateInterface, this, peerRelations);
         localServerManager = new LocalServerManager(
                 ownPeerID,
                 networkConfiguration.getExternalPort(),
@@ -169,12 +170,6 @@ public class PeerClientConnectionManager implements DaemonAction {
     void networkProblem() {
         // the local address is not available due to some problem in the local network
         // the user has been notified. Disconnect services until we have connection.
-        updateState();
-    }
-
-    void publicIPMismatch(State.ConnectionToServerState connectionToServerStatus) {
-        connectionEvents.connectionParametersChanged(connectionToServerStatus);
-        networkTopologyManager.publicIPMismatch();
         updateState();
     }
 

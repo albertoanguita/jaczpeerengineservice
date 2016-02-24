@@ -65,6 +65,7 @@ public class Client {
         generalEvents.init(ownPeerID, this);
         connectionEvents.init(ownPeerID, this);
 
+        String serverURL = "https://testserver01-1100.appspot.com/_ah/api/server/v1/";
         TestListContainer testListContainer = new TestListContainer(readingLists, writingLists);
 //        if (FileUtil.isFile("globalDownloads.txt")) {
 //            VersionedObjectSerializer.deserializeVersionedObject(globalDownloadStatistics);
@@ -81,7 +82,7 @@ public class Client {
         } catch (IOException | VersionedSerializationException e) {
             transferStatistics = new TransferStatistics();
         }
-        peerClient = new PeerClient(ownPeerID, peerEncryption, networkConfiguration, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, testListContainer, null);
+        peerClient = new PeerClient(ownPeerID, serverURL, peerEncryption, networkConfiguration, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, testListContainer, null);
 
         tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
     }

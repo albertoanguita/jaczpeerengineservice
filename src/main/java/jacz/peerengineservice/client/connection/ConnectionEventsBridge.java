@@ -139,17 +139,6 @@ public class ConnectionEventsBridge {
         });
     }
 
-    public void connectionParametersChanged(final State.ConnectionToServerState connectionToServerStatus) {
-        updateConnectionToServerInfo(connectionToServerStatus);
-        logger.info("COULD NOT FETCH EXTERNAL ADDRESS. State: " + buildState());
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
-            @Override
-            public void performTask() {
-                connectionEvents.connectionParametersChanged(buildState());
-            }
-        });
-    }
-
     public void unrecognizedMessageFromServer(final State.ConnectionToServerState connectionToServerStatus) {
         updateConnectionToServerInfo(connectionToServerStatus);
         logger.info("UNRECOGNIZED MESSAGE FROM SERVER. State: " + buildState());

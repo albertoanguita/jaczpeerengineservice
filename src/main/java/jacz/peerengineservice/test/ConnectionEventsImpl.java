@@ -63,11 +63,6 @@ public class ConnectionEventsImpl implements ConnectionEvents {
     }
 
     @Override
-    public void connectionParametersChanged(State state) {
-        System.out.println(initMessage + "Connection parameters changed. Resetting connection. State: " + state);
-    }
-
-    @Override
     public void unrecognizedMessageFromServer(State state) {
         System.out.println(initMessage + "Unrecognized message from server. State: " + state);
     }

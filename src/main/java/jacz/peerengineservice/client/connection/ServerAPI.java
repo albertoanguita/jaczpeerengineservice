@@ -39,16 +39,14 @@ public class ServerAPI {
         private final String peerID;
 
         private final String localIPAddress;
-        private final String externalIPAddress;
 
         private final int localMainServerPort;
 
         private final int externalMainServerPort;
 
-        public ConnectionRequest(PeerID peerID, String localIPAddress, String externalIPAddress, int localMainServerPort, int externalMainServerPort) {
+        public ConnectionRequest(PeerID peerID, String localIPAddress, int localMainServerPort, int externalMainServerPort) {
             this.peerID = peerID.toString();
             this.localIPAddress = localIPAddress;
-            this.externalIPAddress = externalIPAddress;
             this.localMainServerPort = localMainServerPort;
             this.externalMainServerPort = externalMainServerPort;
         }
@@ -137,8 +135,6 @@ public class ServerAPI {
     public enum RefreshResponse {
 
         OK,
-        // todo: make server return this if the public ip does not match what we are sending to him. Include public ip in connection message
-        PUBLIC_IP_MISMATCH,
         UNRECOGNIZED_SESSION,
         TOO_SOON
     }
@@ -289,18 +285,20 @@ public class ServerAPI {
         }
     }
 
-    public static String hello() throws IOException, ServerAccessException {
+    public static String hello(String serverURL) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-                "https://testserver01-1100.appspot.com/_ah/api/server/v1/hello",
+//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/hello",
+                getURL(serverURL, "hello"),
                 HttpClient.Verb.GET,
                 HttpClient.ContentType.JSON);
         checkError(result);
         return result.element2;
     }
 
-    public static RegistrationResponse register(RegistrationRequest registrationRequest) throws IOException, ServerAccessException {
+    public static RegistrationResponse register(String serverURL, RegistrationRequest registrationRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-                "https://testserver01-1100.appspot.com/_ah/api/server/v1/register",
+//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/register",
+                getURL(serverURL, "register"),
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
                 HttpClient.ContentType.JSON,
@@ -316,9 +314,10 @@ public class ServerAPI {
         }
     }
 
-    public static ConnectionResponse connect(ConnectionRequest connectionRequest) throws IOException, ServerAccessException {
+    public static ConnectionResponse connect(String serverURL, ConnectionRequest connectionRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-                "https://testserver01-1100.appspot.com/_ah/api/server/v1/connect",
+//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/connect",
+                getURL(serverURL, "connect"),
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
                 HttpClient.ContentType.JSON,
@@ -359,9 +358,10 @@ public class ServerAPI {
         }
     }
 
-    public static RefreshResponse refresh(UpdateRequest updateRequest) throws IOException, ServerAccessException {
+    public static RefreshResponse refresh(String serverURL, UpdateRequest updateRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-                "https://testserver01-1100.appspot.com/_ah/api/server/v1/refresh",
+//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/refresh",
+                getURL(serverURL, "refresh"),
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
                 HttpClient.ContentType.JSON,
@@ -377,9 +377,10 @@ public class ServerAPI {
         }
     }
 
-    public static DisconnectResponse disconnect(UpdateRequest updateRequest) throws IOException, ServerAccessException {
+    public static DisconnectResponse disconnect(String serverURL, UpdateRequest updateRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-                "https://testserver01-1100.appspot.com/_ah/api/server/v1/disconnect",
+//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/disconnect",
+                getURL(serverURL, "disconnect"),
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
                 HttpClient.ContentType.JSON,
@@ -395,9 +396,10 @@ public class ServerAPI {
         }
     }
 
-    public static InfoResponse info(InfoRequest infoRequest) throws IOException, ServerAccessException {
+    public static InfoResponse info(String serverURL, InfoRequest infoRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-                "https://testserver01-1100.appspot.com/_ah/api/server/v1/info",
+//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/info",
+                getURL(serverURL, "info"),
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
                 HttpClient.ContentType.JSON,
@@ -413,6 +415,10 @@ public class ServerAPI {
         }
     }
 
+    private static String getURL(String serverURL, String method) {
+        return serverURL + method;
+    }
+
     private static void checkError(Duple<Integer, String> response) throws ServerAccessException {
         if (response.element1 / 100 == 4 || response.element1 / 100 == 5) {
             throw new ServerAccessException(response.element2, response.element1);
@@ -421,26 +427,27 @@ public class ServerAPI {
 
 
     public static void main(String[] args) throws Exception {
+        String serverURL = "https://testserver01-1100.appspot.com/_ah/api/server/v1/";
 //        System.out.println(hello());
 
-//        RegistrationResponse registrationResponse = register(new RegistrationRequest(new PeerID("0000000000000000000000000000000000000000003")));
+//        RegistrationResponse registrationResponse = register(serverURL, new RegistrationRequest(new PeerID("0000000000000000000000000000000000000000003")));
 //
 //        System.out.println(registrationResponse);
 
 
-        ConnectionResponse connectionResponse = connect(new ConnectionRequest(new PeerID("0000000000000000000000000000000000000000003"), "192.168.1.1", "192.168.1.1", 50000, 50001));
+        ConnectionResponse connectionResponse = connect(serverURL, new ConnectionRequest(new PeerID("0000000000000000000000000000000000000000003"), "192.168.1.1", 50000, 50001));
         System.out.println(connectionResponse);
 
-//        RefreshResponse refreshResponse = refresh(new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIDvmYoJDA"));
+//        RefreshResponse refreshResponse = refresh(serverURL, new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIDvmYoJDA"));
 //        System.out.println(refreshResponse);
 
-//        UpdateResponse disconnectResponse = disconnect(new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
+//        UpdateResponse disconnectResponse = disconnect(serverURL, new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
 //        System.out.println(disconnectResponse);
 
         List<PeerID> peerIDList = new ArrayList<>();
         peerIDList.add(new PeerID("0000000000000000000000000000000000000000003"));
         peerIDList.add(new PeerID("0000000000000000000000000000000000000000004"));
-        InfoResponse infoResponse = info(new InfoRequest(peerIDList));
+        InfoResponse infoResponse = info(serverURL, new InfoRequest(peerIDList));
         System.out.println(infoResponse);
 
 
