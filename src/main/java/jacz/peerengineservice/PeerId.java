@@ -11,14 +11,14 @@ import java.util.Arrays;
 /**
  * This class represents an identifier for a peer in our network. The id consist on a 32-byte array (256 bits) obtained randomly through SHA-256
  */
-public final class PeerIDtemp implements Comparable<PeerIDtemp>, Serializable {
+public final class PeerId implements Comparable<PeerId>, Serializable {
 
     private static final int KEY_LENGTH = 32;
 
     // 32-byte array (43 characters in six-bit serialization format)
     private final byte[] id;
 
-    public PeerIDtemp(byte[] id) {
+    public PeerId(byte[] id) {
         if (id.length >= KEY_LENGTH) {
             // truncate the byte array (keep the first KEY_LENGTH bytes)
             this.id = Arrays.copyOf(id, KEY_LENGTH);
@@ -27,7 +27,7 @@ public final class PeerIDtemp implements Comparable<PeerIDtemp>, Serializable {
         }
     }
 
-    public PeerIDtemp(String id) throws IllegalArgumentException {
+    public PeerId(String id) throws IllegalArgumentException {
         try {
             this.id = SixBitSerializer.deserialize(id, KEY_LENGTH);
         } catch (Exception e) {
@@ -35,25 +35,25 @@ public final class PeerIDtemp implements Comparable<PeerIDtemp>, Serializable {
         }
     }
 
-    public static PeerIDtemp generateRandomPeerId(byte[] randomBytes) {
-        return new PeerIDtemp(new SHA_256().digest(randomBytes));
+    public static PeerId generateRandomPeerId(byte[] randomBytes) {
+        return new PeerId(new SHA_256().digest(randomBytes));
     }
 
-    public static PeerIDtemp buildTestPeerId(String postID) {
+    public static PeerId buildTestPeerId(String postID) {
         while (!isPeerId(postID)) {
             postID = "0" + postID;
         }
-        return new PeerIDtemp(postID);
+        return new PeerId(postID);
     }
 
-    public static Duple<PeerIDtemp, PeerEncryption> generateIdAndEncryptionKeys(byte[] randomBytes) {
+    public static Duple<PeerId, PeerEncryption> generateIdAndEncryptionKeys(byte[] randomBytes) {
         PeerEncryption peerEncryption = new PeerEncryption(randomBytes);
-        return new Duple<>(new PeerIDtemp(peerEncryption.getPublicDigest()), peerEncryption);
+        return new Duple<>(new PeerId(peerEncryption.getPublicDigest()), peerEncryption);
     }
 
     public static boolean isPeerId(String id) {
         try {
-            new PeerIDtemp(id);
+            new PeerId(id);
             return true;
         } catch (IllegalArgumentException e) {
             return false;
@@ -65,14 +65,14 @@ public final class PeerIDtemp implements Comparable<PeerIDtemp>, Serializable {
         if (this == obj) {
             return true;
         } else //noinspection SimplifiableIfStatement
-            if (!(obj instanceof PeerIDtemp)) {
+            if (!(obj instanceof PeerId)) {
                 return false;
             } else {
-                return Arrays.equals(id, ((PeerIDtemp) obj).id);
+                return Arrays.equals(id, ((PeerId) obj).id);
             }
     }
 
-    public int compareTo(@NotNull PeerIDtemp o) {
+    public int compareTo(@NotNull PeerId o) {
         return SixBitSerializer.serialize(id).compareTo(SixBitSerializer.serialize(o.id));
     }
 
@@ -98,7 +98,7 @@ public final class PeerIDtemp implements Comparable<PeerIDtemp>, Serializable {
      * @param anotherPeerId ID to which we must compare our own ID
      * @return true if our ID has higher priority that anotherPeerId, false otherwise
      */
-    public boolean hasHigherPriorityThan(PeerIDtemp anotherPeerId) {
+    public boolean hasHigherPriorityThan(PeerId anotherPeerId) {
         return compareTo(anotherPeerId) < 0;
     }
 }
