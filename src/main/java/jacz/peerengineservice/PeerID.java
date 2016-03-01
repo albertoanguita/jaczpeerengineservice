@@ -39,8 +39,8 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
         return new PeerID(new SHA_256().digest(randomBytes));
     }
 
-    public static PeerID buildTestPeerID(String postID) {
-        while (!isPeerID(postID)) {
+    public static PeerID buildTestPeerId(String postID) {
+        while (!isPeerId(postID)) {
             postID = "0" + postID;
         }
         return new PeerID(postID);
@@ -51,7 +51,7 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
         return new Duple<>(new PeerID(peerEncryption.getPublicDigest()), peerEncryption);
     }
 
-    public static boolean isPeerID(String id) {
+    public static boolean isPeerId(String id) {
         try {
             new PeerID(id);
             return true;
@@ -95,10 +95,10 @@ public final class PeerID implements Comparable<PeerID>, Serializable {
      * priority in case of duplicate connections (two peers try to connect to each other at the same time), but has
      * no other practical uses and it does not transcend to the peer engine client
      *
-     * @param anotherPeerID ID to which we must compare our own ID
-     * @return true if our ID has higher priority that anotherPeerID, false otherwise
+     * @param anotherPeerId ID to which we must compare our own ID
+     * @return true if our ID has higher priority that anotherPeerId, false otherwise
      */
-    public boolean hasHigherPriorityThan(PeerID anotherPeerID) {
-        return compareTo(anotherPeerID) < 0;
+    public boolean hasHigherPriorityThan(PeerID anotherPeerId) {
+        return compareTo(anotherPeerId) < 0;
     }
 }
