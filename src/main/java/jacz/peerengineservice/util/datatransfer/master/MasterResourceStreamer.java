@@ -1,14 +1,15 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.util.datatransfer.*;
+import jacz.peerengineservice.PeerId;
+import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
+import jacz.peerengineservice.util.datatransfer.GenericPriorityManagerStakeholder;
+import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceLink;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.peerengineservice.util.datatransfer.slave.ResourceChunk;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
-import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.hash.HashFunction;
 import jacz.util.identifier.UniqueIdentifier;
@@ -88,7 +89,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     /**
      * This attribute indicates if the download is performed from a unique peer (non null value) or from as many peers as possible (null)
      */
-    private final PeerID specificPeerDownload;
+    private final PeerId specificPeerDownload;
 
     /**
      * Name of the store holding the resource
@@ -158,7 +159,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
 
     public MasterResourceStreamer(
             ResourceStreamingManager resourceStreamingManager,
-            PeerID specificPeerDownload,
+            PeerId specificPeerDownload,
             String storeName,
             String resourceID,
             ResourceWriter resourceWriter,
@@ -250,7 +251,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         return resourceSize;
     }
 
-    public PeerID getSpecificPeerDownload() {
+    public PeerId getSpecificPeerDownload() {
         return specificPeerDownload;
     }
 
@@ -269,9 +270,9 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @param resourceProviders collection of resource providers offering the desired resource
      */
     public void reportAvailableResourceProviders(final Collection<? extends ResourceProvider> resourceProviders) {
-        ParallelTask parallelTask = new ParallelTask() {
+        Runnable parallelTask = new Runnable() {
             @Override
-            public void performTask() {
+            public void run() {
                 reportAvailableResourceProvidersSynch(resourceProviders);
             }
         };
@@ -286,7 +287,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private synchronized void reportAvailableResourceProvidersSynch(Collection<? extends ResourceProvider> resourceProviders) {
         if (alive) {
             // add the resource providers which are not active providers or active requests
-            Set<PeerID> activeResourceProviders = getActiveResourceProviders();
+            Set<PeerId> activeResourceProviders = getActiveResourceProviders();
             for (ResourceProvider resourceProvider : resourceProviders) {
                 // check that the given resource provider is not null, as the resource streaming manager might include null providers due to those
                 // not being available
@@ -302,8 +303,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      *
      * @return a set containing resource providers corresponding to the currently active slaves
      */
-    private synchronized Set<PeerID> getActiveResourceProviders() {
-        Set<PeerID> activeResourceProviders = new HashSet<>(activeSlaves.size());
+    private synchronized Set<PeerId> getActiveResourceProviders() {
+        Set<PeerId> activeResourceProviders = new HashSet<>(activeSlaves.size());
         for (SlaveController slave : activeSlaves.values()) {
             activeResourceProviders.add(slave.getResourceProviderId());
         }
@@ -328,9 +329,9 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private synchronized void addSlave(ResourceLink resourceLink, ResourceProvider resourceProvider, short subchannel) {
         final SlaveController slaveController = new SlaveController(this, resourceSize != null, resourceLink, resourceProvider, subchannel, resourceLink.recommendedMillisForRequest(), resourcePartScheduler, active);
         activeSlaves.put(subchannel, slaveController);
-        ParallelTaskExecutor.executeTask(new ParallelTask() {
+        ParallelTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
+            public void run() {
                 resourceStreamingManager.getDownloadPriorityManager().addRegulatedResource(MasterResourceStreamer.this, slaveController);
             }
         });
@@ -349,16 +350,16 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 activeSlaves.get(subchannel).getResourceLink().die();
             }
             final SlaveController slaveController = activeSlaves.remove(subchannel);
-            ParallelTaskExecutor.executeTask(new ParallelTask() {
+            ParallelTaskExecutor.executeTask(new Runnable() {
                 @Override
-                public void performTask() {
+                public void run() {
                     slaveController.finishExecution();
                 }
             });
             resourceStreamingManager.freeSubchannel(subchannel);
-            ParallelTaskExecutor.executeTask(new ParallelTask() {
+            ParallelTaskExecutor.executeTask(new Runnable() {
                 @Override
-                public void performTask() {
+                public void run() {
                     resourceStreamingManager.getDownloadPriorityManager().removeRegulatedResource(MasterResourceStreamer.this, slaveController);
                 }
             });
@@ -675,9 +676,9 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private synchronized void freeAssignedResources() {
         // free all subchannels and report the ResourceStreamingManager that this download must be removed. We parallelize this call to avoid
         // locks
-        ParallelTaskExecutor.executeTask(new ParallelTask() {
+        ParallelTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
+            public void run() {
                 resourceStreamingManager.freeAllSubchannels(MasterResourceStreamer.this);
                 resourceStreamingManager.removeDownload(MasterResourceStreamer.this);
             }

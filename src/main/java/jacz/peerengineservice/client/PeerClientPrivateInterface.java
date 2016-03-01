@@ -2,7 +2,7 @@ package jacz.peerengineservice.client;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.RequestFromPeerToPeer;
 import jacz.peerengineservice.util.ConnectionStatus;
 
@@ -246,35 +246,35 @@ public class PeerClientPrivateInterface {
 
     ////////////////////////////////// FRIEND CONNECTION MANAGER  //////////////////////////////////
 
-    public synchronized void newPeerConnected(PeerID peerID, ChannelConnectionPoint ccp, ConnectionStatus status) {
-        peerClient.newPeerConnected(peerID, ccp, status);
+    public synchronized void newPeerConnected(PeerId peerId, ChannelConnectionPoint ccp, ConnectionStatus status) {
+        peerClient.newPeerConnected(peerId, ccp, status);
     }
 
     /**
      * The PeerClientConnectionManager informs that we have lost connection to a peer (either we disconnected from him, or he disconnected from us)
      *
-     * @param peerID peer that was disconnected
+     * @param peerId peer that was disconnected
      */
-    public synchronized void peerDisconnected(PeerID peerID) {
-        peerClient.peerDisconnected(peerID, null);
+    public synchronized void peerDisconnected(PeerId peerId) {
+        peerClient.peerDisconnected(peerId, null);
     }
 
     /**
      * The PeerClientConnectionManager informs that we have lost connection to a peer due to an error in our end
      *
-     * @param peerID peer that was disconnected
+     * @param peerId peer that was disconnected
      * @param error  error raised
      */
-    public synchronized void peerError(PeerID peerID, CommError error) {
-        peerClient.peerDisconnected(peerID, error);
+    public synchronized void peerError(PeerId peerId, CommError error) {
+        peerClient.peerDisconnected(peerId, error);
     }
 
-    public synchronized void newObjectMessageReceived(PeerID peerID, Object message) {
-        peerClient.newObjectMessageReceived(peerID, message);
+    public synchronized void newObjectMessageReceived(PeerId peerId, Object message) {
+        peerClient.newObjectMessageReceived(peerId, message);
     }
 
-    public synchronized void requestServerCustomFSM(RequestFromPeerToPeer requestFromPeerToPeer, String serverFSMName, PeerID peerID, ChannelConnectionPoint ccp, byte outgoingChannel) {
-        peerClient.requestServerCustomFSM(requestFromPeerToPeer, serverFSMName, peerID, ccp, outgoingChannel);
+    public synchronized void requestServerCustomFSM(RequestFromPeerToPeer requestFromPeerToPeer, String serverFSMName, PeerId peerId, ChannelConnectionPoint ccp, byte outgoingChannel) {
+        peerClient.requestServerCustomFSM(requestFromPeerToPeer, serverFSMName, peerId, ccp, outgoingChannel);
     }
 
 //    public synchronized void periodicDownloadsNotification(DownloadsManager downloadsManager) {

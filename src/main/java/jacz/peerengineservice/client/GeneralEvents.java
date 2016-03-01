@@ -1,33 +1,31 @@
 package jacz.peerengineservice.client;
 
 import jacz.commengine.communication.CommError;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.ConnectionStatus;
-import jacz.peerengineservice.util.datatransfer.DownloadsManager;
-import jacz.peerengineservice.util.datatransfer.UploadsManager;
 
 /**
  * General events (peers, personal data)
  */
 public interface GeneralEvents {
 
-    void peerAddedAsFriend(PeerID peerID, PeerRelations peerRelations);
+    void peerAddedAsFriend(PeerId peerId, PeerRelations peerRelations);
 
-    void peerRemovedAsFriend(PeerID peerID, PeerRelations peerRelations);
+    void peerRemovedAsFriend(PeerId peerId, PeerRelations peerRelations);
 
-    void peerAddedAsBlocked(PeerID peerID, PeerRelations peerRelations);
+    void peerAddedAsBlocked(PeerId peerId, PeerRelations peerRelations);
 
-    void peerRemovedAsBlocked(PeerID peerID, PeerRelations peerRelations);
+    void peerRemovedAsBlocked(PeerId peerId, PeerRelations peerRelations);
 
-    void newPeerConnected(PeerID peerID, ConnectionStatus status);
+    void newPeerConnected(PeerId peerId, ConnectionStatus status);
 
-    void newObjectMessage(PeerID peerID, Object message);
+    void newObjectMessage(PeerId peerId, Object message);
 
-    void newPeerNick(PeerID peerID, String nick);
+    void newPeerNick(PeerId peerId, String nick);
 
-    void peerValidatedUs(PeerID peerID);
+    void peerValidatedUs(PeerId peerId);
 
-    void peerDisconnected(PeerID peerID, CommError error);
+    void peerDisconnected(PeerId peerId, CommError error);
 
     void stop();
 

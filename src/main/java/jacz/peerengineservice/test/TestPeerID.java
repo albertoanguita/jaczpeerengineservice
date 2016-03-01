@@ -1,9 +1,7 @@
 package jacz.peerengineservice.test;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.util.stochastic.MouseToRandom;
-
-import java.util.Random;
 
 /**
  *
@@ -34,12 +32,12 @@ public class TestPeerID {
 //            mouseToRandom.mouseCoords(0, i);
 //            randomBytes = mouseToRandom.getRandomBytes();
 //            random.nextBytes(randomBytes);
-            PeerID peerID = PeerID.generateIdAndEncryptionKeys(randomBytes).element1;
-            String s = peerID.toString();
-            PeerID peerID2 = new PeerID(s);
+            PeerId peerId = PeerId.generateIdAndEncryptionKeys(randomBytes).element1;
+            String s = peerId.toString();
+            PeerId peerId2 = new PeerId(s);
             System.out.print("-" + i + ": ");
             System.out.println(s);
-            if (!peerID.toString().equals(peerID2.toString())) {
+            if (!peerId.toString().equals(peerId2.toString())) {
                 System.out.println("ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             }
         }

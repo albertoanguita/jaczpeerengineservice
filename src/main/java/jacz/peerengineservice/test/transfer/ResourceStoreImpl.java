@@ -1,11 +1,10 @@
 package jacz.peerengineservice.test.transfer;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.ResourceStore;
 import jacz.peerengineservice.util.datatransfer.ResourceStoreResponse;
 import jacz.peerengineservice.util.datatransfer.resource_accession.BasicFileReader;
 
-import javax.tools.Tool;
 import java.io.FileNotFoundException;
 
 /**
@@ -35,7 +34,7 @@ public class ResourceStoreImpl implements ResourceStore {
     }
 
     @Override
-    public ResourceStoreResponse requestResource(PeerID peerID, String resourceID) {
+    public ResourceStoreResponse requestResource(PeerId peerId, String resourceID) {
         try {
             switch (resourceID) {
                 case "file_1":

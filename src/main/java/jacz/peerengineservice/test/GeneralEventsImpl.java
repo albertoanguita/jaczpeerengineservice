@@ -1,7 +1,7 @@
 package jacz.peerengineservice.test;
 
 import jacz.commengine.communication.CommError;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.GeneralEvents;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.util.ConnectionStatus;
@@ -15,58 +15,58 @@ public class GeneralEventsImpl implements GeneralEvents {
 
     private String initMessage;
 
-    public void init(PeerID ownPeerID, jacz.peerengineservice.test.Client client) {
+    public void init(PeerId ownPeerId, jacz.peerengineservice.test.Client client) {
         this.client = client;
-        initMessage = formatPeer(ownPeerID) + ": ";
+        initMessage = formatPeer(ownPeerId) + ": ";
     }
 
     protected boolean equalsPeerID(int id) {
-        return client.getPeerClient().getOwnPeerID().equals(PeerIDGenerator.peerID(id));
+        return client.getPeerClient().getOwnPeerId().equals(PeerIDGenerator.peerID(id));
     }
 
     @Override
-    public void peerAddedAsFriend(PeerID peerID, PeerRelations peerRelations) {
-        System.out.println(initMessage + "peer added as friend: " + formatPeer(peerID));
+    public void peerAddedAsFriend(PeerId peerId, PeerRelations peerRelations) {
+        System.out.println(initMessage + "peer added as friend: " + formatPeer(peerId));
     }
 
     @Override
-    public void peerRemovedAsFriend(PeerID peerID, PeerRelations peerRelations) {
-        System.out.println(initMessage + "peer removed as friend: " + formatPeer(peerID));
+    public void peerRemovedAsFriend(PeerId peerId, PeerRelations peerRelations) {
+        System.out.println(initMessage + "peer removed as friend: " + formatPeer(peerId));
     }
 
     @Override
-    public void peerAddedAsBlocked(PeerID peerID, PeerRelations peerRelations) {
-        System.out.println(initMessage + "peer added as blocked: " + formatPeer(peerID));
+    public void peerAddedAsBlocked(PeerId peerId, PeerRelations peerRelations) {
+        System.out.println(initMessage + "peer added as blocked: " + formatPeer(peerId));
     }
 
     @Override
-    public void peerRemovedAsBlocked(PeerID peerID, PeerRelations peerRelations) {
-        System.out.println(initMessage + "peer removed as blocked: " + formatPeer(peerID));
+    public void peerRemovedAsBlocked(PeerId peerId, PeerRelations peerRelations) {
+        System.out.println(initMessage + "peer removed as blocked: " + formatPeer(peerId));
     }
 
     @Override
-    public void newPeerConnected(PeerID peerID, ConnectionStatus status) {
-        System.out.println(initMessage + "New peer connected: " + formatPeer(peerID) + ", " + status);
+    public void newPeerConnected(PeerId peerId, ConnectionStatus status) {
+        System.out.println(initMessage + "New peer connected: " + formatPeer(peerId) + ", " + status);
     }
 
     @Override
-    public void newObjectMessage(PeerID peerID, Object message) {
-        System.out.println(initMessage + "New object message from " + formatPeer(peerID) + ": " + message);
+    public void newObjectMessage(PeerId peerId, Object message) {
+        System.out.println(initMessage + "New object message from " + formatPeer(peerId) + ": " + message);
     }
 
     @Override
-    public void newPeerNick(PeerID peerID, String nick) {
-        System.out.println("Peer " + formatPeer(peerID) + " changed his nick to " + nick);
+    public void newPeerNick(PeerId peerId, String nick) {
+        System.out.println("Peer " + formatPeer(peerId) + " changed his nick to " + nick);
     }
 
     @Override
-    public void peerValidatedUs(PeerID peerID) {
-        System.out.println("Peer " + formatPeer(peerID) + " has validated us, connection status is now " + client.getPeerClient().getPeerConnectionStatus(peerID));
+    public void peerValidatedUs(PeerId peerId) {
+        System.out.println("Peer " + formatPeer(peerId) + " has validated us, connection status is now " + client.getPeerClient().getPeerConnectionStatus(peerId));
     }
 
     @Override
-    public void peerDisconnected(PeerID peerID, CommError error) {
-        System.out.println(initMessage + "Peer disconnected (" + formatPeer(peerID) + "). Error = " + error);
+    public void peerDisconnected(PeerId peerId, CommError error) {
+        System.out.println(initMessage + "Peer disconnected (" + formatPeer(peerId) + "). Error = " + error);
     }
 
     @Override
@@ -74,8 +74,8 @@ public class GeneralEventsImpl implements GeneralEvents {
         System.out.println(initMessage + "Stop");
     }
 
-    private String formatPeer(PeerID peerID) {
-        return "{" + peerID.toString().substring(40) + "}";
+    private String formatPeer(PeerId peerId) {
+        return "{" + peerId.toString().substring(40) + "}";
     }
 
 }

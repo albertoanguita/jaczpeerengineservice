@@ -24,8 +24,8 @@ class ReaderTask extends TempIndexTask {
     }
 
     @Override
-    public void performTask() {
-        super.performTask();
+    public void run() {
+        super.run();
         if (tempIndex != null) {
             try {
                 data = tempIndex.read(offset, length);

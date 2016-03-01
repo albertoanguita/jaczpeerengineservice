@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.slave;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.util.date_time.PerformRegularAction;
 import jacz.util.date_time.SpeedLimiter;
@@ -23,7 +23,7 @@ public class SlaveMessageHandler implements MessageHandler {
 
     private final ResourceStreamingManager resourceStreamingManager;
 
-    private final PeerID otherPeer;
+    private final PeerId otherPeer;
 
     private final short outgoingChannel;
 
@@ -34,7 +34,7 @@ public class SlaveMessageHandler implements MessageHandler {
     private final PerformRegularAction flushDataRegularAction;
 
 
-    public SlaveMessageHandler(ResourceStreamingManager resourceStreamingManager, PeerID otherPeer, short outgoingChannel) {
+    public SlaveMessageHandler(ResourceStreamingManager resourceStreamingManager, PeerId otherPeer, short outgoingChannel) {
         this.resourceStreamingManager = resourceStreamingManager;
         this.otherPeer = otherPeer;
         this.outgoingChannel = outgoingChannel;

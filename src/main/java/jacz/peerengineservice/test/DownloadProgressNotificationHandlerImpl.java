@@ -1,14 +1,12 @@
 package jacz.peerengineservice.test;
 
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.master.ProviderStatistics;
 import jacz.util.numeric.range.LongRange;
-import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
-
-import java.io.IOException;
 
 /**
  * Simple download progress notification handler
@@ -17,8 +15,8 @@ public class DownloadProgressNotificationHandlerImpl implements DownloadProgress
 
     private String initMessage;
 
-    public DownloadProgressNotificationHandlerImpl(PeerID peerID) {
-        initMessage = peerID + " downloading resource: ";
+    public DownloadProgressNotificationHandlerImpl(PeerId peerId) {
+        initMessage = peerId + " downloading resource: ";
     }
 
     @Override
@@ -32,12 +30,12 @@ public class DownloadProgressNotificationHandlerImpl implements DownloadProgress
     }
 
     @Override
-    public void providerAdded(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerID providerId) {
+    public void providerAdded(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerId providerId) {
         System.out.println(initMessage + "provider added to download of resource " + resourceID + ". Provider: " + providerId);
     }
 
     @Override
-    public void providerRemoved(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerID providerId) {
+    public void providerRemoved(String resourceID, String storeName, ProviderStatistics providerStatistics, DownloadManager downloadManager, PeerId providerId) {
         System.out.println(initMessage + "provider removed from download of resource " + resourceID + ". Provider: " + providerId);
     }
 

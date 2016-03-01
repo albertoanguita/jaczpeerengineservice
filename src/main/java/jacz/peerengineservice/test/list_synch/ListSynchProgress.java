@@ -1,6 +1,6 @@
 package jacz.peerengineservice.test.list_synch;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.data_synchronization.SynchError;
 import jacz.util.notification.ProgressNotificationWithError;
 
@@ -9,7 +9,7 @@ import jacz.util.notification.ProgressNotificationWithError;
  */
 public class ListSynchProgress implements ProgressNotificationWithError<Integer, SynchError> {
 
-    private PeerID otherPeerID;
+    private PeerId otherPeerId;
 
     private String listName;
 
@@ -17,12 +17,12 @@ public class ListSynchProgress implements ProgressNotificationWithError<Integer,
 
     private Object customObject;
 
-    public ListSynchProgress(PeerID otherPeerID, String listName, boolean client) {
-        this(otherPeerID, listName, client, null);
+    public ListSynchProgress(PeerId otherPeerId, String listName, boolean client) {
+        this(otherPeerId, listName, client, null);
     }
 
-    public ListSynchProgress(PeerID otherPeerID, String listName, boolean client, Object customObject) {
-        this.otherPeerID = otherPeerID;
+    public ListSynchProgress(PeerId otherPeerId, String listName, boolean client, Object customObject) {
+        this.otherPeerId = otherPeerId;
         this.listName = listName;
         this.client = client;
         this.customObject = customObject;
@@ -36,7 +36,7 @@ public class ListSynchProgress implements ProgressNotificationWithError<Integer,
         } else {
             mode = "server";
         }
-        System.out.println("Started synchronizing list as " + mode + ". The other peer is: " + otherPeerID + ". List: " + listName);
+        System.out.println("Started synchronizing list as " + mode + ". The other peer is: " + otherPeerId + ". List: " + listName);
     }
 
     @Override

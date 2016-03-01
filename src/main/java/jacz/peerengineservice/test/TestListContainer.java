@@ -1,7 +1,6 @@
 package jacz.peerengineservice.test;
 
-import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.UnavailablePeerException;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.data_synchronization.AccessorNotFoundException;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.data_synchronization.DataAccessorContainer;
@@ -23,22 +22,22 @@ public class TestListContainer implements DataAccessorContainer {
     }
 
     @Override
-    public void peerConnected(PeerID peerID) {
+    public void peerConnected(PeerId peerId) {
 
     }
 
     @Override
-    public void peerDisconnected(PeerID peerID) {
+    public void peerDisconnected(PeerId peerId) {
 
     }
 
     @Override
-    public DataAccessor getAccessorForTransmitting(PeerID peerID, String dataAccessorName) throws AccessorNotFoundException {
+    public DataAccessor getAccessorForTransmitting(PeerId peerId, String dataAccessorName) throws AccessorNotFoundException {
         return transmittingAccessors.get(dataAccessorName);
     }
 
 //    @Override
-//    public DataAccessor getAccessorForReceiving(PeerID peerID, String dataAccessorName) throws AccessorNotFoundException {
+//    public DataAccessor getAccessorForReceiving(PeerId peerID, String dataAccessorName) throws AccessorNotFoundException {
 //        return receivingAccessors.get(dataAccessorName);
 //    }
 }

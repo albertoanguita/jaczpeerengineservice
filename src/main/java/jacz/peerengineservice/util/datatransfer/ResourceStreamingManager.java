@@ -2,7 +2,7 @@ package jacz.peerengineservice.util.datatransfer;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.NotAliveException;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.connection.ConnectedPeersMessenger;
 import jacz.peerengineservice.util.ChannelConstants;
@@ -14,9 +14,8 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWrite
 import jacz.peerengineservice.util.datatransfer.slave.SlaveResourceStreamer;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
 import jacz.util.concurrency.ManuallyRemovedElementBag;
-import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
-import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
+import jacz.util.concurrency.task_executor.TaskSemaphore;
 import jacz.util.concurrency.timer.SimpleTimerAction;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.identifier.UniqueIdentifier;
@@ -73,21 +72,21 @@ public class ResourceStreamingManager {
 
     private class RemotePeerStakeholder extends GenericPriorityManagerStakeholder {
 
-        private final PeerID peerID;
+        private final PeerId peerId;
 
-        public RemotePeerStakeholder(PeerID peerID) {
-            this.peerID = peerID;
+        public RemotePeerStakeholder(PeerId peerId) {
+            this.peerId = peerId;
         }
 
 //        @Override
 //        public String toString() {
-//            return this.getClass().toString() + "-" + peerID.toString();
+//            return this.getClass().toString() + "-" + peerId.toString();
 //        }
 
         @Override
         public String toString() {
             return "RemotePeerStakeholder{" +
-                    "peerID=" + peerID +
+                    "peerId=" + peerId +
                     '}';
         }
 
@@ -102,12 +101,12 @@ public class ResourceStreamingManager {
 
             RemotePeerStakeholder that = (RemotePeerStakeholder) o;
 
-            return peerID.equals(that.peerID);
+            return peerId.equals(that.peerId);
         }
 
         @Override
         public int hashCode() {
-            return peerID.hashCode();
+            return peerId.hashCode();
         }
     }
 
@@ -250,9 +249,9 @@ public class ResourceStreamingManager {
             for (String storeName : activeDownloads.keySet()) {
                 activeDownloadsCopy.put(storeName, new HashMap<>(activeDownloads.get(storeName)));
             }
-            ParallelTaskExecutor.executeTask(new ParallelTask() {
+            ParallelTaskExecutor.executeTask(new Runnable() {
                 @Override
-                public void performTask() {
+                public void run() {
                     for (String storeName : activeDownloadsCopy.keySet()) {
                         Map<String, Map<UniqueIdentifier, MasterResourceStreamer>> activeDownloadsForOneStore = activeDownloadsCopy.get(storeName);
                         for (String resourceID : activeDownloadsForOneStore.keySet()) {
@@ -523,7 +522,7 @@ public class ResourceStreamingManager {
 
     private static final long MILLIS_FOR_GENERAL_PROVIDER_UPDATE = 15000;
 
-    private final PeerID ownPeerID;
+    private final PeerId ownPeerId;
 
     private final ResourceTransferEventsBridge resourceTransferEventsBridge;
 
@@ -599,12 +598,12 @@ public class ResourceStreamingManager {
     private boolean alive;
 
     public ResourceStreamingManager(
-            PeerID ownPeerID,
+            PeerId ownPeerId,
             ResourceTransferEvents resourceTransferEvents,
             ConnectedPeersMessenger connectedPeersMessenger,
             TransferStatistics transferStatistics,
             double accuracy) {
-        this.ownPeerID = ownPeerID;
+        this.ownPeerId = ownPeerId;
         this.resourceTransferEventsBridge = new ResourceTransferEventsBridge(resourceTransferEvents);
         this.connectedPeersMessenger = connectedPeersMessenger;
         DoubleElementArrayList<Short, SubchannelOwner> occupiedSubchannels = new DoubleElementArrayList<>(1);
@@ -652,22 +651,22 @@ public class ResourceStreamingManager {
         ccp.registerGenericFSM(peerDataReceiver, "PeerDataReceiver", ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL);
     }
 
-    public long write(PeerID destinationPeer, short subchannel, Object message) {
+    public long write(PeerId destinationPeer, short subchannel, Object message) {
         return connectedPeersMessenger.sendObjectMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, new SubchannelObjectMessage(subchannel, message), true);
     }
 
-    public long write(PeerID destinationPeer, short subchannel, byte[] message, boolean isData) {
+    public long write(PeerId destinationPeer, short subchannel, byte[] message, boolean isData) {
         return write(destinationPeer, subchannel, message, isData, true);
     }
 
-    public long write(PeerID destinationPeer, short subchannel, byte[] message, boolean isData, boolean flush) {
+    public long write(PeerId destinationPeer, short subchannel, byte[] message, boolean isData, boolean flush) {
         if (isData) {
             transferStatistics.addUploadedBytes(destinationPeer, message.length);
         }
         return connectedPeersMessenger.sendDataMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, SubchannelDataMessage.encode(subchannel, message), flush);
     }
 
-    public long flush(PeerID destinationPeer) {
+    public long flush(PeerId destinationPeer) {
         return connectedPeersMessenger.flush(destinationPeer);
     }
 
@@ -813,7 +812,7 @@ public class ResourceStreamingManager {
      * specify the target store. However, it is not required that we have this store updated (not even registered) with
      * the resources shared on it
      *
-     * @param serverPeerID                        ID of the Peer from which the resource is to be downloaded
+     * @param serverPeerId                        ID of the Peer from which the resource is to be downloaded
      * @param resourceStoreName                   name of the individual store to access
      * @param resourceID                          ID of the resource
      * @param resourceWriter                      object in charge of writing the resource
@@ -827,7 +826,7 @@ public class ResourceStreamingManager {
      * (due to the resource store name given not corresponding to any existing resource store)
      */
     public synchronized DownloadManager downloadResource(
-            PeerID serverPeerID,
+            PeerId serverPeerId,
             String resourceStoreName,
             String resourceID,
             ResourceWriter resourceWriter,
@@ -836,11 +835,11 @@ public class ResourceStreamingManager {
             String totalHash,
             String totalHashAlgorithm) throws NotAliveException {
         if (alive) {
-            resourceTransferEventsBridge.peerDownloadInitiated(serverPeerID, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
+            resourceTransferEventsBridge.peerDownloadInitiated(serverPeerId, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
             MasterResourceStreamer masterResourceStreamer =
                     new MasterResourceStreamer(
                             this,
-                            serverPeerID,
+                            serverPeerId,
                             resourceStoreName,
                             resourceID,
                             resourceWriter,
@@ -849,7 +848,7 @@ public class ResourceStreamingManager {
                             totalHash,
                             totalHashAlgorithm);
             activeDownloadSet.addDownload(masterResourceStreamer);
-            reportResourceProviderForPeerSpecificDownload(serverPeerID, masterResourceStreamer);
+            reportResourceProviderForPeerSpecificDownload(serverPeerId, masterResourceStreamer);
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
             return masterResourceStreamer.getDownloadManager();
         } else {
@@ -888,8 +887,8 @@ public class ResourceStreamingManager {
         }
     }
 
-    public void reportDownloadedSize(PeerID peerID, long bytes) {
-        transferStatistics.addDownloadedBytes(peerID, bytes);
+    public void reportDownloadedSize(PeerId peerId, long bytes) {
+        transferStatistics.addDownloadedBytes(peerId, bytes);
     }
 
     /**
@@ -900,7 +899,7 @@ public class ResourceStreamingManager {
      */
     public void stop() {
         resourceTransferEventsBridge.stop();
-        Collection<TaskFinalizationIndicator> tfiCollection;
+        Collection<TaskSemaphore> tfiCollection;
         synchronized (this) {
             // subchannel assignments
             downloadsManager.stop();
@@ -908,16 +907,16 @@ public class ResourceStreamingManager {
             for (final DownloadManager downloadManager : downloadsManager.getAllDownloads()) {
                 // this call is parallelized to avoid triple interlock between the ResourceStreamingManager, the MasterResourceStreamer and the
                 // DownloadManager
-                TaskFinalizationIndicator tfi = ParallelTaskExecutor.executeTask(new ParallelTask() {
+                TaskSemaphore tfi = ParallelTaskExecutor.executeTask(new Runnable() {
                     @Override
-                    public void performTask() {
+                    public void run() {
                         downloadManager.stop();
                     }
                 });
                 tfiCollection.add(tfi);
             }
         }
-        TaskFinalizationIndicator.waitForFinalization(tfiCollection);
+        TaskSemaphore.waitForFinalization(tfiCollection);
         synchronized (this) {
             tfiCollection.clear();
             uploadPriorityManager.stop();
@@ -927,16 +926,16 @@ public class ResourceStreamingManager {
             subchannelManager.stop();
             uploadsManager.stop();
             for (final UploadManager uploadManager : uploadsManager.getAllUploads()) {
-                TaskFinalizationIndicator tfi = ParallelTaskExecutor.executeTask(new ParallelTask() {
+                TaskSemaphore tfi = ParallelTaskExecutor.executeTask(new Runnable() {
                     @Override
-                    public void performTask() {
+                    public void run() {
                         uploadManager.stop();
                     }
                 });
                 tfiCollection.add(tfi);
             }
         }
-        TaskFinalizationIndicator.waitForFinalization(tfiCollection);
+        TaskSemaphore.waitForFinalization(tfiCollection);
         synchronized (this) {
             alive = false;
         }
@@ -959,10 +958,10 @@ public class ResourceStreamingManager {
         ForeignStoreShare foreignStoreShare = foreignShareManager.getResourceProviderShare(resourceStoreName);
         Set<ResourceProvider> resourceProviders = null;
         if (foreignStoreShare != null) {
-            Set<PeerID> peersSharing = foreignStoreShare.getForeignPeerShares(resourceID);
+            Set<PeerId> peersSharing = foreignStoreShare.getForeignPeerShares(resourceID);
             resourceProviders = new HashSet<>(peersSharing.size());
-            for (PeerID peerID : peersSharing) {
-                ResourceProvider peerResourceProvider = generateResourceProvider(peerID);
+            for (PeerId peerId : peersSharing) {
+                ResourceProvider peerResourceProvider = generateResourceProvider(peerId);
                 resourceProviders.add(peerResourceProvider);
             }
         }
@@ -983,15 +982,15 @@ public class ResourceStreamingManager {
         }
     }
 
-    private void reportResourceProviderForPeerSpecificDownload(PeerID serverPeerID, MasterResourceStreamer masterResourceStreamer) {
-        ResourceProvider resourceProvider = generateResourceProvider(serverPeerID);
+    private void reportResourceProviderForPeerSpecificDownload(PeerId serverPeerId, MasterResourceStreamer masterResourceStreamer) {
+        ResourceProvider resourceProvider = generateResourceProvider(serverPeerId);
         List<ResourceProvider> providerList = new ArrayList<>(1);
         providerList.add(resourceProvider);
         masterResourceStreamer.reportAvailableResourceProviders(providerList);
     }
 
-    private ResourceProvider generateResourceProvider(PeerID peerID) {
-        return new ResourceProvider(ownPeerID, peerID, this);
+    private ResourceProvider generateResourceProvider(PeerId peerId) {
+        return new ResourceProvider(ownPeerId, peerId, this);
     }
 
     private void requestNewResource(ResourceRequest request) {

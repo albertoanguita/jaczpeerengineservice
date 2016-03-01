@@ -17,8 +17,8 @@ class OwnedPartsTask extends TempIndexTask {
     }
 
     @Override
-    public void performTask() {
-        super.performTask();
+    public void run() {
+        super.run();
         if (tempIndex != null) {
             ownedParts = tempIndex.getOwnedDataParts();
         }

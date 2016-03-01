@@ -15,8 +15,8 @@ class GetSizeTask extends TempIndexTask {
     }
 
     @Override
-    public void performTask() {
-        super.performTask();
+    public void run() {
+        super.run();
         if (tempIndex != null) {
             size = tempIndex.getTotalResourceSize();
         }

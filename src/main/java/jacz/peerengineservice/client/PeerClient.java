@@ -4,7 +4,7 @@ import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.PeerEncryption;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.connection.*;
 import jacz.peerengineservice.util.ChannelConstants;
@@ -48,7 +48,7 @@ public class PeerClient {
     /**
      * Our own peer ID
      */
-    private final PeerID ownPeerID;
+    private final PeerId ownPeerId;
 
     /**
      * Peer encryption object that defines the authentication information for this peer. Not currently used.
@@ -106,7 +106,7 @@ public class PeerClient {
      * @param dataAccessorContainer container for sharing lists of data with peers using the provided list synchronization methods (optional, null if not used)
      */
     public PeerClient(
-            PeerID ownPeerID,
+            PeerId ownPeerId,
             String serverURL,
             PeerEncryption peerEncryption,
             NetworkConfiguration networkConfiguration,
@@ -119,7 +119,7 @@ public class PeerClient {
             Map<String, PeerFSMFactory> customFSMs,
             DataAccessorContainer dataAccessorContainer,
             ErrorHandler errorHandler) {
-        this.ownPeerID = ownPeerID;
+        this.ownPeerId = ownPeerId;
         this.peerEncryption = peerEncryption;
         this.generalEvents = new GeneralEventsBridge(generalEvents);
         this.peersPersonalData = peersPersonalData;
@@ -134,11 +134,11 @@ public class PeerClient {
                 connectionEvents,
                 peerClientPrivateInterface,
                 connectedPeers,
-                ownPeerID,
+                ownPeerId,
                 serverURL,
                 networkConfiguration,
                 peerRelations);
-        resourceStreamingManager = new ResourceStreamingManager(ownPeerID, resourceTransferEvents, connectedPeersMessenger, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
+        resourceStreamingManager = new ResourceStreamingManager(ownPeerId, resourceTransferEvents, connectedPeersMessenger, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
         dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer);
         PeerClient.errorHandler = new ErrorHandlerBridge(this, errorHandler);
@@ -195,8 +195,8 @@ public class PeerClient {
         peerClientConnectionManager.setWishForConnection(false);
     }
 
-    public synchronized PeerID getOwnPeerID() {
-        return ownPeerID;
+    public synchronized PeerId getOwnPeerId() {
+        return ownPeerId;
     }
 
     public PeerEncryption getPeerEncryption() {
@@ -227,55 +227,55 @@ public class PeerClient {
         return peerRelations;
     }
 
-    public synchronized boolean isFriendPeer(PeerID peerID) {
-        return peerRelations.isFriendPeer(peerID);
+    public synchronized boolean isFriendPeer(PeerId peerId) {
+        return peerRelations.isFriendPeer(peerId);
     }
 
-    public synchronized boolean isBlockedPeer(PeerID peerID) {
-        return peerRelations.isBlockedPeer(peerID);
+    public synchronized boolean isBlockedPeer(PeerId peerId) {
+        return peerRelations.isBlockedPeer(peerId);
     }
 
-    public synchronized boolean isNonRegisteredPeer(PeerID peerID) {
-        return peerRelations.isNonRegisteredPeer(peerID);
+    public synchronized boolean isNonRegisteredPeer(PeerId peerId) {
+        return peerRelations.isNonRegisteredPeer(peerId);
     }
 
-    public synchronized Set<PeerID> getFriendPeers() {
+    public synchronized Set<PeerId> getFriendPeers() {
         return peerRelations.getFriendPeers();
     }
 
-    public synchronized void addFriendPeer(final PeerID peerID) {
-        peerRelations.addFriendPeer(peerID);
+    public synchronized void addFriendPeer(final PeerId peerId) {
+        peerRelations.addFriendPeer(peerId);
         searchFriends();
-        if (connectedPeers.getPeerConnectionStatus(peerID) == ConnectionStatus.UNVALIDATED) {
-            connectedPeers.setPeerConnectionStatus(peerID, ConnectionStatus.CORRECT);
-            sendObjectMessage(peerID, new ValidationMessage());
+        if (connectedPeers.getPeerConnectionStatus(peerId) == ConnectionStatus.UNVALIDATED) {
+            connectedPeers.setPeerConnectionStatus(peerId, ConnectionStatus.CORRECT);
+            sendObjectMessage(peerId, new ValidationMessage());
         }
-        generalEvents.peerAddedAsFriend(peerID, peerRelations);
+        generalEvents.peerAddedAsFriend(peerId, peerRelations);
     }
 
-    public synchronized void removeFriendPeer(final PeerID peerID) {
-        peerRelations.removeFriendPeer(peerID);
+    public synchronized void removeFriendPeer(final PeerId peerId) {
+        peerRelations.removeFriendPeer(peerId);
         searchFriends();
-        generalEvents.peerRemovedAsFriend(peerID, peerRelations);
+        generalEvents.peerRemovedAsFriend(peerId, peerRelations);
     }
 
-    public synchronized Set<PeerID> getBlockedPeers() {
+    public synchronized Set<PeerId> getBlockedPeers() {
         return peerRelations.getBlockedPeers();
     }
 
-    public synchronized void addBlockedPeer(final PeerID peerID) {
-        peerRelations.addBlockedPeer(peerID);
+    public synchronized void addBlockedPeer(final PeerId peerId) {
+        peerRelations.addBlockedPeer(peerId);
         searchFriends();
-        generalEvents.peerAddedAsBlocked(peerID, peerRelations);
+        generalEvents.peerAddedAsBlocked(peerId, peerRelations);
     }
 
-    public synchronized void removeBlockedPeer(final PeerID peerID) {
-        peerRelations.removeBlockedPeer(peerID);
-        generalEvents.peerRemovedAsBlocked(peerID, peerRelations);
+    public synchronized void removeBlockedPeer(final PeerId peerId) {
+        peerRelations.removeBlockedPeer(peerId);
+        generalEvents.peerRemovedAsBlocked(peerId, peerRelations);
     }
 
-    public PeerID getNextConnectedPeer(PeerID peerID) {
-        return connectedPeers.getNextConnectedPeer(peerID);
+    public PeerId getNextConnectedPeer(PeerId peerId) {
+        return connectedPeers.getNextConnectedPeer(peerId);
     }
 
     /**
@@ -376,7 +376,7 @@ public class PeerClient {
      * specify the target store. However, it is not required that we have this store updated (not even registered) with
      * the resources shared on it
      *
-     * @param serverPeerID                        ID of the Peer from which the resource is to be downloaded
+     * @param serverPeerId                        ID of the Peer from which the resource is to be downloaded
      * @param resourceStoreName                   name of the individual store to access
      * @param resourceID                          ID of the resource
      * @param resourceWriter                      object in charge of writing the resource
@@ -388,7 +388,7 @@ public class PeerClient {
      * (due to the resource store name given not corresponding to any existing resource store)
      */
     public synchronized DownloadManager downloadResource(
-            PeerID serverPeerID,
+            PeerId serverPeerId,
             String resourceStoreName,
             String resourceID,
             ResourceWriter resourceWriter,
@@ -396,7 +396,7 @@ public class PeerClient {
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm) throws NotAliveException {
-        return resourceStreamingManager.downloadResource(serverPeerID, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, streamingNeed, totalHash, totalHashAlgorithm);
+        return resourceStreamingManager.downloadResource(serverPeerId, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, streamingNeed, totalHash, totalHashAlgorithm);
     }
 
     public synchronized Float getMaxDesiredDownloadSpeed() {
@@ -477,35 +477,35 @@ public class PeerClient {
         resourceStreamingManager.getUploadsManager().stopTimer();
     }
 
-    void newPeerConnected(final PeerID peerID, final ChannelConnectionPoint ccp, final ConnectionStatus status) {
+    void newPeerConnected(final PeerId peerId, final ChannelConnectionPoint ccp, final ConnectionStatus status) {
         // first notify the resource streaming manager, so it sets up the necessary FSMs for receiving resource data. Then, notify the client
-        dataSynchronizer.getDataAccessorContainer().peerConnected(peerID);
+        dataSynchronizer.getDataAccessorContainer().peerConnected(peerId);
         resourceStreamingManager.newPeerConnected(ccp);
-        generalEvents.newPeerConnected(peerID, status);
+        generalEvents.newPeerConnected(peerId, status);
         // send the other peer own nick, to ensure he has our latest value
-        sendObjectMessage(peerID, new NewNickMessage(peersPersonalData.getOwnNick()));
+        sendObjectMessage(peerId, new NewNickMessage(peersPersonalData.getOwnNick()));
     }
 
     /**
      * This method allows to register a new custom FSM in this PeerClient. Custom FSMs allows client of the peer engine
      * package to establish custom communication protocols with other peers
      *
-     * @param peerID        the ID of the peer with which this FSM must communicate
+     * @param peerId        the ID of the peer with which this FSM must communicate
      * @param peerFSMAction the actions to be invoked by the new peer FSM (this is the real behaviour of the FSM)
      * @param serverFSMName the name of the corresponding FSM at the server with which the new FSM will communicate.
      *                      This FSM allows the RequestDispatcher at the other peer to build the correct FSM
      * @param <T>           class used for representing the state in the new FSM
      * @return true if the FSM was correctly set up, false otherwise (due to no available channels, client can try later)
-     * @throws UnavailablePeerException the given PeerID does not correspond to a connected peer
+     * @throws UnavailablePeerException the given PeerId does not correspond to a connected peer
      */
-    public synchronized <T> UniqueIdentifier registerCustomFSM(PeerID peerID, PeerFSMAction<T> peerFSMAction, String serverFSMName) throws UnavailablePeerException {
+    public synchronized <T> UniqueIdentifier registerCustomFSM(PeerId peerId, PeerFSMAction<T> peerFSMAction, String serverFSMName) throws UnavailablePeerException {
         // do not allow to register FSM for peers who are not ready yet
-        if (connectedPeers.isConnectedPeer(peerID)) {
-            Byte assignedChannel = connectedPeers.requestChannel(peerID);
+        if (connectedPeers.isConnectedPeer(peerId)) {
+            Byte assignedChannel = connectedPeers.requestChannel(peerId);
             if (assignedChannel == null) {
                 return null;
             }
-            ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerID);
+            ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerId);
             CustomPeerFSM<T> customPeerFSM = new CustomPeerFSM<>(peerFSMAction, serverFSMName, assignedChannel);
             UniqueIdentifier id = ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
             if (id != null) {
@@ -520,22 +520,22 @@ public class PeerClient {
     /**
      * Same as registerCustomFSM method, but with timeout functionality
      *
-     * @param peerID             the ID of the peer with which this FSM must communicate
+     * @param peerId             the ID of the peer with which this FSM must communicate
      * @param peerTimedFSMAction the actions to be invoked by the new peer FSM (this is the real behaviour of the FSM)
      * @param serverFSMName      the name of the corresponding FSM at the server with which the new FSM will communicate.
      *                           This FSM allows the RequestDispatcher at the other peer to build the correct FSM
      * @param timeoutMillis      timeout of the new FSM, in milliseconds
      * @param <T>                class used for representing the state in the new FSM
      * @return true if the FSM was correctly set up, false otherwise (due to no available channels, client can try later)
-     * @throws UnavailablePeerException the given PeerID does not correspond to a connected peer
+     * @throws UnavailablePeerException the given PeerId does not correspond to a connected peer
      */
-    public synchronized <T> UniqueIdentifier registerTimedCustomFSM(PeerID peerID, PeerTimedFSMAction<T> peerTimedFSMAction, String serverFSMName, long timeoutMillis) throws UnavailablePeerException {
-        if (connectedPeers.isConnectedPeer(peerID)) {
-            Byte assignedChannel = connectedPeers.requestChannel(peerID);
+    public synchronized <T> UniqueIdentifier registerTimedCustomFSM(PeerId peerId, PeerTimedFSMAction<T> peerTimedFSMAction, String serverFSMName, long timeoutMillis) throws UnavailablePeerException {
+        if (connectedPeers.isConnectedPeer(peerId)) {
+            Byte assignedChannel = connectedPeers.requestChannel(peerId);
             if (assignedChannel == null) {
                 return null;
             }
-            ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerID);
+            ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerId);
             CustomTimedPeerFSM<T> customTimedPeerFSM = new CustomTimedPeerFSM<>(peerTimedFSMAction, serverFSMName, assignedChannel);
             UniqueIdentifier id = ccp.registerTimedFSM(customTimedPeerFSM, timeoutMillis, "UnnamedCustomTimedPeerFSM", assignedChannel);
             if (id != null) {
@@ -547,13 +547,13 @@ public class PeerClient {
         }
     }
 
-    synchronized void requestServerCustomFSM(RequestFromPeerToPeer requestFromPeerToPeer, String serverFSMName, PeerID peerID, ChannelConnectionPoint ccp, byte outgoingChannel) {
+    synchronized void requestServerCustomFSM(RequestFromPeerToPeer requestFromPeerToPeer, String serverFSMName, PeerId peerId, ChannelConnectionPoint ccp, byte outgoingChannel) {
         if (customFSMs.containsKey(serverFSMName)) {
             // requestFromPeerToPeer a channel for the new required custom FSM
             // the channel should be sent in the init method of the custom FSM, not our responsibility
-            PeerFSMAction<?> peerFSMAction = customFSMs.get(serverFSMName).buildPeerFSMAction(peerID, connectedPeers.getPeerConnectionStatus(peerID));
+            PeerFSMAction<?> peerFSMAction = customFSMs.get(serverFSMName).buildPeerFSMAction(peerId, connectedPeers.getPeerConnectionStatus(peerId));
             if (peerFSMAction != null) {
-                Byte assignedChannel = connectedPeers.requestChannel(peerID);
+                Byte assignedChannel = connectedPeers.requestChannel(peerId);
                 if (assignedChannel != null) {
                     // set up custom FSM
                     // non-timed
@@ -589,11 +589,11 @@ public class PeerClient {
      * Sends an object message to a connected peer. If the given peer is not among the list of connected peers, the
      * message will be ignored
      *
-     * @param peerID  ID of the peer to which the message is to be sent
+     * @param peerId  ID of the peer to which the message is to be sent
      * @param message string message to send
      */
-    public void sendObjectMessage(PeerID peerID, Serializable message) {
-        connectedPeersMessenger.sendObjectRequest(peerID, message);
+    public void sendObjectMessage(PeerId peerId, Serializable message) {
+        connectedPeersMessenger.sendObjectRequest(peerId, message);
     }
 
     /**
@@ -621,25 +621,25 @@ public class PeerClient {
      * This method allows the PeerRequestDispatcherFSM of a connected peer to report that his peer has sent us a chat
      * message
      *
-     * @param peerID  ID of the peer who sent the message
+     * @param peerId  ID of the peer who sent the message
      * @param message string message received
      */
-    synchronized void newObjectMessageReceived(final PeerID peerID, final Object message) {
-        if (connectedPeers.isConnectedPeer(peerID)) {
+    synchronized void newObjectMessageReceived(final PeerId peerId, final Object message) {
+        if (connectedPeers.isConnectedPeer(peerId)) {
             if (message instanceof ValidationMessage) {
                 // validation messages are handled here
-                if (connectedPeers.getPeerConnectionStatus(peerID) == ConnectionStatus.WAITING_FOR_REMOTE_VALIDATION) {
-                    connectedPeers.setPeerConnectionStatus(peerID, ConnectionStatus.CORRECT);
-                    generalEvents.peerValidatedUs(peerID);
+                if (connectedPeers.getPeerConnectionStatus(peerId) == ConnectionStatus.WAITING_FOR_REMOTE_VALIDATION) {
+                    connectedPeers.setPeerConnectionStatus(peerId, ConnectionStatus.CORRECT);
+                    generalEvents.peerValidatedUs(peerId);
                 }
             } else if (message instanceof NewNickMessage) {
                 // new nick from other peer received
                 final NewNickMessage newNickMessage = (NewNickMessage) message;
-                if (peersPersonalData.setPeersNicks(peerID, newNickMessage.nick)) {
-                    generalEvents.newPeerNick(peerID, newNickMessage.nick);
+                if (peersPersonalData.setPeersNicks(peerId, newNickMessage.nick)) {
+                    generalEvents.newPeerNick(peerId, newNickMessage.nick);
                 }
             } else {
-                generalEvents.newObjectMessage(peerID, message);
+                generalEvents.newObjectMessage(peerId, message);
             }
         }
     }
@@ -649,11 +649,11 @@ public class PeerClient {
      * of him (CORRECT), he is not a friend of us but we are a friend of him (UNVALIDATED) or he is our friend but we are waiting for
      * him to make us his friend (WAITING_FOR_REMOTE_VALIDATION)
      *
-     * @param peerID peer whose connection status we want to retrieve
+     * @param peerId peer whose connection status we want to retrieve
      * @return the connection status of the given peer, or null if we are not connected to this peer
      */
-    public synchronized ConnectionStatus getPeerConnectionStatus(PeerID peerID) {
-        return connectedPeers.getPeerConnectionStatus(peerID);
+    public synchronized ConnectionStatus getPeerConnectionStatus(PeerId peerId) {
+        return connectedPeers.getPeerConnectionStatus(peerId);
     }
 
     public synchronized void subscribeToConnectedPeers(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver) {
@@ -667,11 +667,11 @@ public class PeerClient {
     /**
      * This methods erases a connected peer (due to this peer disconnecting from us, or we from him, or due to an error)
      *
-     * @param peerID peer that was disconnected
+     * @param peerId peer that was disconnected
      * @param error  error that provoked the disconnection (null if no error)
      */
-    synchronized void peerDisconnected(PeerID peerID, CommError error) {
-        dataSynchronizer.getDataAccessorContainer().peerDisconnected(peerID);
-        generalEvents.peerDisconnected(peerID, error);
+    synchronized void peerDisconnected(PeerId peerId, CommError error) {
+        dataSynchronizer.getDataAccessorContainer().peerDisconnected(peerId);
+        generalEvents.peerDisconnected(peerId, error);
     }
 }

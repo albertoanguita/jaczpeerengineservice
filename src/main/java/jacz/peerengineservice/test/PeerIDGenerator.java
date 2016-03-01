@@ -1,6 +1,6 @@
 package jacz.peerengineservice.test;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 
 /**
  * Class description
@@ -11,12 +11,12 @@ import jacz.peerengineservice.PeerID;
  */
 public class PeerIDGenerator {
 
-    public static PeerID peerID(int b) {
+    public static PeerId peerID(int b) {
         String pid = "" + b;
         while (pid.length() < 43) {
             pid = "0" + pid;
         }
 //        pid = "pid{" + pid + "}";
-        return new PeerID(pid);
+        return new PeerId(pid);
     }
 }

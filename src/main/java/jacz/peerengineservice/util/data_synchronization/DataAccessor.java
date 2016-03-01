@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.data_synchronization;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.util.notification.ProgressNotificationWithError;
 
 import java.io.Serializable;
@@ -111,12 +111,12 @@ public interface DataAccessor {
      * <p/>
      * This method is only invoked in server mode.
      *
-     * @param clientPeerID identifier of the peer requesting synchronization of this list
+     * @param clientPeerId identifier of the peer requesting synchronization of this list
      * @return a ServerSynchRequestAnswer object containing the answer (OK or SERVER_BUSY), plus
      * an implementation of the ProgressNotificationWithError<Integer, String> interface if it is desired that
      * the progress of such synchronization is monitored. addMessage(Integer) invocations will be performed
      * to the given implementation, with values from 0 to 10000, and a completeTask() invocation will be
      * done after the process is complete. Returning a null value means that no progress monitoring is required.
      */
-    ProgressNotificationWithError<Integer, SynchError> getServerSynchProgress(PeerID clientPeerID);
+    ProgressNotificationWithError<Integer, SynchError> getServerSynchProgress(PeerId clientPeerId);
 }

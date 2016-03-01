@@ -1,6 +1,6 @@
 package jacz.peerengineservice.test;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
 import jacz.peerengineservice.client.connection.NetworkConfiguration;
@@ -16,10 +16,10 @@ import java.io.FileNotFoundException;
  */
 public class PeerClientConfigSerializer {
 
-    public static Four_Tuple<PeerID, NetworkConfiguration, PeersPersonalData, PeerRelations> readPeerClientData(String path) throws FileNotFoundException, XMLStreamException, IllegalArgumentException, NumberFormatException {
+    public static Four_Tuple<PeerId, NetworkConfiguration, PeersPersonalData, PeerRelations> readPeerClientData(String path) throws FileNotFoundException, XMLStreamException, IllegalArgumentException, NumberFormatException {
         XMLReader xmlReader = new XMLReader(path);
 
-        PeerID ownPeerID = new PeerID(xmlReader.getFieldValue("peer-id"));
+        PeerId ownPeerId = new PeerId(xmlReader.getFieldValue("peer-id"));
         NetworkConfiguration networkConfiguration = new NetworkConfiguration(
                 StrCast.asInteger(xmlReader.getFieldValue("port")),
                 StrCast.asInteger(xmlReader.getFieldValue("external-port")));
@@ -29,21 +29,21 @@ public class PeerClientConfigSerializer {
         xmlReader.getStruct("friend-peers");
         while (xmlReader.hasMoreChildren()) {
             xmlReader.getNextStruct();
-            PeerID peerID = new PeerID(xmlReader.getFieldValue("peer-id"));
+            PeerId peerId = new PeerId(xmlReader.getFieldValue("peer-id"));
             String nick = xmlReader.getFieldValue("nick");
-            peersPersonalData.setPeersNicks(peerID, nick);
-            peerRelations.addFriendPeer(peerID);
+            peersPersonalData.setPeersNicks(peerId, nick);
+            peerRelations.addFriendPeer(peerId);
             xmlReader.gotoParent();
         }
         xmlReader.getStruct("blocked-peers");
         while (xmlReader.hasMoreChildren()) {
             xmlReader.getNextStruct();
-            PeerID peerID = new PeerID(xmlReader.getFieldValue("peer-id"));
+            PeerId peerId = new PeerId(xmlReader.getFieldValue("peer-id"));
             String nick = xmlReader.getFieldValue("nick");
-            peersPersonalData.setPeersNicks(peerID, nick);
-            peerRelations.addBlockedPeer(peerID);
+            peersPersonalData.setPeersNicks(peerId, nick);
+            peerRelations.addBlockedPeer(peerId);
             xmlReader.gotoParent();
         }
-        return new Four_Tuple<>(ownPeerID, networkConfiguration, peersPersonalData, peerRelations);
+        return new Four_Tuple<>(ownPeerId, networkConfiguration, peersPersonalData, peerRelations);
     }
 }

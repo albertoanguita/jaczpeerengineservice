@@ -2,7 +2,7 @@ package jacz.peerengineservice.client.connection;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.channel.ChannelFSMAction;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 
 /**
@@ -29,17 +29,17 @@ public class PeerRequestDispatcherFSM implements ChannelFSMAction<PeerRequestDis
     /**
      * The Peer to which this RequestDispatcher listens
      */
-    private final PeerID peerID;
+    private final PeerId peerId;
 
     /**
      * Class constructor
      *
      * @param peerClientPrivateInterface the interface to the PeerClient for which this RequestDispatcher processes new requests
-     * @param peerID     The ID of out client
+     * @param peerId     The ID of out client
      */
-    public PeerRequestDispatcherFSM(PeerClientPrivateInterface peerClientPrivateInterface, PeerID peerID) {
+    public PeerRequestDispatcherFSM(PeerClientPrivateInterface peerClientPrivateInterface, PeerId peerId) {
         this.peerClientPrivateInterface = peerClientPrivateInterface;
-        this.peerID = peerID;
+        this.peerId = peerId;
     }
 
     @Override
@@ -51,20 +51,20 @@ public class PeerRequestDispatcherFSM implements ChannelFSMAction<PeerRequestDis
 
                 case OBJECT_MESSAGE:
                     // report our PeerClient
-                    peerClientPrivateInterface.newObjectMessageReceived(peerID, requestFromPeerToPeer.customObject);
+                    peerClientPrivateInterface.newObjectMessageReceived(peerId, requestFromPeerToPeer.customObject);
                     break;
 
                 case CUSTOM:
                     // requestFromPeerToPeer for a new custom FSM received, look for the FSM in the custom FSM factory
                     // if we don't have that custom FSM registered, simply ignore
                     String value = requestFromPeerToPeer.value;
-                    peerClientPrivateInterface.requestServerCustomFSM(requestFromPeerToPeer, value, peerID, ccp, outgoingChannel);
+                    peerClientPrivateInterface.requestServerCustomFSM(requestFromPeerToPeer, value, peerId, ccp, outgoingChannel);
 //                    if (customFSMs.containsKey(value)) {
 //                        // requestFromPeerToPeer a channel for the new required custom FSM
 //                        // the channel should be sent in the init method of the custom FSM, not our responsibility
-//                        PeerFSMAction<?> peerFSMAction = customFSMs.get(value).buildPeerFSMAction(connectedPeers.getPeerConnectionStatus(peerID));
+//                        PeerFSMAction<?> peerFSMAction = customFSMs.get(value).buildPeerFSMAction(connectedPeers.getPeerConnectionStatus(peerId));
 //                        if (peerFSMAction != null) {
-//                            Byte assignedChannel = connectedPeers.requestChannel(peerID);
+//                            Byte assignedChannel = connectedPeers.requestChannel(peerId);
 //                            //System.out.println("RequestDispatcher sends " + assignedChannel + " to " + outgoingChannel);
 //                            if (assignedChannel != null) {
 //                                // set up custom FSM

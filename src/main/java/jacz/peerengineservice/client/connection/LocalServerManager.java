@@ -4,21 +4,21 @@ import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.clientserver.server.ServerAction;
 import jacz.commengine.clientserver.server.ServerModule;
 import jacz.commengine.communication.CommError;
-import jacz.peerengineservice.PeerID;
-import jacz.util.concurrency.daemon.Daemon;
-import jacz.util.concurrency.daemon.DaemonAction;
-import jacz.util.concurrency.timer.SimpleTimerAction;
-import jacz.util.concurrency.timer.Timer;
+import jacz.peerengineservice.PeerId;
+import jacz.util.AI.evolve.DiscreteEvolvingState;
+import jacz.util.AI.evolve.EvolvingState;
+import jacz.util.AI.evolve.EvolvingStateController;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.network.IP4Port;
+import jacz.util.numeric.NumericUtil;
 import org.bitlet.weupnp.GatewayDevice;
 
 import java.io.IOException;
 
 /**
- * This class manages the server for listening to other peers connecting to us
+ * Created by Alberto on 01/03/2016.
  */
-public class LocalServerManager implements DaemonAction {
+public class LocalServerManager {
 
     /**
      * Used by the ServerModule of the PeerClientConnectionManager, to listen to new connections from other peers. This
@@ -87,41 +87,17 @@ public class LocalServerManager implements DaemonAction {
         }
     }
 
-    private static class RetryReminder implements SimpleTimerAction {
-
-        private static final long RETRY_CONNECTION_DELAY = 25000L;
-
-        private final LocalServerManager localServerManager;
-
-        private final Timer timer;
-
-        private RetryReminder(LocalServerManager localServerManager) {
-            this.localServerManager = localServerManager;
-            timer = new Timer(RETRY_CONNECTION_DELAY, this, false, "LocalServerManager.RetryReminder");
-        }
-
-        synchronized void mustRetryConnection() {
-            timer.reset();
-        }
-
-        synchronized void stop() {
-            timer.kill();
-        }
-
-        @Override
-        public Long wakeUp(Timer timer) {
-            localServerManager.finishWaitForConnectionRetry();
-            return 0L;
-        }
-    }
-
 
     private static final String NAT_RULE_DESCRIPTION_INIT = "JCZ_";
 
     private static final int NAT_RULE_CHARACTER_COUNT = 6;
 
+    private static final long RETRY_CONNECTION_DELAY = 25000L;
 
-    private final PeerID ownPeerID;
+    private final static long GENERAL_REMINDER = NumericUtil.max(RETRY_CONNECTION_DELAY) + 5000L;
+
+
+    private final PeerId ownPeerId;
 
     private final int defaultExternalPort;
 
@@ -129,7 +105,7 @@ public class LocalServerManager implements DaemonAction {
 
     private final NetworkTopologyManager networkTopologyManager;
 
-    private final FriendConnectionManager friendConnectionManager;
+    private final PeerClientConnectionManager peerClientConnectionManager;
 
     /**
      * Actions to invoke upon certain events
@@ -141,18 +117,6 @@ public class LocalServerManager implements DaemonAction {
      */
     private ServerModule serverModule;
 
-    private boolean wishForConnect;
-
-    /**
-     * Daemon thread that helps keep the state in its desired values
-     */
-    private final Daemon stateDaemon;
-
-    /**
-     * Status of the server for listening to incoming peer connections
-     */
-    private State.LocalServerConnectionsState localServerConnectionsState;
-
     /**
      * Collection of all information related to connection to the server, as provided by the user
      */
@@ -163,30 +127,96 @@ public class LocalServerManager implements DaemonAction {
      */
     private int listeningPort;
 
-    private RetryReminder retryReminder;
-
+    private final DiscreteEvolvingState<State.LocalServerConnectionsState, Boolean> dynamicState;
 
     public LocalServerManager(
-            PeerID ownPeerID,
+            PeerId ownPeerId,
             int defaultExternalPort,
-            NetworkTopologyManager networkTopologyManager,
-            FriendConnectionManager friendConnectionManager,
+            final NetworkTopologyManager networkTopologyManager,
+            PeerClientConnectionManager peerClientConnectionManager,
             ConnectionInformation wishedConnectionInformation,
-            ConnectionEventsBridge connectionEvents) {
-        this.ownPeerID = ownPeerID;
+            final ConnectionEventsBridge connectionEvents) {
+        this.ownPeerId = ownPeerId;
         this.defaultExternalPort = defaultExternalPort;
         externalPort = -1;
         this.networkTopologyManager = networkTopologyManager;
-        this.friendConnectionManager = friendConnectionManager;
+        this.peerClientConnectionManager = peerClientConnectionManager;
         this.connectionEvents = connectionEvents;
         serverModule = null;
-        wishForConnect = false;
-        stateDaemon = new Daemon(this);
-        localServerConnectionsState = State.LocalServerConnectionsState.CLOSED;
         this.wishedConnectionInformation = wishedConnectionInformation;
         listeningPort = -1;
-        this.retryReminder = new RetryReminder(this);
+        dynamicState = new DiscreteEvolvingState<>(State.LocalServerConnectionsState.CLOSED, false, new EvolvingState.Transitions<State.LocalServerConnectionsState, Boolean>() {
+            @Override
+            public void runTransition(State.LocalServerConnectionsState state, Boolean goal, EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
+                if (!goal) {
+                    switch (state) {
+                        case LISTENING:
+                            // we must close our server and kick all connected clients
+                            if (externalPort != -1) {
+                                destroyGatewayForwardingRule(externalPort, controller);
+                                externalPort = -1;
+                            }
+                            controller.evolve();
+                            break;
+
+                        case OPEN:
+                            // we must close our server and kick all connected clients
+                            closePeerConnectionsServer(controller);
+                            controller.evolve();
+                            break;
+                    }
+                } else {
+                    switch (state) {
+                        case CLOSED:
+                        case WAITING_FOR_OPENING_TRY:
+                            // open the server for listening connections from other peers
+                            openPeerConnectionsServer(controller);
+                            break;
+
+                        case OPEN:
+                        case WAITING_FOR_NAT_RULE_TRY:
+                            // check gateway
+                            if (listeningPort == 0 && LocalServerManager.this.networkTopologyManager.hasGateway()) {
+                                // we must create a NAT rule in the gateway for connection to be able to reach us
+                                externalPort = createGatewayForwardingRule(LocalServerManager.this.defaultExternalPort, controller);
+                                if (LocalServerManager.this.externalPort != -1) {
+                                    // the nat rule was created ok, evolve
+                                    controller.evolve();
+                                }
+                                // if not, we will retry shortly
+                            } else {
+                                // fixed port (rely on user to appropriately forward ports) or no gateway,
+                                // we can move to LISTENING state
+                                controller.setState(State.LocalServerConnectionsState.LISTENING);
+                                externalPort = LocalServerManager.this.wishedConnectionInformation.getLocalPort();
+                                connectionEvents.listeningConnectionsWithoutNATRule(externalPort, listeningPort, State.LocalServerConnectionsState.LISTENING);
+                                controller.evolve();
+                            }
+                            break;
+
+                        case LISTENING:
+                            // check the correct listening port is being used
+                            if (!isCorrectConnectionInformation()) {
+                                destroyGatewayForwardingRule(externalPort, controller);
+                                closePeerConnectionsServer(controller);
+                                controller.evolve();
+                            }
+                            // otherwise, everything ok
+                            break;
+                    }
+                }
+            }
+
+            @Override
+            public boolean hasReachedGoal(State.LocalServerConnectionsState state, Boolean goal) {
+                return goal && state == State.LocalServerConnectionsState.LISTENING || !goal && state == State.LocalServerConnectionsState.CLOSED;
+            }
+        });
+        dynamicState.setStateTimer(State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY, RETRY_CONNECTION_DELAY);
+        dynamicState.setStateTimer(State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY, RETRY_CONNECTION_DELAY);
+        dynamicState.setGeneralTimer(GENERAL_REMINDER);
     }
+
 
     public int getDefaultExternalPort() {
         return defaultExternalPort;
@@ -202,23 +232,15 @@ public class LocalServerManager implements DaemonAction {
     }
 
     synchronized Integer getExternalListeningPort() {
-        return localServerConnectionsState == State.LocalServerConnectionsState.LISTENING ? externalPort : null;
+        return dynamicState.state() == State.LocalServerConnectionsState.LISTENING ? externalPort : null;
     }
 
-    synchronized void setWishForConnect(boolean wishForConnect) {
-        boolean mustUpdateState = this.wishForConnect != wishForConnect;
-        this.wishForConnect = wishForConnect;
-        if (mustUpdateState) {
-            updateState();
-        }
+    void setWishForConnect(boolean wishForConnect) {
+        dynamicState.setGoal(wishForConnect, true);
     }
 
-    synchronized boolean isInWishedState() {
-        if (wishForConnect) {
-            return localServerConnectionsState == State.LocalServerConnectionsState.LISTENING;
-        } else {
-            return localServerConnectionsState == State.LocalServerConnectionsState.CLOSED;
-        }
+    boolean isInWishedState() {
+        return dynamicState.hasReachedGoal();
     }
 
     private boolean isCorrectConnectionInformation() {
@@ -227,140 +249,74 @@ public class LocalServerManager implements DaemonAction {
 
     void stop() {
         setWishForConnect(false);
-        retryReminder.stop();
-        stateDaemon.blockUntilStateIsSolved();
+        dynamicState.blockUntilStateIsSolved();
+        dynamicState.stop();
     }
 
     synchronized void updateState() {
-        stateDaemon.stateChange();
-        stateDaemon.interrupt();
-    }
-
-    @Override
-    public synchronized boolean solveState() {
-        if (wishForConnect) {
-            // first open the server for listening to incoming peer connections, then connect to the peer server
-            switch (localServerConnectionsState) {
-
-                case CLOSED:
-                    // open the server for listening connections from other peers
-                    openPeerConnectionsServer();
-                    return false;
-                case OPEN:
-                    // check gateway
-                    if (listeningPort == 0 && networkTopologyManager.hasGateway()) {
-                        // we must create a NAT rule in the gateway for connection to be able to reach us
-                        externalPort = createGatewayForwardingRule(defaultExternalPort);
-                        // finish if we could not create the NAT rule (timer is set to try again later)
-                        return externalPort == -1;
-                    } else {
-                        // fixed port (rely on user to appropriately forward ports) or no gateway,
-                        // we can move to LISTENING state
-                        localServerConnectionsState = State.LocalServerConnectionsState.LISTENING;
-                        externalPort = wishedConnectionInformation.getLocalPort();
-                        connectionEvents.listeningConnectionsWithoutNATRule(externalPort, listeningPort, localServerConnectionsState);
-                        return false;
-                    }
-                case WAITING_FOR_OPENING_TRY:
-                    return true;
-                case LISTENING:
-                    // check the correct listening port is being used
-                    if (!isCorrectConnectionInformation()) {
-                        destroyGatewayForwardingRule(externalPort);
-                        closePeerConnectionsServer();
-                        return false;
-                    } else {
-                        return true;
-                    }
-                case WAITING_FOR_NAT_RULE_TRY:
-                    return true;
-            }
-        } else {
-            switch (localServerConnectionsState) {
-                case LISTENING:
-                    // we must close our server and kick all connected clients
-                    if (externalPort != -1) {
-                        destroyGatewayForwardingRule(externalPort);
-                        externalPort = -1;
-                    }
-                    localServerConnectionsState = State.LocalServerConnectionsState.OPEN;
-                    return false;
-                case OPEN:
-                    // we must close our server and kick all connected clients
-                    closePeerConnectionsServer();
-                    return false;
-            }
-        }
-        return true;
-    }
-
-    private void finishWaitForConnectionRetry() {
-        if (localServerConnectionsState == State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY) {
-            localServerConnectionsState = State.LocalServerConnectionsState.CLOSED;
-        } else if (localServerConnectionsState == State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY) {
-            localServerConnectionsState = State.LocalServerConnectionsState.OPEN;
-        }
-        updateState();
+        dynamicState.evolve();
     }
 
 
-    private void openPeerConnectionsServer() {
+    private void openPeerConnectionsServer(EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
         try {
             connectionEvents.tryingToOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.OPENING);
             listeningPort = wishedConnectionInformation.getLocalPort();
-            serverModule = new ServerModule(listeningPort, new PeerClientServerActionImpl(friendConnectionManager, connectionEvents), PeerClientConnectionManager.generateConcurrentChannelSets());
+            serverModule = new ServerModule(listeningPort, new PeerClientServerActionImpl(peerClientConnectionManager.getFriendConnectionManager(), connectionEvents), PeerClientConnectionManager.generateConcurrentChannelSets());
             serverModule.startListeningConnections();
-            localServerConnectionsState = State.LocalServerConnectionsState.OPEN;
-            connectionEvents.localServerOpen(getActualListeningPort(), localServerConnectionsState);
+            controller.setState(State.LocalServerConnectionsState.OPEN);
+            connectionEvents.localServerOpen(getActualListeningPort(), State.LocalServerConnectionsState.OPEN);
+            controller.evolve();
         } catch (IOException e) {
             // the server could not be opened
             connectionEvents.couldNotOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY);
-            localServerConnectionsState = State.LocalServerConnectionsState.CLOSED;
-            retryReminder.mustRetryConnection();
+            controller.setState(State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY);
         }
     }
 
-    private int createGatewayForwardingRule(int defaultExternalPort) {
+    private int createGatewayForwardingRule(int defaultExternalPort, EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
         try {
             connectionEvents.tryingToCreateNATRule(defaultExternalPort, getActualListeningPort(), State.LocalServerConnectionsState.CREATING_NAT_RULE);
             GatewayDevice gatewayDevice = UpnpAPI.fetchGatewayDevice(networkTopologyManager.getExternalAddress());
             int externalPort = UpnpAPI.mapPortFrom(gatewayDevice, generateNATRuleDescription(), defaultExternalPort, getActualListeningPort(), true);
-            localServerConnectionsState = State.LocalServerConnectionsState.LISTENING;
-            connectionEvents.NATRuleCreated(externalPort, getActualListeningPort(), localServerConnectionsState);
+            controller.setState(State.LocalServerConnectionsState.LISTENING);
+            connectionEvents.NATRuleCreated(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.LISTENING);
             return externalPort;
         } catch (UpnpAPI.NoGatewayException e) {
-            connectionEvents.couldNotFetchUPNPGateway(externalPort, getActualListeningPort(), localServerConnectionsState);
-            retryReminder.mustRetryConnection();
+            controller.setState(State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY);
+            connectionEvents.couldNotFetchUPNPGateway(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY);
             return -1;
         } catch (UpnpAPI.UpnpException e) {
-            connectionEvents.errorCreatingNATRule(externalPort, getActualListeningPort(), localServerConnectionsState);
-            retryReminder.mustRetryConnection();
+            controller.setState(State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY);
+            connectionEvents.errorCreatingNATRule(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY);
             return -1;
         }
     }
 
-    private void destroyGatewayForwardingRule(int externalPort) {
+    private void destroyGatewayForwardingRule(int externalPort, EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
         connectionEvents.tryingToDestroyNATRule(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.DESTROYING_NAT_RULE);
         try {
+            // in both cases (success or error) the resulting state will be OPEN
+            controller.setState(State.LocalServerConnectionsState.OPEN);
             GatewayDevice gatewayDevice = UpnpAPI.fetchGatewayDevice(networkTopologyManager.getExternalAddress());
             UpnpAPI.unmapPort(gatewayDevice, externalPort);
-            connectionEvents.NATRuleDestroyed(externalPort, getActualListeningPort(), localServerConnectionsState);
+            connectionEvents.NATRuleDestroyed(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.OPEN);
         } catch (UpnpAPI.NoGatewayException | UpnpAPI.UpnpException e) {
-            connectionEvents.couldNotDestroyNATRule(externalPort, getActualListeningPort(), localServerConnectionsState);
+            connectionEvents.couldNotDestroyNATRule(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.OPEN);
         }
     }
 
     private String generateNATRuleDescription() {
         // use the latest characters from the peerID value
-        return NAT_RULE_DESCRIPTION_INIT + ownPeerID.toString().substring(ownPeerID.toString().length() - NAT_RULE_CHARACTER_COUNT);
+        return NAT_RULE_DESCRIPTION_INIT + ownPeerId.toString().substring(ownPeerId.toString().length() - NAT_RULE_CHARACTER_COUNT);
     }
 
-    private void closePeerConnectionsServer() {
+    private void closePeerConnectionsServer(EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
         if (serverModule != null) {
             connectionEvents.tryingToCloseLocalServer(getActualListeningPort(), State.LocalServerConnectionsState.CLOSING);
             serverModule.stopListeningConnections();
         }
-        localServerConnectionsState = State.LocalServerConnectionsState.CLOSED;
-        connectionEvents.localServerClosed(listeningPort, localServerConnectionsState);
+        controller.setState(State.LocalServerConnectionsState.CLOSED);
+        connectionEvents.localServerClosed(listeningPort, State.LocalServerConnectionsState.CLOSED);
     }
 }

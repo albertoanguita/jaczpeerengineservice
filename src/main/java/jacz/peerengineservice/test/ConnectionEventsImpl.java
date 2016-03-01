@@ -1,6 +1,6 @@
 package jacz.peerengineservice.test;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.ConnectionEvents;
 import jacz.peerengineservice.client.connection.State;
 import jacz.util.network.IP4Port;
@@ -14,17 +14,17 @@ public class ConnectionEventsImpl implements ConnectionEvents {
 
     private String initMessage;
 
-    public void init(PeerID ownPeerID, jacz.peerengineservice.test.Client client) {
+    public void init(PeerId ownPeerId, jacz.peerengineservice.test.Client client) {
         this.client = client;
-        initMessage = formatPeer(ownPeerID) + ": ";
+        initMessage = formatPeer(ownPeerId) + ": ";
     }
 
     protected boolean equalsPeerID(int id) {
-        return client.getPeerClient().getOwnPeerID().equals(PeerIDGenerator.peerID(id));
+        return client.getPeerClient().getOwnPeerId().equals(PeerIDGenerator.peerID(id));
     }
 
-    private String formatPeer(PeerID peerID) {
-        return "{" + peerID.toString().substring(40) + "}";
+    private String formatPeer(PeerId peerId) {
+        return "{" + peerId.toString().substring(40) + "}";
     }
 
     @Override

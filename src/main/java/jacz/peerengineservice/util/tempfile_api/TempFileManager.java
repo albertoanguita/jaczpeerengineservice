@@ -3,7 +3,7 @@ package jacz.peerengineservice.util.tempfile_api;
 import jacz.util.concurrency.concurrency_controller.ConcurrencyController;
 import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWrite;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
-import jacz.util.concurrency.task_executor.TaskFinalizationIndicator;
+import jacz.util.concurrency.task_executor.TaskSemaphore;
 import jacz.util.files.FileUtil;
 import jacz.util.io.serialization.VersionedObjectSerializer;
 import jacz.util.io.serialization.VersionedSerializationException;
@@ -224,7 +224,7 @@ public class TempFileManager {
      * @throws IOException there were errors accessing the given temporary file
      */
     public Long getTemporaryResourceSize(String tempFileName) throws IOException {
-        TaskFinalizationIndicator tfi;
+        TaskSemaphore tfi;
         GetSizeTask getSizeTask = new GetSizeTask(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
@@ -244,7 +244,7 @@ public class TempFileManager {
      * @throws IOException there were errors accessing the given temporary file
      */
     public void setTemporaryResourceSize(String tempFileName, long size) throws IOException {
-        TaskFinalizationIndicator tfi;
+        TaskSemaphore tfi;
         SetSizeTask setSizeTask = new SetSizeTask(this, generateIndexFilePath(tempFileName), size);
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
@@ -264,7 +264,7 @@ public class TempFileManager {
      * @throws IOException there were errors accessing the given temporary file
      */
     public LongRangeList getTemporaryOwnedParts(String tempFileName) throws IOException {
-        TaskFinalizationIndicator tfi;
+        TaskSemaphore tfi;
         OwnedPartsTask ownedPartsTask = new OwnedPartsTask(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
@@ -290,7 +290,7 @@ public class TempFileManager {
      * @throws IOException problems accessing the index file
      */
     public String completeTempFile(String tempFileName) throws IOException {
-        TaskFinalizationIndicator tfi;
+        TaskSemaphore tfi;
         CompleterTask completerTask = new CompleterTask(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
@@ -323,7 +323,7 @@ public class TempFileManager {
     }
 
     public HashMap<String, Serializable> getUserDictionary(String tempFileName) throws IOException {
-        TaskFinalizationIndicator tfi;
+        TaskSemaphore tfi;
         GetUserDictionary getUserDictionary = new GetUserDictionary(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
@@ -336,7 +336,7 @@ public class TempFileManager {
     }
 
     public HashMap<String, Serializable> getSystemDictionary(String tempFileName) throws IOException {
-        TaskFinalizationIndicator tfi;
+        TaskSemaphore tfi;
         GetSystemDictionary getSystemDictionary = new GetSystemDictionary(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
@@ -349,7 +349,7 @@ public class TempFileManager {
     }
 
     public void setSystemField(String tempFileName, String key, Serializable value) throws IOException {
-        TaskFinalizationIndicator tfi;
+        TaskSemaphore tfi;
         SetSystemField setSystemField = new SetSystemField(this, generateIndexFilePath(tempFileName), key, value);
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
@@ -372,7 +372,7 @@ public class TempFileManager {
      * @throws IndexOutOfBoundsException tried to read data outside the bounds of the temporary file
      */
     public byte[] read(String tempFileName, long offset, int length) throws IOException, IndexOutOfBoundsException {
-        TaskFinalizationIndicator tfi;
+        TaskSemaphore tfi;
         ReaderTask readerTask = new ReaderTask(this, generateIndexFilePath(tempFileName), offset, length);
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(
@@ -394,7 +394,7 @@ public class TempFileManager {
      * @throws IndexOutOfBoundsException tried to write data outside the bounds of the temporary file
      */
     public void write(String tempFileName, long offset, byte[] data) throws IOException, IndexOutOfBoundsException {
-        TaskFinalizationIndicator tfi;
+        TaskSemaphore tfi;
         WriterTask writerTask = new WriterTask(this, generateIndexFilePath(tempFileName), offset, data);
         synchronized (this) {
             tfi = ParallelTaskExecutor.executeTask(

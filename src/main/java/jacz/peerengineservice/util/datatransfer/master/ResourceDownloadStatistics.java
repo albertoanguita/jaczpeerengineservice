@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.util.date_time.SpeedMonitor;
@@ -54,7 +54,7 @@ public class ResourceDownloadStatistics {
      */
     private final SpeedMonitor speed;
 
-    private final HashMap<PeerID, ProviderStatistics> providers;
+    private final HashMap<PeerId, ProviderStatistics> providers;
 
     ResourceDownloadStatistics(ResourceWriter resourceWriter) throws IOException {
         this.resourceWriter = resourceWriter;
@@ -154,7 +154,7 @@ public class ResourceDownloadStatistics {
         return speed.getAverageSpeed();
     }
 
-    public synchronized Map<PeerID, ProviderStatistics> getProviders() {
+    public synchronized Map<PeerId, ProviderStatistics> getProviders() {
         return new HashMap<>(providers);
     }
 
@@ -169,7 +169,7 @@ public class ResourceDownloadStatistics {
 //            providers.put(resourceProvider.getID(), providerStatistics);
 //        }
 //        if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerBasedStatistics != null) {
-//            peerBasedStatistics.startDownloadSession(((PeerResourceProvider) resourceProvider).getPeerID());
+//            peerBasedStatistics.startDownloadSession(((PeerResourceProvider) resourceProvider).getPeerId());
 //        }
         return providers.get(resourceProvider.getPeerID());
     }

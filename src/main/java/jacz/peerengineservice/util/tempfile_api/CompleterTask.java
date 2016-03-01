@@ -18,8 +18,8 @@ class CompleterTask extends TempIndexTask {
     }
 
     @Override
-    public void performTask() {
-        super.performTask();
+    public void run() {
+        super.run();
         if (tempIndex != null) {
             finalPath = tempIndex.getTempDataFilePath();
         }

@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.util.date_time.SpeedRegistry;
 import jacz.util.io.serialization.*;
@@ -134,7 +134,7 @@ public class TransferStatistics implements VersionedObject {
 
     private BytesTransferred globalTransfer;
 
-    private HashMap<PeerID, BytesTransferred> peerTransfers;
+    private HashMap<PeerId, BytesTransferred> peerTransfers;
 
     public TransferStatistics() {
         reset();
@@ -150,21 +150,21 @@ public class TransferStatistics implements VersionedObject {
         peerTransfers = new HashMap<>();
     }
 
-    public synchronized void addUploadedBytes(PeerID peerID, long bytes) {
+    public synchronized void addUploadedBytes(PeerId peerId, long bytes) {
         globalTransfer.addUploaded(bytes);
-        checkPeerExists(peerID);
-        peerTransfers.get(peerID).addUploaded(bytes);
+        checkPeerExists(peerId);
+        peerTransfers.get(peerId).addUploaded(bytes);
     }
 
-    public synchronized void addDownloadedBytes(PeerID peerID, long bytes) {
+    public synchronized void addDownloadedBytes(PeerId peerId, long bytes) {
         globalTransfer.addDownloaded(bytes);
-        checkPeerExists(peerID);
-        peerTransfers.get(peerID).addDownloaded(bytes);
+        checkPeerExists(peerId);
+        peerTransfers.get(peerId).addDownloaded(bytes);
     }
 
-    private void checkPeerExists(PeerID peerID) {
-        if (!peerTransfers.containsKey(peerID)) {
-            peerTransfers.put(peerID, new BytesTransferred());
+    private void checkPeerExists(PeerId peerId) {
+        if (!peerTransfers.containsKey(peerId)) {
+            peerTransfers.put(peerId, new BytesTransferred());
         }
     }
 
@@ -203,7 +203,7 @@ public class TransferStatistics implements VersionedObject {
             PeerClient.reportError("Could not serialize the globalTransfer object", globalTransfer);
         }
         FragmentedByteArray fragmentedByteArray = new FragmentedByteArray();
-        for (Map.Entry<PeerID, BytesTransferred> entry : peerTransfers.entrySet()) {
+        for (Map.Entry<PeerId, BytesTransferred> entry : peerTransfers.entrySet()) {
             try {
                 fragmentedByteArray.add(Serializer.serialize(entry.getKey().toByteArray()), VersionedObjectSerializer.serialize(entry.getValue()));
             } catch (NotSerializableException e) {
@@ -227,10 +227,10 @@ public class TransferStatistics implements VersionedObject {
             byte[] peerTransfersData = (byte[]) attributes.get("peerTransfers");
             MutableOffset offset = new MutableOffset();
             while (offset.value() < peerTransfersData.length) {
-                PeerID peerID = new PeerID(Serializer.deserializeBytes(peerTransfersData, offset));
+                PeerId peerId = new PeerId(Serializer.deserializeBytes(peerTransfersData, offset));
                 try {
                     BytesTransferred bytesTransferred = new BytesTransferred(peerTransfersData, offset);
-                    peerTransfers.put(peerID, bytesTransferred);
+                    peerTransfers.put(peerId, bytesTransferred);
                 } catch (VersionedSerializationException e) {
                     stop();
                     throw new RuntimeException();

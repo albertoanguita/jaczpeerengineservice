@@ -1,7 +1,7 @@
 package jacz.peerengineservice.test;
 
 import jacz.peerengineservice.PeerEncryption;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.*;
 import jacz.peerengineservice.client.connection.NetworkConfiguration;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
@@ -28,18 +28,18 @@ public class Client {
     private TransferStatistics transferStatistics;
 
     public Client(
-            PeerID ownPeerID,
+            PeerId ownPeerId,
             NetworkConfiguration networkConfiguration,
             PeersPersonalData peersPersonalData,
             PeerRelations peerRelations,
             GeneralEventsImpl generalEvents,
             ConnectionEventsImpl connectionEvents,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(ownPeerID, networkConfiguration, peersPersonalData, peerRelations, generalEvents, connectionEvents, new ResourceTransferEventsImpl(), customFSMs);
+        this(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, generalEvents, connectionEvents, new ResourceTransferEventsImpl(), customFSMs);
     }
 
     public Client(
-            PeerID ownPeerID,
+            PeerId ownPeerId,
             NetworkConfiguration networkConfiguration,
             PeersPersonalData peersPersonalData,
             PeerRelations peerRelations,
@@ -47,11 +47,11 @@ public class Client {
             ConnectionEventsImpl connectionEvents,
             ResourceTransferEvents resourceTransferEvents,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(ownPeerID, null, networkConfiguration, peersPersonalData, peerRelations, generalEvents, connectionEvents, resourceTransferEvents, customFSMs, null, null);
+        this(ownPeerId, null, networkConfiguration, peersPersonalData, peerRelations, generalEvents, connectionEvents, resourceTransferEvents, customFSMs, null, null);
     }
 
     public Client(
-            PeerID ownPeerID,
+            PeerId ownPeerId,
             PeerEncryption peerEncryption,
             NetworkConfiguration networkConfiguration,
             PeersPersonalData peersPersonalData,
@@ -62,8 +62,8 @@ public class Client {
             Map<String, PeerFSMFactory> customFSMs,
             Map<String, DataAccessor> readingLists,
             Map<String, DataAccessor> writingLists) throws IOException {
-        generalEvents.init(ownPeerID, this);
-        connectionEvents.init(ownPeerID, this);
+        generalEvents.init(ownPeerId, this);
+        connectionEvents.init(ownPeerId, this);
 
         String serverURL = "https://testserver01-1100.appspot.com/_ah/api/server/v1/";
         TestListContainer testListContainer = new TestListContainer(readingLists, writingLists);
@@ -82,7 +82,7 @@ public class Client {
         } catch (IOException | VersionedSerializationException e) {
             transferStatistics = new TransferStatistics();
         }
-        peerClient = new PeerClient(ownPeerID, serverURL, peerEncryption, networkConfiguration, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, testListContainer, null);
+        peerClient = new PeerClient(ownPeerId, serverURL, peerEncryption, networkConfiguration, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, testListContainer, null);
 
         tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
     }

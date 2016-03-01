@@ -2,7 +2,6 @@ package jacz.peerengineservice.util.tempfile_api;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashMap;
 
 /**
  * Sets a system field in a temp index file
@@ -20,8 +19,8 @@ public class SetSystemField extends TempIndexTask {
     }
 
     @Override
-    public void performTask() {
-        super.performTask();
+    public void run() {
+        super.run();
         if (tempIndex != null) {
             try {
                 tempIndex.setSystemField(key, value);

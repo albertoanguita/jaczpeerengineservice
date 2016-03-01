@@ -1,6 +1,6 @@
 package jacz.peerengineservice.test.transfer;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
@@ -22,13 +22,13 @@ public class TestTransfer_1_Temp_Recover {
 
     public static void main(String args[]) throws Exception {
         String config = "./etc/tests/clientConf_1_new.xml";
-        Four_Tuple<PeerID, NetworkConfiguration, PeersPersonalData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
-        PeerID ownPeerID = data.element1;
+        Four_Tuple<PeerId, NetworkConfiguration, PeersPersonalData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
+        PeerId ownPeerId = data.element1;
         NetworkConfiguration networkConfiguration = data.element2;
         PeersPersonalData peersPersonalData = data.element3;
         PeerRelations peerRelations = data.element4;
 
-        Client client = new Client(ownPeerID, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new ResourceTransferEventsPlus(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new ResourceTransferEventsPlus(), new HashMap<String, PeerFSMFactory>());
         ForeignStoreShare foreignStoreShare = new ForeignStoreShare(client.getPeerClient());
         foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_2", PeerIDGenerator.peerID(2));
@@ -62,8 +62,8 @@ public class TestTransfer_1_Temp_Recover {
             String resourceId = (String) tempFileWriter.getSystemDictionary().get(MasterResourceStreamer.RESOURCE_WRITER_RESOURCE_ID_FIELD);
             String totalHash = (String) tempFileWriter.getSystemDictionary().get(MasterResourceStreamer.RESOURCE_WRITER_TOTAL_HASH_FIELD);
             String hashAlgorithm = (String) tempFileWriter.getSystemDictionary().get(MasterResourceStreamer.RESOURCE_WRITER_HASH_ALGORITHM_FIELD);
-//            client.getPeerClient().downloadResource("files", "file_1", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, (String) tempFileWriter.getUserDictionary().get("hash"), "MD5");
-            client.getPeerClient().downloadResource(storeName, resourceId, tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, totalHash, hashAlgorithm);
+//            client.getPeerClient().downloadResource("files", "file_1", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerId()), 0.1f, (String) tempFileWriter.getUserDictionary().get("hash"), "MD5");
+            client.getPeerClient().downloadResource(storeName, resourceId, tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerId()), 0.1f, totalHash, hashAlgorithm);
         }
 
 
@@ -79,7 +79,7 @@ public class TestTransfer_1_Temp_Recover {
         client.stopClient();
 //        ThreadUtil.safeSleep(8000);
 //        System.out.println("RESTART!!!");
-//        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);
+//        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerId()), 0.1f, null, null, null);
 
         System.out.println("END");
     }

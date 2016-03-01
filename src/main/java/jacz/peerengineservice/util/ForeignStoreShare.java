@@ -1,11 +1,11 @@
 package jacz.peerengineservice.util;
 
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.util.event.notification.NotificationEmitter;
 import jacz.util.event.notification.NotificationProcessor;
 import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.identifier.UniqueIdentifier;
-import jacz.peerengineservice.PeerID;
 import jacz.util.identifier.UniqueIdentifierFactory;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -53,14 +53,14 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
     /**
      * For each file, a list of peers offering it is maintained
      */
-    private final Map<String, Set<PeerID>> remoteResources;
+    private final Map<String, Set<PeerId>> remoteResources;
 
     /**
      * The same table is maintained for volatile resources (temp files). These are handled differently, although
      * they provide files in a similar way. Volatile share is fully reported periodically, instead of changes with
      * respect to previous report
      */
-    private final Map<String, Set<PeerID>> volatileRemoteResources;
+    private final Map<String, Set<PeerId>> volatileRemoteResources;
 
     /**
      * For submitting events to subscribers (each time the providers of a resource are modified)
@@ -82,13 +82,13 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
      * Adds one peer as provider of a resource
      *
      * @param resourceID identifier of the resource
-     * @param peerID     peer providing the resource
+     * @param peerId     peer providing the resource
      */
-    public synchronized void addResourceProvider(String resourceID, PeerID peerID) {
+    public synchronized void addResourceProvider(String resourceID, PeerId peerId) {
         if (!remoteResources.containsKey(resourceID)) {
-            remoteResources.put(resourceID, new HashSet<PeerID>());
+            remoteResources.put(resourceID, new HashSet<PeerId>());
         }
-        remoteResources.get(resourceID).add(peerID);
+        remoteResources.get(resourceID).add(peerId);
         notificationProcessor.newEvent(resourceID);
     }
 
@@ -96,11 +96,11 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
      * A peer is no longer providing a resource
      *
      * @param resourceID identifier of the resource
-     * @param peerID     peer no longer providing the resource
+     * @param peerId     peer no longer providing the resource
      */
-    public synchronized void removeResourceProvider(String resourceID, PeerID peerID) {
-        if (remoteResources.containsKey(resourceID) && remoteResources.get(resourceID).contains(peerID)) {
-            remoteResources.get(resourceID).remove(peerID);
+    public synchronized void removeResourceProvider(String resourceID, PeerId peerId) {
+        if (remoteResources.containsKey(resourceID) && remoteResources.get(resourceID).contains(peerId)) {
+            remoteResources.get(resourceID).remove(peerId);
             if (remoteResources.get(resourceID).isEmpty()) {
                 remoteResources.remove(resourceID);
             }
@@ -108,17 +108,17 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
         }
     }
 
-    public synchronized void reportVolatileResources(PeerID peerID, Set<String> resources) {
+    public synchronized void reportVolatileResources(PeerId peerId, Set<String> resources) {
         // first add peer to resources. Then remove peer from resources not mentioned
         for (String resourceID : resources) {
             if (!volatileRemoteResources.containsKey(resourceID)) {
-                volatileRemoteResources.put(resourceID, new HashSet<PeerID>());
+                volatileRemoteResources.put(resourceID, new HashSet<PeerId>());
             }
-            volatileRemoteResources.get(resourceID).add(peerID);
+            volatileRemoteResources.get(resourceID).add(peerId);
             notificationProcessor.newEvent(resourceID);
         }
         for (String resourceID : CollectionUtils.subtract(volatileRemoteResources.keySet(), resources)) {
-            volatileRemoteResources.get(resourceID).remove(peerID);
+            volatileRemoteResources.get(resourceID).remove(peerId);
             if (volatileRemoteResources.get(resourceID).isEmpty()) {
                 volatileRemoteResources.remove(resourceID);
             }
@@ -129,11 +129,11 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
     /**
      * A peer is completely removed from this foreign store share (usually because the peer is no longer reachable)
      *
-     * @param peerID peer to remove
+     * @param peerId peer to remove
      */
-    public synchronized void removeResourceProvider(PeerID peerID) {
+    public synchronized void removeResourceProvider(PeerId peerId) {
         for (String resourceID : new HashSet<>(remoteResources.keySet())) {
-            removeResourceProvider(resourceID, peerID);
+            removeResourceProvider(resourceID, peerId);
         }
     }
 
@@ -143,19 +143,19 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
      * @param resourceID resource id
      * @return set with the peers that provide the specified resource
      */
-    public synchronized Set<PeerID> getForeignPeerShares(String resourceID) {
-        Set<PeerID> peerShares = new HashSet<>();
+    public synchronized Set<PeerId> getForeignPeerShares(String resourceID) {
+        Set<PeerId> peerShares = new HashSet<>();
         peerShares.addAll(addCorrectPeersWithResource(resourceID, remoteResources));
         peerShares.addAll(addCorrectPeersWithResource(resourceID, volatileRemoteResources));
         return peerShares;
     }
 
-    private Set<PeerID> addCorrectPeersWithResource(String resourceID, Map<String, Set<PeerID>> resourceShare) {
-        Set<PeerID> peers = new HashSet<>();
+    private Set<PeerId> addCorrectPeersWithResource(String resourceID, Map<String, Set<PeerId>> resourceShare) {
+        Set<PeerId> peers = new HashSet<>();
         if (resourceShare.containsKey(resourceID)) {
-            for (PeerID peerID : resourceShare.get(resourceID)) {
-                if (peerClient.getPeerConnectionStatus(peerID) == ConnectionStatus.CORRECT) {
-                    peers.add(peerID);
+            for (PeerId peerId : resourceShare.get(resourceID)) {
+                if (peerClient.getPeerConnectionStatus(peerId) == ConnectionStatus.CORRECT) {
+                    peers.add(peerId);
                 }
             }
         }
@@ -185,15 +185,15 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
     public void newEvent(UniqueIdentifier emitterID, int eventCount, List<List<Object>> nonGroupedMessages, List<Object> groupedMessages) {
         // the connection status of a peer has changed. Notify all resources shared by that peer id
         // first, generate the set of affected peers. Messages are grouped, so they all come in the first list
-        Set<PeerID> affectedPeers = new HashSet<>();
+        Set<PeerId> affectedPeers = new HashSet<>();
         for (Object o : groupedMessages) {
-            affectedPeers.add((PeerID) o);
+            affectedPeers.add((PeerId) o);
         }
-        Map<String, Set<PeerID>> remoteResourcesCopy;
+        Map<String, Set<PeerId>> remoteResourcesCopy;
         synchronized (this) {
             remoteResourcesCopy = new HashMap<>(remoteResources);
         }
-        for (Map.Entry<String, Set<PeerID>> remoteResource : remoteResourcesCopy.entrySet()) {
+        for (Map.Entry<String, Set<PeerId>> remoteResource : remoteResourcesCopy.entrySet()) {
             if (CollectionUtils.containsAny(remoteResource.getValue(), affectedPeers)) {
                 notificationProcessor.newEvent(remoteResource.getKey());
             }

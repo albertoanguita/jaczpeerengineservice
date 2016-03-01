@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,61 +28,61 @@ public final class PeerRelations {
      * Set of peers which are friend of us. The connection manager will actively try to connect to these, and they are allowed to connect to us and
      * gain access to all services
      */
-    private Set<PeerID> friendPeers;
+    private Set<PeerId> friendPeers;
 
     /**
      * Set of blocked peers. The connection manager will never try to connect to these, and they will never be allowed to connect to us.
      */
-    private Set<PeerID> blockedPeers;
+    private Set<PeerId> blockedPeers;
 
-    public PeerRelations(Set<PeerID> friendPeers, Set<PeerID> blockedPeers) {
+    public PeerRelations(Set<PeerId> friendPeers, Set<PeerId> blockedPeers) {
         this.friendPeers = friendPeers;
         this.blockedPeers = blockedPeers;
     }
 
     public PeerRelations() {
-        this(new HashSet<PeerID>(), new HashSet<PeerID>());
+        this(new HashSet<PeerId>(), new HashSet<PeerId>());
     }
 
-    public synchronized boolean isFriendPeer(PeerID peerID) {
-        return friendPeers.contains(peerID);
+    public synchronized boolean isFriendPeer(PeerId peerId) {
+        return friendPeers.contains(peerId);
     }
 
-    public synchronized boolean isBlockedPeer(PeerID peerID) {
-        return blockedPeers.contains(peerID);
+    public synchronized boolean isBlockedPeer(PeerId peerId) {
+        return blockedPeers.contains(peerId);
     }
 
-    public synchronized boolean isNonRegisteredPeer(PeerID peerID) {
-        return !isFriendPeer(peerID) && !isBlockedPeer(peerID);
+    public synchronized boolean isNonRegisteredPeer(PeerId peerId) {
+        return !isFriendPeer(peerId) && !isBlockedPeer(peerId);
     }
 
-    public synchronized Set<PeerID> getFriendPeers() {
+    public synchronized Set<PeerId> getFriendPeers() {
         return new HashSet<>(friendPeers);
     }
 
-    public synchronized void addFriendPeer(PeerID peerID) {
-        if (blockedPeers.contains(peerID)) {
-            blockedPeers.remove(peerID);
+    public synchronized void addFriendPeer(PeerId peerId) {
+        if (blockedPeers.contains(peerId)) {
+            blockedPeers.remove(peerId);
         }
-        friendPeers.add(peerID);
+        friendPeers.add(peerId);
     }
 
-    public synchronized void removeFriendPeer(PeerID peerID) {
-        friendPeers.remove(peerID);
+    public synchronized void removeFriendPeer(PeerId peerId) {
+        friendPeers.remove(peerId);
     }
 
-    public synchronized Set<PeerID> getBlockedPeers() {
+    public synchronized Set<PeerId> getBlockedPeers() {
         return new HashSet<>(blockedPeers);
     }
 
-    public synchronized void addBlockedPeer(PeerID peerID) {
-        if (friendPeers.contains(peerID)) {
-            friendPeers.remove(peerID);
+    public synchronized void addBlockedPeer(PeerId peerId) {
+        if (friendPeers.contains(peerId)) {
+            friendPeers.remove(peerId);
         }
-        blockedPeers.add(peerID);
+        blockedPeers.add(peerId);
     }
 
-    public synchronized void removeBlockedPeer(PeerID peerID) {
-        blockedPeers.remove(peerID);
+    public synchronized void removeBlockedPeer(PeerId peerId) {
+        blockedPeers.remove(peerId);
     }
 }

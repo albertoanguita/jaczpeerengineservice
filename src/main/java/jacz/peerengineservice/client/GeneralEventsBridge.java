@@ -1,9 +1,8 @@
 package jacz.peerengineservice.client;
 
 import jacz.commengine.communication.CommError;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.ConnectionStatus;
-import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,100 +24,100 @@ public class GeneralEventsBridge implements GeneralEvents {
     }
 
     @Override
-    public void peerAddedAsFriend(final PeerID peerID, final PeerRelations peerRelations) {
-        logger.info("PEER ADDED AS FRIEND. Peer: " + peerID);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
+    public void peerAddedAsFriend(final PeerId peerId, final PeerRelations peerRelations) {
+        logger.info("PEER ADDED AS FRIEND. Peer: " + peerId);
+        sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
-                generalEvents.peerAddedAsFriend(peerID, peerRelations);
+            public void run() {
+                generalEvents.peerAddedAsFriend(peerId, peerRelations);
             }
         });
     }
 
     @Override
-    public void peerRemovedAsFriend(final PeerID peerID, final PeerRelations peerRelations) {
-        logger.info("PEER REMOVED AS FRIEND. Peer: " + peerID);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
+    public void peerRemovedAsFriend(final PeerId peerId, final PeerRelations peerRelations) {
+        logger.info("PEER REMOVED AS FRIEND. Peer: " + peerId);
+        sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
-                generalEvents.peerRemovedAsFriend(peerID, peerRelations);
+            public void run() {
+                generalEvents.peerRemovedAsFriend(peerId, peerRelations);
             }
         });
     }
 
     @Override
-    public void peerAddedAsBlocked(final PeerID peerID, final PeerRelations peerRelations) {
-        logger.info("PEER ADDED AS BLOCKED. Peer: " + peerID);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
+    public void peerAddedAsBlocked(final PeerId peerId, final PeerRelations peerRelations) {
+        logger.info("PEER ADDED AS BLOCKED. Peer: " + peerId);
+        sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
-                generalEvents.peerAddedAsBlocked(peerID, peerRelations);
+            public void run() {
+                generalEvents.peerAddedAsBlocked(peerId, peerRelations);
             }
         });
     }
 
     @Override
-    public void peerRemovedAsBlocked(final PeerID peerID, final PeerRelations peerRelations) {
-        logger.info("PEER REMOVED AS BLOCKED. Peer: " + peerID);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
+    public void peerRemovedAsBlocked(final PeerId peerId, final PeerRelations peerRelations) {
+        logger.info("PEER REMOVED AS BLOCKED. Peer: " + peerId);
+        sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
-                generalEvents.peerRemovedAsBlocked(peerID, peerRelations);
+            public void run() {
+                generalEvents.peerRemovedAsBlocked(peerId, peerRelations);
             }
         });
     }
 
     @Override
-    public void newPeerConnected(final PeerID peerID, final ConnectionStatus status) {
-        logger.info("NEW PEER CONNECTED. Peer: " + peerID + ". Status: " + status);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
+    public void newPeerConnected(final PeerId peerId, final ConnectionStatus status) {
+        logger.info("NEW PEER CONNECTED. Peer: " + peerId + ". Status: " + status);
+        sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
-                generalEvents.newPeerConnected(peerID, status);
+            public void run() {
+                generalEvents.newPeerConnected(peerId, status);
             }
         });
     }
 
     @Override
-    public void newObjectMessage(final PeerID peerID, final Object message) {
-        logger.info("NEW OBJECT MESSAGE. Peer: " + peerID + ". Message: " + message.toString());
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
+    public void newObjectMessage(final PeerId peerId, final Object message) {
+        logger.info("NEW OBJECT MESSAGE. Peer: " + peerId + ". Message: " + message.toString());
+        sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
-                generalEvents.newObjectMessage(peerID, message);
+            public void run() {
+                generalEvents.newObjectMessage(peerId, message);
             }
         });
     }
 
     @Override
-    public void newPeerNick(final PeerID peerID, final String nick) {
-        logger.info("NEW PEER NICK. Peer: " + peerID + ". Nick: " + nick);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
+    public void newPeerNick(final PeerId peerId, final String nick) {
+        logger.info("NEW PEER NICK. Peer: " + peerId + ". Nick: " + nick);
+        sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
-                generalEvents.newPeerNick(peerID, nick);
+            public void run() {
+                generalEvents.newPeerNick(peerId, nick);
             }
         });
     }
 
     @Override
-    public void peerValidatedUs(final PeerID peerID) {
-        logger.info("PEER VALIDATED US. Peer: " + peerID);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
+    public void peerValidatedUs(final PeerId peerId) {
+        logger.info("PEER VALIDATED US. Peer: " + peerId);
+        sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
-                generalEvents.peerValidatedUs(peerID);
+            public void run() {
+                generalEvents.peerValidatedUs(peerId);
             }
         });
     }
 
     @Override
-    public void peerDisconnected(final PeerID peerID, final CommError error) {
-        logger.info("PEER DISCONNECTED. Peer: " + peerID + ". Error: " + error);
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
+    public void peerDisconnected(final PeerId peerId, final CommError error) {
+        logger.info("PEER DISCONNECTED. Peer: " + peerId + ". Error: " + error);
+        sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
-                generalEvents.peerDisconnected(peerID, error);
+            public void run() {
+                generalEvents.peerDisconnected(peerId, error);
             }
         });
     }
@@ -126,9 +125,9 @@ public class GeneralEventsBridge implements GeneralEvents {
     @Override
     public void stop() {
         logger.info("STOP");
-        sequentialTaskExecutor.executeTask(new ParallelTask() {
+        sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
+            public void run() {
                 generalEvents.stop();
             }
         });

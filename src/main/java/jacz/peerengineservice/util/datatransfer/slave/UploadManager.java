@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.slave;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.util.identifier.UniqueIdentifier;
 
 /**
@@ -14,7 +14,7 @@ public class UploadManager {
 
     private final String resourceID;
 
-    private final PeerID requestingPeer;
+    private final PeerId requestingPeer;
 
     public UploadManager(SlaveResourceStreamer slaveResourceStreamer) {
         this.slaveResourceStreamer = slaveResourceStreamer;
@@ -35,7 +35,7 @@ public class UploadManager {
         return resourceID;
     }
 
-    public PeerID getRequestingPeer() {
+    public PeerId getRequestingPeer() {
         return requestingPeer;
     }
 

@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.commengine.channel.ChannelConnectionPoint;
 
 import java.io.Serializable;
@@ -31,11 +31,11 @@ public class ConnectedPeersMessenger {
      * Sends an object message to a connected peer. If the given peer is not among the list of connected peers, the
      * message will be ignored
      *
-     * @param peerID  ID of the peer to which the message is to be sent
+     * @param peerId  ID of the peer to which the message is to be sent
      * @param message string message to send
      */
-    public long sendObjectMessage(PeerID peerID, byte channel, Serializable message, boolean flush) {
-        ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerID);
+    public long sendObjectMessage(PeerId peerId, byte channel, Serializable message, boolean flush) {
+        ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerId);
         if (ccp != null) {
             return ccp.write(channel, message, flush);
         } else {
@@ -49,8 +49,8 @@ public class ConnectedPeersMessenger {
      * @param message string message to send to all connected peers
      */
     public void broadcastObjectMessage(byte channel, Serializable message) {
-        for (PeerID peerID : connectedPeers.getConnectedPeers()) {
-            sendObjectMessage(peerID, channel, message, true);
+        for (PeerId peerId : connectedPeers.getConnectedPeers()) {
+            sendObjectMessage(peerId, channel, message, true);
         }
     }
 
@@ -58,12 +58,12 @@ public class ConnectedPeersMessenger {
      * Sends an object message to a connected peer. If the given peer is not among the list of connected peers, the
      * message will be ignored
      *
-     * @param peerID  ID of the peer to which the message is to be sent
+     * @param peerId  ID of the peer to which the message is to be sent
      * @param message string message to send
      */
-    public long sendObjectRequest(PeerID peerID, Serializable message) {
+    public long sendObjectRequest(PeerId peerId, Serializable message) {
         RequestFromPeerToPeer requestFromPeerToPeer = RequestFromPeerToPeer.generateObjectMessageRequest(message);
-        return sendObjectMessage(peerID, requestDispatcherChannel, requestFromPeerToPeer, true);
+        return sendObjectMessage(peerId, requestDispatcherChannel, requestFromPeerToPeer, true);
     }
 
     /**
@@ -80,11 +80,11 @@ public class ConnectedPeersMessenger {
      * Sends an object message to a connected peer. If the given peer is not among the list of connected peers, the
      * message will be ignored
      *
-     * @param peerID ID of the peer to which the message is to be sent
+     * @param peerId ID of the peer to which the message is to be sent
      * @param data   data to send
      */
-    public long sendDataMessage(PeerID peerID, byte channel, byte[] data, boolean flush) {
-        ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerID);
+    public long sendDataMessage(PeerId peerId, byte channel, byte[] data, boolean flush) {
+        ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerId);
         if (ccp != null) {
             return ccp.write(channel, data, flush);
         } else {
@@ -92,8 +92,8 @@ public class ConnectedPeersMessenger {
         }
     }
 
-    public long flush(PeerID peerID) {
-        ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerID);
+    public long flush(PeerId peerId) {
+        ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerId);
         if (ccp != null) {
             return ccp.flush();
         } else {

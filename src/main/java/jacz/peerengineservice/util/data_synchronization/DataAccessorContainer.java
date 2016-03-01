@@ -1,18 +1,17 @@
 package jacz.peerengineservice.util.data_synchronization;
 
-import jacz.peerengineservice.PeerID;
-import jacz.peerengineservice.UnavailablePeerException;
+import jacz.peerengineservice.PeerId;
 
 /**
  * Container of data accessors
  */
 public interface DataAccessorContainer {
 
-    void peerConnected(PeerID peerID);
+    void peerConnected(PeerId peerId);
 
-    void peerDisconnected(PeerID peerID);
+    void peerDisconnected(PeerId peerId);
 
-    DataAccessor getAccessorForTransmitting(PeerID peerID, String dataAccessorName) throws AccessorNotFoundException, ServerBusyException;
+    DataAccessor getAccessorForTransmitting(PeerId peerId, String dataAccessorName) throws AccessorNotFoundException, ServerBusyException;
 
-//    DataAccessor getAccessorForReceiving(PeerID peerID, String dataAccessorName) throws AccessorNotFoundException;
+//    DataAccessor getAccessorForReceiving(PeerId peerID, String dataAccessorName) throws AccessorNotFoundException;
 }

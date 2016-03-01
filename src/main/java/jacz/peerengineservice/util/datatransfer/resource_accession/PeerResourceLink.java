@@ -1,8 +1,8 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.master.MasterMessage;
 import jacz.util.numeric.range.LongRange;
-import jacz.peerengineservice.PeerID;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.slave.SlaveResourceStreamer;
 
@@ -13,11 +13,11 @@ public class PeerResourceLink implements ResourceLink {
 
     private final ResourceStreamingManager resourceStreamingManager;
 
-    private final PeerID otherPeer;
+    private final PeerId otherPeer;
 
     private short outgoingSubchannel;
 
-    public PeerResourceLink(ResourceStreamingManager resourceStreamingManager, PeerID otherPeer) {
+    public PeerResourceLink(ResourceStreamingManager resourceStreamingManager, PeerId otherPeer) {
         this.resourceStreamingManager = resourceStreamingManager;
         this.otherPeer = otherPeer;
     }

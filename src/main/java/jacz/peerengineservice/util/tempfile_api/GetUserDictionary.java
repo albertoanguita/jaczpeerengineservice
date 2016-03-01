@@ -17,8 +17,8 @@ public class GetUserDictionary extends TempIndexTask {
     }
 
     @Override
-    public void performTask() {
-        super.performTask();
+    public void run() {
+        super.run();
         if (tempIndex != null) {
             userDictionary = tempIndex.getUserDictionary();
         }

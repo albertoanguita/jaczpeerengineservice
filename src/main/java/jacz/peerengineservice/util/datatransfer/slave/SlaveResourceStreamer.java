@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.slave;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.GenericPriorityManagerRegulatedResource;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.master.MasterMessage;
@@ -123,7 +123,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
 
     private ResourceReader resourceReader;
 
-    private PeerID otherPeer;
+    private PeerId otherPeer;
 
     private short outgoingChannel;
 
@@ -152,7 +152,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         alive = true;
     }
 
-    public synchronized void initialize(ResourceReader resourceReader, PeerID otherPeer, short incomingChannel, short outgoingChannel) {
+    public synchronized void initialize(ResourceReader resourceReader, PeerId otherPeer, short incomingChannel, short outgoingChannel) {
         this.resourceReader = resourceReader;
         this.otherPeer = otherPeer;
         this.incomingChannel = incomingChannel;

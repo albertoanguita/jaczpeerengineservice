@@ -1,7 +1,7 @@
 package jacz.peerengineservice.client.connection;
 
 import com.google.gson.Gson;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.util.io.http.HttpClient;
 import jacz.util.lists.tuple.Duple;
@@ -19,8 +19,8 @@ public class ServerAPI {
 
         private final String peerID;
 
-        public RegistrationRequest(PeerID peerID) {
-            this.peerID = peerID.toString();
+        public RegistrationRequest(PeerId peerId) {
+            this.peerID = peerId.toString();
         }
     }
 
@@ -44,8 +44,8 @@ public class ServerAPI {
 
         private final int externalMainServerPort;
 
-        public ConnectionRequest(PeerID peerID, String localIPAddress, int localMainServerPort, int externalMainServerPort) {
-            this.peerID = peerID.toString();
+        public ConnectionRequest(PeerId peerId, String localIPAddress, int localMainServerPort, int externalMainServerPort) {
+            this.peerID = peerId.toString();
             this.localIPAddress = localIPAddress;
             this.localMainServerPort = localMainServerPort;
             this.externalMainServerPort = externalMainServerPort;
@@ -149,10 +149,10 @@ public class ServerAPI {
 
         private final List<String> peerIDList;
 
-        public InfoRequest(List<PeerID> peerIDList) {
+        public InfoRequest(List<PeerId> peerIdList) {
             this.peerIDList = new ArrayList<>();
-            for (PeerID peerID : peerIDList) {
-                this.peerIDList.add(peerID.toString());
+            for (PeerId peerId : peerIdList) {
+                this.peerIDList.add(peerId.toString());
             }
         }
     }
@@ -207,7 +207,7 @@ public class ServerAPI {
 
     public static final class PeerIDInfo {
 
-        private final PeerID peerID;
+        private final PeerId peerId;
         private final String localIPAddress;
         private final String externalIPAddress;
         private final int localMainServerPort;
@@ -215,14 +215,14 @@ public class ServerAPI {
         private final int externalMainServerPort;
         private final int externalRESTServerPort;
 
-        public PeerIDInfo(PeerID peerID,
+        public PeerIDInfo(PeerId peerId,
                           String localIPAddress,
                           String externalIPAddress,
                           int localMainServerPort,
                           int localRESTServerPort,
                           int externalMainServerPort,
                           int externalRESTServerPort) {
-            this.peerID = peerID;
+            this.peerId = peerId;
             this.localIPAddress = localIPAddress;
             this.externalIPAddress = externalIPAddress;
             this.localMainServerPort = localMainServerPort;
@@ -231,8 +231,8 @@ public class ServerAPI {
             this.externalRESTServerPort = externalRESTServerPort;
         }
 
-        public PeerID getPeerID() {
-            return peerID;
+        public PeerId getPeerId() {
+            return peerId;
         }
 
         public String getLocalIPAddress() {
@@ -261,7 +261,7 @@ public class ServerAPI {
 
         private static PeerIDInfo buildPeerIDInfo(PeerIDInfoJSON peerIDInfoJson) {
             return new PeerIDInfo(
-                    new PeerID(peerIDInfoJson.peerID),
+                    new PeerId(peerIDInfoJson.peerID),
                     peerIDInfoJson.localIPAddress,
                     peerIDInfoJson.externalIPAddress,
                     Integer.parseInt(peerIDInfoJson.localMainServerPort),
@@ -274,7 +274,7 @@ public class ServerAPI {
         @Override
         public String toString() {
             return "PeerIDInfo{" +
-                    "peerID=" + peerID +
+                    "peerId=" + peerId +
                     ", localIPAddress='" + localIPAddress + '\'' +
                     ", externalIPAddress='" + externalIPAddress + '\'' +
                     ", localMainServerPort=" + localMainServerPort +
@@ -287,7 +287,6 @@ public class ServerAPI {
 
     public static String hello(String serverURL) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/hello",
                 getURL(serverURL, "hello"),
                 HttpClient.Verb.GET,
                 HttpClient.ContentType.JSON);
@@ -297,7 +296,6 @@ public class ServerAPI {
 
     public static RegistrationResponse register(String serverURL, RegistrationRequest registrationRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/register",
                 getURL(serverURL, "register"),
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
@@ -316,36 +314,11 @@ public class ServerAPI {
 
     public static ConnectionResponse connect(String serverURL, ConnectionRequest connectionRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/connect",
                 getURL(serverURL, "connect"),
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
                 HttpClient.ContentType.JSON,
                 new Gson().toJson(connectionRequest));
-
-        // todo I once got an error connecting: SHOULD BE SOLVED, IT WAS A SIMPLE NOT FOUND ERROR, PROBABLY A CONNECTION ISSUE
-//        ERROR THROWN
-//        ------------
-//        2016/02/17-01:33:19:708
-//
-//        Message: Bad request
-//        Data:
-//        Data 0: Not Found
-//
-//        -------------------------------------------------------
-//        Stack trace:
-//        java.lang.RuntimeException
-//        	at jacz.util.log.ErrorFactory.reportError(ErrorFactory.java:23)
-//        	at jacz.peerengineservice.client.PeerClient.reportError(PeerClient.java:179)
-//        	at jacz.peerengineservice.client.connection.ServerAPI.checkError(ServerAPI.java:387)
-//        	at jacz.peerengineservice.client.connection.ServerAPI.connect(ServerAPI.java:320)
-//        	at jacz.peerengineservice.client.connection.PeerServerManager.connectToPeerServer(PeerServerManager.java:314)
-//        	at jacz.peerengineservice.client.connection.PeerServerManager.solveState(PeerServerManager.java:250)
-//        	at jacz.util.concurrency.daemon.Daemon.executeAction(Daemon.java:123)
-//        	at jacz.util.concurrency.daemon.Daemon.access$000(Daemon.java:14)
-//        	at jacz.util.concurrency.daemon.Daemon$DaemonTask.performTask(Daemon.java:28)
-//        	at jacz.util.concurrency.task_executor.ParallelTaskExecutorThread.run(ParallelTaskExecutorThread.java:91)
-
 
         checkError(result);
         ConnectionResponseJSON connectionResponseJSON = new Gson().fromJson(result.element2, ConnectionResponseJSON.class);
@@ -360,7 +333,6 @@ public class ServerAPI {
 
     public static RefreshResponse refresh(String serverURL, UpdateRequest updateRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/refresh",
                 getURL(serverURL, "refresh"),
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
@@ -379,7 +351,6 @@ public class ServerAPI {
 
     public static DisconnectResponse disconnect(String serverURL, UpdateRequest updateRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/disconnect",
                 getURL(serverURL, "disconnect"),
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
@@ -398,7 +369,6 @@ public class ServerAPI {
 
     public static InfoResponse info(String serverURL, InfoRequest infoRequest) throws IOException, ServerAccessException {
         Duple<Integer, String> result = HttpClient.httpRequest(
-//                "https://testserver01-1100.appspot.com/_ah/api/server/v1/info",
                 getURL(serverURL, "info"),
                 HttpClient.Verb.POST,
                 HttpClient.ContentType.JSON,
@@ -430,12 +400,12 @@ public class ServerAPI {
         String serverURL = "https://testserver01-1100.appspot.com/_ah/api/server/v1/";
 //        System.out.println(hello());
 
-//        RegistrationResponse registrationResponse = register(serverURL, new RegistrationRequest(new PeerID("0000000000000000000000000000000000000000003")));
+//        RegistrationResponse registrationResponse = register(serverURL, new RegistrationRequest(new PeerId("0000000000000000000000000000000000000000003")));
 //
 //        System.out.println(registrationResponse);
 
 
-        ConnectionResponse connectionResponse = connect(serverURL, new ConnectionRequest(new PeerID("0000000000000000000000000000000000000000003"), "192.168.1.1", 50000, 50001));
+        ConnectionResponse connectionResponse = connect(serverURL, new ConnectionRequest(new PeerId("0000000000000000000000000000000000000000003"), "192.168.1.1", 50000, 50001));
         System.out.println(connectionResponse);
 
 //        RefreshResponse refreshResponse = refresh(serverURL, new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIDvmYoJDA"));
@@ -444,10 +414,10 @@ public class ServerAPI {
 //        UpdateResponse disconnectResponse = disconnect(serverURL, new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
 //        System.out.println(disconnectResponse);
 
-        List<PeerID> peerIDList = new ArrayList<>();
-        peerIDList.add(new PeerID("0000000000000000000000000000000000000000003"));
-        peerIDList.add(new PeerID("0000000000000000000000000000000000000000004"));
-        InfoResponse infoResponse = info(serverURL, new InfoRequest(peerIDList));
+        List<PeerId> peerIdList = new ArrayList<>();
+        peerIdList.add(new PeerId("0000000000000000000000000000000000000000003"));
+        peerIdList.add(new PeerId("0000000000000000000000000000000000000000004"));
+        InfoResponse infoResponse = info(serverURL, new InfoRequest(peerIdList));
         System.out.println(infoResponse);
 
 

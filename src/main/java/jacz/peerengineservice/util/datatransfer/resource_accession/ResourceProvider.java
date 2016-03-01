@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.ResourceRequest;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 
@@ -41,26 +41,26 @@ public class ResourceProvider {
 //    public ResourceLink requestResource(String storeName, String resourceID, short assignedSubchannel);
 
 
-    private PeerID ownPeerID;
+    private PeerId ownPeerId;
 
-    private PeerID otherPeerID;
+    private PeerId otherPeerId;
 
     private ResourceStreamingManager resourceStreamingManager;
 
-    public ResourceProvider(PeerID ownPeerID, PeerID otherPeerID, ResourceStreamingManager resourceStreamingManager) {
-        this.ownPeerID = ownPeerID;
-        this.otherPeerID = otherPeerID;
+    public ResourceProvider(PeerId ownPeerId, PeerId otherPeerId, ResourceStreamingManager resourceStreamingManager) {
+        this.ownPeerId = ownPeerId;
+        this.otherPeerId = otherPeerId;
         this.resourceStreamingManager = resourceStreamingManager;
     }
 
     public ResourceLink requestResource(String storeName, String resourceID, short assignedSubchannel) {
         // send the request to the peer and initialize the resource link
-        resourceStreamingManager.write(otherPeerID, ResourceStreamingManager.SLAVE_GRANT_SUBCHANNEL, new ResourceRequest(ownPeerID, storeName, resourceID, assignedSubchannel));
-        return new PeerResourceLink(resourceStreamingManager, otherPeerID);
+        resourceStreamingManager.write(otherPeerId, ResourceStreamingManager.SLAVE_GRANT_SUBCHANNEL, new ResourceRequest(ownPeerId, storeName, resourceID, assignedSubchannel));
+        return new PeerResourceLink(resourceStreamingManager, otherPeerId);
     }
 
-    public PeerID getPeerID() {
-        return otherPeerID;
+    public PeerId getPeerID() {
+        return otherPeerId;
     }
 
     @Override

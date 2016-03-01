@@ -2,7 +2,7 @@ package jacz.peerengineservice.client.connection;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.channel.TimedChannelFSMAction;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.util.network.IP4Port;
@@ -10,10 +10,10 @@ import jacz.util.network.IP4Port;
 import java.io.Serializable;
 
 /**
- * This FSM negotiates the first part of a connection with a peerClient. Info about the PeerID is obtained.
+ * This FSM negotiates the first part of a connection with a peerClient. Info about the PeerId is obtained.
  * <p/>
  * This FSM implements the client code. There is really no difference between client and server, just that the client
- * will initiate the conversation, and knows the PeerID of the server (supposedly)
+ * will initiate the conversation, and knows the PeerId of the server (supposedly)
  */
 public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<ConnectionEstablishmentClientFSM.State> {
 
@@ -38,13 +38,13 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
 
     static final class ConnectionRequest implements Serializable {
 
-        final PeerID clientPeerID;
+        final PeerId clientPeerId;
 
-        final PeerID serverPeerID;
+        final PeerId serverPeerId;
 
-        ConnectionRequest(PeerID clientPeerID, PeerID serverPeerID) {
-            this.clientPeerID = clientPeerID;
-            this.serverPeerID = serverPeerID;
+        ConnectionRequest(PeerId clientPeerId, PeerId serverPeerId) {
+            this.clientPeerId = clientPeerId;
+            this.serverPeerId = serverPeerId;
         }
     }
 
@@ -59,12 +59,12 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
     /**
      * Our own ID
      */
-    private final PeerID ownPeerID;
+    private final PeerId ownPeerId;
 
     /**
      * The ID of the peer we are trying to connect to
      */
-    private final PeerID serverPeerID;
+    private final PeerId serverPeerId;
 
     private final IP4Port secondaryIP4Port;
 
@@ -72,17 +72,17 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
      * Class constructor
      *
      * @param friendConnectionManager friendConnectionManager which is trying to connect to another peer
-     * @param ownPeerID               our own ID
-     * @param serverPeerID            the ID of the peer we are trying to connect to
+     * @param ownPeerId               our own ID
+     * @param serverPeerId            the ID of the peer we are trying to connect to
      */
     public ConnectionEstablishmentClientFSM(
             FriendConnectionManager friendConnectionManager,
-            PeerID ownPeerID,
-            PeerID serverPeerID,
+            PeerId ownPeerId,
+            PeerId serverPeerId,
             IP4Port secondaryIP4Port) {
         this.friendConnectionManager = friendConnectionManager;
-        this.ownPeerID = ownPeerID;
-        this.serverPeerID = serverPeerID;
+        this.ownPeerId = ownPeerId;
+        this.serverPeerId = serverPeerId;
         this.secondaryIP4Port = secondaryIP4Port;
     }
 
@@ -122,9 +122,9 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
     @Override
     public State init(ChannelConnectionPoint ccp) {
         // first we must ask permission to the PeerClientConnectionManager for proceeding with this new connection
-        // if we are granted access, send our own PeerID to the server peer (only the client performs this in the INIT)
+        // if we are granted access, send our own PeerId to the server peer (only the client performs this in the INIT)
         // if the PeerClientConnectionManager does not grant permission, terminate the connection process
-        ccp.write(ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL, new ConnectionRequest(ownPeerID, serverPeerID));
+        ccp.write(ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL, new ConnectionRequest(ownPeerId, serverPeerId));
         return State.DATA_SENT;
     }
 
@@ -134,11 +134,11 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         switch (state) {
 
             case SUCCESS_CORRECT_CONNECTION:
-                friendConnectionManager.connectionAsClientCompleted(serverPeerID, ccp, true);
+                friendConnectionManager.connectionAsClientCompleted(serverPeerId, ccp, true);
                 return true;
 
             case SUCCESS_PENDING_VALIDATION:
-                friendConnectionManager.connectionAsClientCompleted(serverPeerID, ccp, false);
+                friendConnectionManager.connectionAsClientCompleted(serverPeerId, ccp, false);
                 return true;
 
             case ERROR:
@@ -165,6 +165,6 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
      * Reports the PeerClientConnectionManager that this connection is no longer ongoing
      */
     private void error() {
-        friendConnectionManager.connectionAsClientFailed(serverPeerID, secondaryIP4Port, serverPeerID);
+        friendConnectionManager.connectionAsClientFailed(serverPeerId, secondaryIP4Port, serverPeerId);
     }
 }

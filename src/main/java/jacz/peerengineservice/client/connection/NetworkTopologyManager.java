@@ -1,72 +1,46 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.util.concurrency.daemon.Daemon;
-import jacz.util.concurrency.daemon.DaemonAction;
-import jacz.util.concurrency.timer.SimpleTimerAction;
-import jacz.util.concurrency.timer.Timer;
+import jacz.util.AI.evolve.DiscreteEvolvingState;
+import jacz.util.AI.evolve.EvolvingState;
+import jacz.util.AI.evolve.EvolvingStateController;
 import jacz.util.io.http.HttpClient;
 import jacz.util.lists.tuple.Duple;
+import jacz.util.numeric.NumericUtil;
 
-import java.net.InetAddress;
+import java.io.IOException;
+import java.net.Socket;
 import java.net.UnknownHostException;
 
 /**
- * This class takes care of detecting local network topology (local ip, external ip, existence of gateway)
- * <p/>
- * It also detects changes in local address by periodically fetching it
+ * Created by Alberto on 27/02/2016.
  */
-public class NetworkTopologyManager implements DaemonAction {
+public class NetworkTopologyManager {
 
     /**
      * This class checks that the local internet address is not modified. In case of modification, it notifies the PeerClientConfigurationManager
      * <p/>
      * This class must be stopped after its use
      */
-    private static class AddressChecker implements SimpleTimerAction {
-
-        private final static long LOCAL_ADDRESS_TIMER_NORMAL = 60000L;
-
-        private final static long LOCAL_ADDRESS_TIMER_SHORT = 10000L;
-
-        private final NetworkTopologyManager networkTopologyManager;
-
-        private final Timer timer;
-
-        private AddressChecker(NetworkTopologyManager networkTopologyManager) {
-            this.networkTopologyManager = networkTopologyManager;
-            timer = new Timer(LOCAL_ADDRESS_TIMER_NORMAL, this, true, "addressChecker");
-        }
-
-        synchronized void mustSearchSoon() {
-            timer.reset(LOCAL_ADDRESS_TIMER_SHORT);
-        }
-
-        @Override
-        public Long wakeUp(Timer timer) {
-            networkTopologyManager.updateState();
-            return LOCAL_ADDRESS_TIMER_NORMAL;
-        }
+    private static class AddressChecker {
 
         /**
          * Detects the local address assigned to our machine
          *
          * @return the detected local address, or null if no detection
          */
-        public static String detectLocalAddress() {
+        public static String detectLocalAddress() throws IOException {
             try {
-                InetAddress inetAddress = InetAddress.getLocalHost();
-                return inetAddress != null ? inetAddress.getHostAddress() : null;
+                Socket s = new Socket("www.google.com", 80);
+                String localAddress = s.getLocalAddress().getHostAddress();
+                s.close();
+                return localAddress;
+//                InetAddress inetAddress = InetAddress.getLocalHost();
+//                return inetAddress != null ? inetAddress.getHostAddress() : null;
             } catch (UnknownHostException e) {
                 return null;
             }
         }
-
-
-        public void stop() {
-            timer.kill();
-        }
     }
-
 
     private static class ExternalIPService {
 
@@ -93,6 +67,13 @@ public class NetworkTopologyManager implements DaemonAction {
     }
 
 
+    private final static long REPEAT_ADDRESS_FETCH = 10000L;
+
+    private final static long REGULAR_ADDRESS_FETCH = 10L * 60000L;
+
+    private final static long GENERAL_REMINDER = NumericUtil.max(REPEAT_ADDRESS_FETCH, REGULAR_ADDRESS_FETCH) + 5000L;
+
+
     /**
      * The PeerClientConnectionManager that created us
      */
@@ -107,33 +88,102 @@ public class NetworkTopologyManager implements DaemonAction {
 
     private String externalAddress;
 
-    /**
-     * Status of the network topology fetching
-     */
-    private State.NetworkTopologyState networkTopologyState;
-
-    private boolean wishForConnect;
-
-    /**
-     * Daemon thread that helps keep the state in its desired values
-     */
-    private final Daemon stateDaemon;
-
-    private final AddressChecker addressChecker;
-
+    private final DiscreteEvolvingState<State.NetworkTopologyState, Boolean> dynamicState;
 
     public NetworkTopologyManager(
             PeerClientConnectionManager peerClientConnectionManager,
-            ConnectionEventsBridge connectionEvents) {
+            final ConnectionEventsBridge connectionEvents) {
         this.peerClientConnectionManager = peerClientConnectionManager;
         this.connectionEvents = connectionEvents;
         localAddress = null;
         externalAddress = null;
-        wishForConnect = false;
-        stateDaemon = new Daemon(this);
-        addressChecker = new AddressChecker(this);
-        networkTopologyState = State.NetworkTopologyState.NO_DATA;
-        updateState();
+        dynamicState = new DiscreteEvolvingState<>(State.NetworkTopologyState.NO_DATA, false, new EvolvingState.Transitions<State.NetworkTopologyState, Boolean>() {
+            @Override
+            public void runTransition(State.NetworkTopologyState state, Boolean goal, EvolvingStateController<State.NetworkTopologyState, Boolean> controller) {
+                if (goal) {
+                    // trying to fetch the local and external address
+                    switch (dynamicState.state()) {
+
+                        case NO_DATA:
+                        case WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH:
+                            // fetch/check the local address
+                            fetchLocalAddress(state, controller);
+                            break;
+
+                        case LOCAL_ADDRESS_FETCHED:
+                        case WAITING_FOR_NEXT_EXTERNAL_ADDRESS_FETCH:
+                            // fetch the public address, infer existence of gateway
+                            fetchExternalAddress(state, controller);
+                            break;
+                    }
+                }
+            }
+
+            @Override
+            public boolean hasReachedGoal(State.NetworkTopologyState state, Boolean goal) {
+                return goal && state == State.NetworkTopologyState.ALL_FETCHED || !goal;
+            }
+        });
+        dynamicState.setEnterStateHook(State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED, new Runnable() {
+            @Override
+            public void run() {
+                connectionEvents.localAddressFetched(getLocalAddress(), State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED);
+            }
+        });
+        dynamicState.setEnterStateHook(State.NetworkTopologyState.ALL_FETCHED, new Runnable() {
+            @Override
+            public void run() {
+                connectionEvents.externalAddressFetched(getExternalAddress(), hasGateway(), State.NetworkTopologyState.ALL_FETCHED);
+            }
+        });
+        dynamicState.setStateTimer(State.NetworkTopologyState.NO_DATA, REPEAT_ADDRESS_FETCH);
+        dynamicState.setStateTimer(State.NetworkTopologyState.WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH, REPEAT_ADDRESS_FETCH);
+        dynamicState.setStateTimer(State.NetworkTopologyState.WAITING_FOR_NEXT_EXTERNAL_ADDRESS_FETCH, REPEAT_ADDRESS_FETCH);
+        dynamicState.setStateTimer(State.NetworkTopologyState.ALL_FETCHED, REGULAR_ADDRESS_FETCH, new Runnable() {
+            @Override
+            public void run() {
+                fetchLocalAddress(dynamicState.state(), dynamicState);
+            }
+        });
+        dynamicState.setGeneralTimer(GENERAL_REMINDER);
+    }
+
+    private void fetchLocalAddress(State.NetworkTopologyState state, EvolvingStateController<State.NetworkTopologyState, Boolean> controller) {
+        if (state == State.NetworkTopologyState.NO_DATA) {
+            // initial fetch
+            connectionEvents.initializingConnection();
+        }
+        try {
+            String newLocalAddress = AddressChecker.detectLocalAddress();
+            if (newLocalAddress == null) {
+                throw new IOException("Could not fetch local address");
+            }
+            if (!newLocalAddress.equals(localAddress)) {
+                // local address has changed
+                localAddress = newLocalAddress;
+                controller.setState(State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED);
+                controller.evolve();
+            }
+        } catch (IOException e) {
+            // error fetching local address
+            controller.setState(State.NetworkTopologyState.WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH);
+            connectionEvents.couldNotFetchLocalAddress(state);
+        }
+        // else -> local address has not changed, all ok
+    }
+
+    private void fetchExternalAddress(State.NetworkTopologyState state, EvolvingStateController<State.NetworkTopologyState, Boolean> controller) {
+        connectionEvents.tryingToFetchExternalAddress(state);
+        externalAddress = ExternalIPService.detectExternalAddress();
+        if (externalAddress != null) {
+            // external address successfully fetched
+            controller.setState(State.NetworkTopologyState.ALL_FETCHED);
+        } else {
+            // error fetching the external address (maybe there is no internet available). Retry in some time
+            controller.setState(State.NetworkTopologyState.WAITING_FOR_NEXT_EXTERNAL_ADDRESS_FETCH);
+            connectionEvents.couldNotFetchExternalAddress(state);
+            peerClientConnectionManager.networkProblem();
+        }
     }
 
     public String getLocalAddress() {
@@ -148,94 +198,17 @@ public class NetworkTopologyManager implements DaemonAction {
         return isInWishedState() && !getLocalAddress().equals(getExternalAddress());
     }
 
-    synchronized void setWishForConnect(boolean wishForConnect) {
-        boolean mustUpdateState = this.wishForConnect != wishForConnect;
-        this.wishForConnect = wishForConnect;
-        if (mustUpdateState) {
-            updateState();
-        }
+    void setWishForConnect(boolean wishForConnect) {
+        dynamicState.setGoal(wishForConnect, true);
     }
 
-    synchronized boolean isInWishedState() {
-        return  (!wishForConnect || networkTopologyState == State.NetworkTopologyState.ALL_FETCHED);
+    boolean isInWishedState() {
+        return dynamicState.hasReachedGoal();
     }
 
     void stop() {
-        addressChecker.stop();
         setWishForConnect(false);
-        stateDaemon.blockUntilStateIsSolved();
-    }
-
-    synchronized void updateState() {
-        stateDaemon.stateChange();
-        stateDaemon.interrupt();
-    }
-
-    @Override
-    public synchronized boolean solveState() {
-        if (wishForConnect) {
-            // only act for fetching the network topology if there is a wish for connecting
-            switch (networkTopologyState) {
-
-                case NO_DATA:
-                    // fetch the local address
-                    connectionEvents.initializingConnection();
-                    return fetchLocalAddress();
-
-                case LOCAL_ADDRESS_FETCHED:
-                case WAITING_FOR_NEXT_EXTERNAL_ADDRESS_FETCH:
-                    // fetch the public address, infer existence of gateway
-                    return fetchExternalAddress();
-
-                case ALL_FETCHED:
-                case WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH:
-                    // check local address
-                    return fetchLocalAddress();
-            }
-        } else {
-            networkTopologyState = State.NetworkTopologyState.NO_DATA;
-            return true;
-        }
-        // cannot happen
-        return true;
-    }
-
-    private boolean fetchLocalAddress() {
-        String newLocalAddress = AddressChecker.detectLocalAddress();
-        if (newLocalAddress != null && !newLocalAddress.equals(localAddress)) {
-            // local address has changed
-            localAddress = newLocalAddress;
-            networkTopologyState = State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED;
-            connectionEvents.localAddressFetched(getLocalAddress(), networkTopologyState);
-            return false;
-        } else if (newLocalAddress == null) {
-            // error fetching local address
-            networkTopologyState = State.NetworkTopologyState.WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH;
-            addressChecker.mustSearchSoon();
-            connectionEvents.couldNotFetchLocalAddress(networkTopologyState);
-            peerClientConnectionManager.networkProblem();
-            return true;
-        } else {
-            // local address has not changed, all ok
-            return true;
-        }
-    }
-
-    private boolean fetchExternalAddress() {
-        connectionEvents.tryingToFetchExternalAddress(networkTopologyState);
-        externalAddress = ExternalIPService.detectExternalAddress();
-        if (externalAddress != null) {
-            // external address successfully fetched
-            networkTopologyState = State.NetworkTopologyState.ALL_FETCHED;
-            connectionEvents.externalAddressFetched(getExternalAddress(), hasGateway(), networkTopologyState);
-            return true;
-        } else {
-            // error fetching the external address (maybe there is no internet available). Retry in some time
-            networkTopologyState = State.NetworkTopologyState.WAITING_FOR_NEXT_EXTERNAL_ADDRESS_FETCH;
-            addressChecker.mustSearchSoon();
-            connectionEvents.couldNotFetchExternalAddress(networkTopologyState);
-            peerClientConnectionManager.networkProblem();
-            return true;
-        }
+        dynamicState.blockUntilStateIsSolved();
+        dynamicState.stop();
     }
 }

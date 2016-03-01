@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 
 /**
  * Events related to resource transfers (download/upload requests, important download/upload events, file store changes,
@@ -22,7 +22,7 @@ public interface ResourceTransferEvents {
 
     void globalDownloadInitiated(String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm);
 
-    void peerDownloadInitiated(PeerID serverPeerID, String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm);
+    void peerDownloadInitiated(PeerId serverPeerId, String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm);
 
     void setMaxDesiredDownloadSpeed(Float totalMaxDesiredSpeed);
 

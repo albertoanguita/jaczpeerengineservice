@@ -1,6 +1,6 @@
 package jacz.peerengineservice.test.startstop;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
@@ -19,14 +19,15 @@ import java.util.HashMap;
 public class TestStartStop {
 
     public static void main(String args[]) throws Exception {
+
         String config = "./etc/tests/clientConf_1_new.xml";
-        Four_Tuple<PeerID, NetworkConfiguration, PeersPersonalData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
-        PeerID ownPeerID = data.element1;
+        Four_Tuple<PeerId, NetworkConfiguration, PeersPersonalData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
+        PeerId ownPeerId = data.element1;
         NetworkConfiguration networkConfiguration = data.element2;
         PeersPersonalData peersPersonalData = data.element3;
         PeerRelations peerRelations = data.element4;
 
-        Client client = new Client(ownPeerID, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new HashMap<String, PeerFSMFactory>());
         client.startClient();
 
         Thread.sleep(25000);

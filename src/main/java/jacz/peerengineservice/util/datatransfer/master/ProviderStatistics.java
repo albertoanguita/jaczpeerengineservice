@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.util.date_time.SpeedMonitor;
 import jacz.util.numeric.range.LongRange;
 
@@ -16,7 +16,7 @@ public class ProviderStatistics {
      * The resource provider that generates this statistics
      */
 //    private final ResourceProvider resourceProvider;
-    private final PeerID resourceProviderID;
+    private final PeerId resourceProviderID;
 
     /**
      * Currently shared part by this provider. Empty if not active
@@ -34,7 +34,7 @@ public class ProviderStatistics {
     private transient SpeedMonitor speed;
 
 
-    public ProviderStatistics(PeerID resourceProviderID) {
+    public ProviderStatistics(PeerId resourceProviderID) {
         // first time this provider is added to the download
         this.resourceProviderID = resourceProviderID;
         sharedPart = new ResourcePart();
@@ -94,7 +94,7 @@ public class ProviderStatistics {
         assignedPart.remove(downloadedSegment);
     }
 
-    public PeerID getResourceProviderID() {
+    public PeerId getResourceProviderID() {
         return resourceProviderID;
     }
 

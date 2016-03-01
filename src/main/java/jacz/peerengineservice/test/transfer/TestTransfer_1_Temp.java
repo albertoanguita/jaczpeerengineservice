@@ -1,6 +1,6 @@
 package jacz.peerengineservice.test.transfer;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.client.PeersPersonalData;
@@ -22,13 +22,13 @@ public class TestTransfer_1_Temp {
 
     public static void main(String args[]) throws Exception {
         String config = "./etc/tests/clientConf_1_new.xml";
-        Four_Tuple<PeerID, NetworkConfiguration, PeersPersonalData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
-        PeerID ownPeerID = data.element1;
+        Four_Tuple<PeerId, NetworkConfiguration, PeersPersonalData, PeerRelations> data = PeerClientConfigSerializer.readPeerClientData(config);
+        PeerId ownPeerId = data.element1;
         NetworkConfiguration networkConfiguration = data.element2;
         PeersPersonalData peersPersonalData = data.element3;
         PeerRelations peerRelations = data.element4;
 
-        Client client = new Client(ownPeerID, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new ResourceTransferEventsPlus(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new ResourceTransferEventsPlus(), new HashMap<String, PeerFSMFactory>());
         ForeignStoreShare foreignStoreShare = new ForeignStoreShare(client.getPeerClient());
         foreignStoreShare.addResourceProvider("file_1", PeerIDGenerator.peerID(2));
         foreignStoreShare.addResourceProvider("file_2", PeerIDGenerator.peerID(2));
@@ -58,7 +58,7 @@ public class TestTransfer_1_Temp {
 
         System.out.println("to download first file...");
 
-        DownloadManager downloadManager1 = client.getPeerClient().downloadResource("files", "file_1", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_1"), "MD5");
+        DownloadManager downloadManager1 = client.getPeerClient().downloadResource("files", "file_1", tempFileWriter, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerId()), 0.1f, ResourceStoreImpl.getHash("file_1"), "MD5");
         ThreadUtil.safeSleep(10000);
 
 //        System.out.println("to download second file...");
@@ -70,8 +70,8 @@ public class TestTransfer_1_Temp {
 //        System.out.println(tempFile2);
 //
 //
-////            client.getPeerClient().downloadResource(new PeerID("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f);
-//        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "file_2", tempFileWriter2, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerID()), 0.1f, ResourceStoreImpl.getHash("file_2"), "MD5");
+////            client.getPeerClient().downloadResource(new PeerId("pid{0000000000000000000000000000000000000000002}"), "files", "aaa", new BasicFileWriter(".\\aaa_transfer.txt"), true, new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerId()), 0.1f);
+//        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "file_2", tempFileWriter2, new DownloadProgressNotificationHandlerImpl(client.getPeerClient().getOwnPeerId()), 0.1f, ResourceStoreImpl.getHash("file_2"), "MD5");
 
         ThreadUtil.safeSleep(15000);
         System.out.println("STOP!!!");
@@ -85,7 +85,7 @@ public class TestTransfer_1_Temp {
 
 //        ThreadUtil.safeSleep(8000);
 //        System.out.println("RESTART!!!");
-//        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerID()), 0.1f, null, null, null);
+//        DownloadManager downloadManager2 = client.getPeerClient().downloadResource("files", "aaa", new TempFileWriter(tempFileManager, tempFile, "custom"), new DownloadProgressNotificationHandlerImpl(client.getPeerClientData().getOwnPeerId()), 0.1f, null, null, null);
 
         System.out.println("END");
     }

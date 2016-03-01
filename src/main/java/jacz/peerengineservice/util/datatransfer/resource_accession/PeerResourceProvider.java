@@ -5,13 +5,13 @@ package jacz.peerengineservice.util.datatransfer.resource_accession;
  */
 public class PeerResourceProvider /*implements ResourceProvider*/ {
 //
-//    private PeerID ownPeerID;
+//    private PeerId ownPeerID;
 //
-//    private PeerID otherPeerID;
+//    private PeerId otherPeerID;
 //
 //    private ResourceStreamingManager resourceStreamingManager;
 //
-//    public PeerResourceProvider(PeerID ownPeerID, PeerID otherPeerID, ResourceStreamingManager resourceStreamingManager) {
+//    public PeerResourceProvider(PeerId ownPeerID, PeerId otherPeerID, ResourceStreamingManager resourceStreamingManager) {
 //        this.ownPeerID = ownPeerID;
 //        this.otherPeerID = otherPeerID;
 //        this.resourceStreamingManager = resourceStreamingManager;
@@ -34,7 +34,7 @@ public class PeerResourceProvider /*implements ResourceProvider*/ {
 //        return new PeerResourceLink(resourceStreamingManager, otherPeerID);
 //    }
 //
-//    public PeerID getPeerID() {
+//    public PeerId getPeerId() {
 //        return otherPeerID;
 //    }
 //

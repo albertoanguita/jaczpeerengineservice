@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 
 /**
  * This interface contains the methods of a resource store (i.e. a store of resources shared to other peers).
@@ -12,9 +12,9 @@ public interface ResourceStore {
     /**
      * Request for a resource from another peer
      *
-     * @param peerID     requesting peer id
+     * @param peerId     requesting peer id
      * @param resourceID requested resource
      * @return the response to this request
      */
-    ResourceStoreResponse requestResource(PeerID peerID, String resourceID);
+    ResourceStoreResponse requestResource(PeerId peerId, String resourceID);
 }

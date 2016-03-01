@@ -1,11 +1,10 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.GenericPriorityManagerRegulatedResource;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceLink;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.slave.SlaveMessage;
-import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.timer.SimpleTimerAction;
 import jacz.util.concurrency.timer.Timer;
@@ -90,7 +89,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     /**
      * The provider id of the resource provider
      */
-    private final PeerID resourceProviderId;
+    private final PeerId resourceProviderId;
 
     /**
      * The subchannel through which the associated slave transmits data
@@ -179,7 +178,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         return resourceProvider;
     }
 
-    PeerID getResourceProviderId() {
+    PeerId getResourceProviderId() {
         return resourceProviderId;
     }
 
@@ -503,9 +502,9 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     }
 
     private void die(final boolean mustReportSlave) {
-        ParallelTaskExecutor.executeTask(new ParallelTask() {
+        ParallelTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
+            public void run() {
                 masterResourceStreamer.removeSlave(subchannel, mustReportSlave);
             }
         });

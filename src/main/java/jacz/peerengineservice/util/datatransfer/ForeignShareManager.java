@@ -1,11 +1,10 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.util.concurrency.task_executor.ParallelTask;
+import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.identifier.UniqueIdentifierFactory;
-import jacz.peerengineservice.util.ForeignStoreShare;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -179,9 +178,9 @@ class ForeignShareManager implements NotificationReceiver {
             for (Object message : groupedMessages) {
                 affectedResources.add((String) message);
             }
-            ParallelTaskExecutor.executeTask(new ParallelTask() {
+            ParallelTaskExecutor.executeTask(new Runnable() {
                 @Override
-                public void performTask() {
+                public void run() {
                     resourceStreamingManager.reportProvidersShareChanges(finalResourceStore, affectedResources);
                 }
             });

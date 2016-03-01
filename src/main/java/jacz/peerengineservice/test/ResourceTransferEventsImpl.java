@@ -1,6 +1,6 @@
 package jacz.peerengineservice.test;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.*;
 
 /**
@@ -43,7 +43,7 @@ public class ResourceTransferEventsImpl implements ResourceTransferEvents {
     }
 
     @Override
-    public void peerDownloadInitiated(PeerID serverPeerID, String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm) {
+    public void peerDownloadInitiated(PeerId serverPeerId, String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm) {
 
     }
 

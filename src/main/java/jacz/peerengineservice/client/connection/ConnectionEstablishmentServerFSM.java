@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.channel.TimedChannelFSMAction;
@@ -49,11 +49,11 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
      */
     private FriendConnectionManager friendConnectionManager;
 
-    private PeerID ownPeerID;
+    private PeerId ownPeerId;
 
-    public ConnectionEstablishmentServerFSM(FriendConnectionManager friendConnectionManager, PeerID ownPeerID) {
+    public ConnectionEstablishmentServerFSM(FriendConnectionManager friendConnectionManager, PeerId ownPeerId) {
         this.friendConnectionManager = friendConnectionManager;
-        this.ownPeerID = ownPeerID;
+        this.ownPeerId = ownPeerId;
     }
 
     @Override
@@ -64,11 +64,11 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
                 // we expect to receive an ObjectListWrapper object containing the ID of the client and our own ID
                 if (message instanceof ConnectionEstablishmentClientFSM.ConnectionRequest) {
                     ConnectionEstablishmentClientFSM.ConnectionRequest connectionRequest = (ConnectionEstablishmentClientFSM.ConnectionRequest) message;
-                    if (!connectionRequest.serverPeerID.equals(ownPeerID)) {
+                    if (!connectionRequest.serverPeerId.equals(ownPeerId)) {
                         // incorrect own id
                         return State.ERROR;
                     }
-                    ConnectionResult connectionResult = friendConnectionManager.newRequestConnectionAsServer(connectionRequest.clientPeerID, ccp);
+                    ConnectionResult connectionResult = friendConnectionManager.newRequestConnectionAsServer(connectionRequest.clientPeerId, ccp);
                     if (connectionResult != null) {
                         // ok to connect -> send result to client and finish
                         ccp.write(ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL, connectionResult);
@@ -83,7 +83,7 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
                 } else if (message instanceof PingRequest) {
                     // a ping request, probably from a PortTestServer --> answer with a true and finish
                     PingRequest pingRequest = (PingRequest) message;
-                    ccp.write(pingRequest.channel, ownPeerID);
+                    ccp.write(pingRequest.channel, ownPeerId);
                     return State.SUCCESS;
                 } else {
                     // incorrect data format received

@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.data_synchronization;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerFSMAction;
 import jacz.peerengineservice.client.PeerFSMFactory;
 import jacz.peerengineservice.util.ConnectionStatus;
@@ -17,11 +17,11 @@ public class DataSynchServerFSMFactory implements PeerFSMFactory {
     }
 
     @Override
-    public PeerFSMAction buildPeerFSMAction(PeerID clientPeerID, ConnectionStatus requestingPeerStatus) {
+    public PeerFSMAction buildPeerFSMAction(PeerId clientPeerId, ConnectionStatus requestingPeerStatus) {
         if (requestingPeerStatus.isFriend()) {
-            return new DataSynchServerFSM(clientPeerID, dataAccessorContainer);
+            return new DataSynchServerFSM(clientPeerId, dataAccessorContainer);
         } else {
-            DataSynchronizer.logger.info("SERVER SYNCH REQUEST DENIED. clientPeer: " + clientPeerID + ". dataAccessorName: " + null + ". fsmID: " + null + ". synchError: " + new SynchError(SynchError.Type.NO_PERMISSION, null));
+            DataSynchronizer.logger.info("SERVER SYNCH REQUEST DENIED. clientPeer: " + clientPeerId + ". dataAccessorName: " + null + ". fsmID: " + null + ". synchError: " + new SynchError(SynchError.Type.NO_PERMISSION, null));
             return null;
         }
     }

@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.data_synchronization;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
@@ -89,7 +89,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
 
     private UniqueIdentifier fsmID;
 
-    private final PeerID clientPeerID;
+    private final PeerId clientPeerId;
 
     private final DataAccessorContainer dataAccessorContainer;
 
@@ -115,8 +115,8 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
     /**
      * Class constructor
      */
-    public DataSynchServerFSM(PeerID clientPeerID, DataAccessorContainer dataAccessorContainer) {
-        this.clientPeerID = clientPeerID;
+    public DataSynchServerFSM(PeerId clientPeerId, DataAccessorContainer dataAccessorContainer) {
+        this.clientPeerId = clientPeerId;
         this.dataAccessorContainer = dataAccessorContainer;
         this.dataAccessorName = null;
         this.synchError = new SynchError(SynchError.Type.UNDEFINED, null);
@@ -156,13 +156,13 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             }
             DataSynchClientFSM.SynchRequest request = (DataSynchClientFSM.SynchRequest) message;
             dataAccessorName = request.dataAccessorName;
-            dataAccessor = dataAccessorContainer.getAccessorForTransmitting(clientPeerID, dataAccessorName);
-            DataSynchronizer.logger.info("SERVER SYNCH REQUEST ACCEPTED. clientPeer: " + clientPeerID + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID);
+            dataAccessor = dataAccessorContainer.getAccessorForTransmitting(clientPeerId, dataAccessorName);
+            DataSynchronizer.logger.info("SERVER SYNCH REQUEST ACCEPTED. clientPeer: " + clientPeerId + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID);
 
             // valid request -> send ok and start synching
             dataAccessor.beginSynchProcess(DataAccessor.Mode.SERVER);
             ccp.write(outgoingChannel, SynchRequestAnswer.OK, false);
-            progress = dataAccessor.getServerSynchProgress(clientPeerID);
+            progress = dataAccessor.getServerSynchProgress(clientPeerId);
             if (progress != null) {
                 progress.beginTask();
             }
@@ -188,12 +188,12 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             return sendElementPack(ccp);
         } catch (ClassNotFoundException e) {
             // invalid class found, error
-            PeerClient.reportError(e.toString(), clientPeerID, dataAccessorName, fsmID);
+            PeerClient.reportError(e.toString(), clientPeerId, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Invalid request format");
             ccp.write(outgoingChannel, SynchRequestAnswer.INVALID_REQUEST_FORMAT);
             return State.DENIED;
         } catch (AccessorNotFoundException e) {
-            PeerClient.reportError(e.toString(), clientPeerID, dataAccessorName, fsmID);
+            PeerClient.reportError(e.toString(), clientPeerId, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.UNKNOWN_ACCESSOR, "Accessor: " + dataAccessorName);
             ccp.write(outgoingChannel, SynchRequestAnswer.UNKNOWN_DATA_ACCESSOR);
             return State.DENIED;
@@ -202,7 +202,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             ccp.write(outgoingChannel, SynchRequestAnswer.SERVER_BUSY);
             return State.DENIED;
         } catch (DataAccessException e) {
-            PeerClient.reportError("Data access error in server synch FSM", clientPeerID, dataAccessorName, fsmID);
+            PeerClient.reportError("Data access error in server synch FSM", clientPeerId, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.DATA_ACCESS_ERROR, null);
             ccp.write(outgoingChannel, SynchRequestAnswer.SERVER_ERROR);
             return State.DENIED;
@@ -252,7 +252,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
     public boolean isFinalState(State state, ChannelConnectionPoint ccp) {
         switch (state) {
             case SUCCESS:
-                DataSynchronizer.logger.info("SERVER SYNCH SUCCESS. clientPeer: " + clientPeerID + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID);
+                DataSynchronizer.logger.info("SERVER SYNCH SUCCESS. clientPeer: " + clientPeerId + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID);
                 dataAccessor.endSynchProcess(DataAccessor.Mode.SERVER, true);
                 if (progress != null) {
                     progress.completeTask();
@@ -260,7 +260,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
                 return true;
 
             case ERROR:
-                DataSynchronizer.logger.info("SERVER SYNCH ERROR. clientPeer: " + clientPeerID + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID + ". synchError: " + synchError);
+                DataSynchronizer.logger.info("SERVER SYNCH ERROR. clientPeer: " + clientPeerId + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID + ". synchError: " + synchError);
                 if (dataAccessor != null) {
                     dataAccessor.endSynchProcess(DataAccessor.Mode.SERVER, false);
                 }
@@ -270,7 +270,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
                 return true;
 
             case DENIED:
-                DataSynchronizer.logger.info("SERVER SYNCH REQUEST DENIED. clientPeer: " + clientPeerID + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID + ". synchError: " + synchError);
+                DataSynchronizer.logger.info("SERVER SYNCH REQUEST DENIED. clientPeer: " + clientPeerId + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID + ". synchError: " + synchError);
                 if (dataAccessor != null) {
                     dataAccessor.endSynchProcess(DataAccessor.Mode.SERVER, false);
                 }
@@ -295,7 +295,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
 
     @Override
     public void timedOut(State state) {
-        DataSynchronizer.logger.info("SERVER SYNCH TIMEOUT. clientPeer: " + clientPeerID + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID);
+        DataSynchronizer.logger.info("SERVER SYNCH TIMEOUT. clientPeer: " + clientPeerId + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID);
         if (dataAccessor != null) {
             dataAccessor.endSynchProcess(DataAccessor.Mode.SERVER, false);
         }

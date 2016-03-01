@@ -1,6 +1,6 @@
 package jacz.peerengineservice.test.list_synch;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.data_synchronization.DataAccessException;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.data_synchronization.SynchError;
@@ -142,7 +142,7 @@ public class TestData_0 implements DataAccessor {
     }
 
     @Override
-    public ProgressNotificationWithError<Integer, SynchError> getServerSynchProgress(PeerID clientPeerID) {
-        return new ListSynchProgress(clientPeerID, "TestList_0", false);
+    public ProgressNotificationWithError<Integer, SynchError> getServerSynchProgress(PeerId clientPeerId) {
+        return new ListSynchProgress(clientPeerId, "TestList_0", false);
     }
 }

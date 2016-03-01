@@ -1,6 +1,5 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.util.concurrency.task_executor.ParallelTask;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.timer.SimpleTimerAction;
 import jacz.util.concurrency.timer.Timer;
@@ -110,9 +109,9 @@ public abstract class TransfersManager<T> implements SimpleTimerAction {
      */
     public synchronized Long wakeUp(final Timer timer) {
         // notify the client. Currently we always send a false, maybe use the argument in the future
-        ParallelTaskExecutor.executeTask(new ParallelTask() {
+        ParallelTaskExecutor.executeTask(new Runnable() {
             @Override
-            public void performTask() {
+            public void run() {
                 notifyClient();
             }
         });

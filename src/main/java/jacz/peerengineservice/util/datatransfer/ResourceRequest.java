@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.peerengineservice.PeerID;
+import jacz.peerengineservice.PeerId;
 
 import java.io.Serializable;
 
@@ -9,7 +9,7 @@ import java.io.Serializable;
  */
 public class ResourceRequest implements Serializable {
 
-    private PeerID requestingPeer;
+    private PeerId requestingPeer;
 
     private String storeName;
 
@@ -19,11 +19,11 @@ public class ResourceRequest implements Serializable {
 
     private Float priority;
 
-    public ResourceRequest(PeerID requestingPeer, String storeName, String resourceID, short subchannel) {
+    public ResourceRequest(PeerId requestingPeer, String storeName, String resourceID, short subchannel) {
         this(requestingPeer, storeName, resourceID, subchannel, null);
     }
 
-    public ResourceRequest(PeerID requestingPeer, String storeName, String resourceID, short subchannel, Float priority) {
+    public ResourceRequest(PeerId requestingPeer, String storeName, String resourceID, short subchannel, Float priority) {
         this.requestingPeer = requestingPeer;
         this.storeName = storeName;
         this.resourceID = resourceID;
@@ -31,7 +31,7 @@ public class ResourceRequest implements Serializable {
         this.priority = priority;
     }
 
-    public PeerID getRequestingPeer() {
+    public PeerId getRequestingPeer() {
         return requestingPeer;
     }
 
