@@ -98,5 +98,15 @@
         <artifactId>weupnp</artifactId>
         <version>0.1.4</version>
     </dependency>
+    <dependency>
+        <groupId>org.javalite</groupId>
+        <artifactId>activejdbc</artifactId>
+        <version>1.4.11</version>
+    </dependency>
+    <dependency>
+        <groupId>jacz.storage</groupId>
+        <artifactId>activejdbc-controller</artifactId>
+        <version>0.1a</version>
+    </dependency>
   </dependencies>
 </project>
