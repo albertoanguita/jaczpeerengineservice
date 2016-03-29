@@ -1,7 +1,6 @@
 package jacz.peerengineservice.client;
 
 import jacz.commengine.channel.ChannelFSMAction;
-import jacz.util.identifier.UniqueIdentifier;
 
 /**
  * Actions that need to be implemented in order to use custom FSMs in the peer engine. They are similar to channel
@@ -25,7 +24,7 @@ public interface PeerFSMAction<T> extends ChannelFSMAction<T> {
      *
      * @param id unique identifier of the fsm
      */
-    void setID(UniqueIdentifier id);
+    void setID(String id);
 
     /**
      * This method gives the outgoing channel to use for the rest of the communication process to send messages to the

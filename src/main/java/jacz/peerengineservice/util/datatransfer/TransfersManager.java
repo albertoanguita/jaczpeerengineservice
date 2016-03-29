@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.datatransfer;
 
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
-import jacz.util.concurrency.timer.SimpleTimerAction;
+import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.identifier.UniqueIdentifier;
 
@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Class that handles active transfers (used for downloads and uploads)
  */
-public abstract class TransfersManager<T> implements SimpleTimerAction {
+public abstract class TransfersManager<T> implements TimerAction {
 
     /**
      * Active uploads, indexed by store name and resource streamer id (slave id or master id)

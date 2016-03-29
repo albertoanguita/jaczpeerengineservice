@@ -6,7 +6,6 @@ import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.util.event.notification.NotificationEmitter;
 import jacz.util.event.notification.NotificationProcessor;
 import jacz.util.event.notification.NotificationReceiver;
-import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.sets.availableelements.AvailableElementsByte;
 
 import java.util.*;
@@ -261,17 +260,17 @@ public class ConnectedPeers implements NotificationEmitter {
     }
 
     @Override
-    public UniqueIdentifier subscribe(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver) throws IllegalArgumentException {
+    public String subscribe(String receiverID, NotificationReceiver notificationReceiver) throws IllegalArgumentException {
         return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver);
     }
 
     @Override
-    public UniqueIdentifier subscribe(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver, long millis, double timeFactorAtEachEvent, int limit) throws IllegalArgumentException {
+    public String subscribe(String receiverID, NotificationReceiver notificationReceiver, long millis, double timeFactorAtEachEvent, int limit) throws IllegalArgumentException {
         return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver, millis, timeFactorAtEachEvent, limit);
     }
 
     @Override
-    public void unsubscribe(UniqueIdentifier receiverID) {
+    public void unsubscribe(String receiverID) {
         notificationProcessor.unsubscribeReceiver(receiverID);
     }
 

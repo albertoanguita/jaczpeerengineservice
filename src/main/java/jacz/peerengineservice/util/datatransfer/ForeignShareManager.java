@@ -3,8 +3,8 @@ package jacz.peerengineservice.util.datatransfer;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.event.notification.NotificationReceiver;
+import jacz.util.id.AlphaNumFactory;
 import jacz.util.identifier.UniqueIdentifier;
-import jacz.util.identifier.UniqueIdentifierFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,9 +41,9 @@ class ForeignShareManager implements NotificationReceiver {
 
         private final ForeignStoreShare foreignStoreShare;
 
-        private final UniqueIdentifier emitterID;
+        private final String emitterID;
 
-        private ForeignPeerShareWithEmitterID(ForeignStoreShare foreignStoreShare, UniqueIdentifier emitterID) {
+        private ForeignPeerShareWithEmitterID(ForeignStoreShare foreignStoreShare, String emitterID) {
             this.foreignStoreShare = foreignStoreShare;
             this.emitterID = emitterID;
         }
@@ -72,12 +72,12 @@ class ForeignShareManager implements NotificationReceiver {
     /**
      * Table with all registered ResourceStores, indexed by their emitter id
      */
-    private final Map<UniqueIdentifier, String> globalEmitterIDs;
+    private final Map<String, String> globalEmitterIDs;
 
     /**
      * Own unique identifier, for receiving event updates from ForeignPeerShares
      */
-    private final UniqueIdentifier receiverID;
+    private final String receiverID;
 
     /**
      * The resource streaming manager that owns this resource store manager. We need it to report provider data
@@ -98,7 +98,7 @@ class ForeignShareManager implements NotificationReceiver {
     ForeignShareManager(ResourceStreamingManager resourceStreamingManager) {
         storeShares = new HashMap<>();
         globalEmitterIDs = new HashMap<>();
-        receiverID = UniqueIdentifierFactory.getOneStaticIdentifier();
+        receiverID = AlphaNumFactory.getStaticId();
         this.resourceStreamingManager = resourceStreamingManager;
         alive = true;
     }
@@ -112,7 +112,7 @@ class ForeignShareManager implements NotificationReceiver {
     synchronized void addStore(String store, ForeignStoreShare foreignStoreShare) {
         // the subscribe call can be synched because it can cause no clash
         if (alive) {
-            UniqueIdentifier shareEmitterID = foreignStoreShare.subscribe(receiverID, this, RECEIVER_MILLIS, RECEIVER_TIME_FACTOR, RECEIVER_LIMIT);
+            String shareEmitterID = foreignStoreShare.subscribe(receiverID, this, RECEIVER_MILLIS, RECEIVER_TIME_FACTOR, RECEIVER_LIMIT);
             storeShares.put(store, new ForeignPeerShareWithEmitterID(foreignStoreShare, shareEmitterID));
             globalEmitterIDs.put(shareEmitterID, store);
         }
@@ -139,7 +139,7 @@ class ForeignShareManager implements NotificationReceiver {
         synchronized (this) {
             if (storeShares.containsKey(store)) {
                 foreignStoreShare = storeShares.get(store).foreignStoreShare;
-                UniqueIdentifier emitterID = storeShares.remove(store).emitterID;
+                String emitterID = storeShares.remove(store).emitterID;
                 globalEmitterIDs.remove(emitterID);
             }
         }
@@ -162,7 +162,7 @@ class ForeignShareManager implements NotificationReceiver {
     }
 
     @Override
-    public void newEvent(final UniqueIdentifier emitterID, int eventCount, List<List<Object>> nonGroupedMessages, List<Object> groupedMessages) {
+    public void newEvent(final String emitterID, int eventCount, List<List<Object>> nonGroupedMessages, List<Object> groupedMessages) {
         // messages are grouped, so they all come in the first list instead of in individual lists
         // a timer thread invokes this sporadically, but this thread can clash with the unsubscribe method, so it is left un-synchronized
         // and the call to the ResourceStreamingManager is in parallel. Therefore, this newEvent call ALWAYS ends

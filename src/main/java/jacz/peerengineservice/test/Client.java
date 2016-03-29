@@ -65,7 +65,8 @@ public class Client {
         generalEvents.init(ownPeerId, this);
         connectionEvents.init(ownPeerId, this);
 
-        String serverURL = "https://testserver01-1100.appspot.com/_ah/api/server/v1/";
+//        String serverURL = "https://testserver01-1100.appspot.com/_ah/api/server/v1/";
+        String serverURL = "https://jaczserver.appspot.com/_ah/api/server/v1/";
         TestListContainer testListContainer = new TestListContainer(readingLists, writingLists);
 //        if (FileUtil.isFile("globalDownloads.txt")) {
 //            VersionedObjectSerializer.deserializeVersionedObject(globalDownloadStatistics);

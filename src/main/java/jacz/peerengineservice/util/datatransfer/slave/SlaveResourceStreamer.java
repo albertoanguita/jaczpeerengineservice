@@ -6,7 +6,7 @@ import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.master.MasterMessage;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
-import jacz.util.concurrency.timer.SimpleTimerAction;
+import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.identifier.UniqueIdentifierFactory;
@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * This class handles a slave that serves a resource to a master
  */
-public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResource implements ResourceStreamingManager.SubchannelOwner, SimpleTimerAction {
+public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResource implements ResourceStreamingManager.SubchannelOwner, TimerAction {
 
     static class RemovedRange {
 

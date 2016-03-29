@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.datatransfer;
 
 import jacz.util.AI.resource_distribution.PriorityResourceDistribution;
-import jacz.util.concurrency.timer.SimpleTimerAction;
+import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.concurrency.timer.Timer;
 
 import java.util.HashMap;
@@ -15,7 +15,7 @@ import java.util.Set;
  * todo check possibility of updating communications to java NIO socketchannel
  * http://tutorials.jenkov.com/java-nio/socketchannel.html
  */
-public class GenericPriorityManager implements SimpleTimerAction {
+public class GenericPriorityManager implements TimerAction {
 
     private static final long WAIT_TIME = 2500;
 

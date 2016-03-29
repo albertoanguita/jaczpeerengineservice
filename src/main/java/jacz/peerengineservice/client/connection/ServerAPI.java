@@ -1,6 +1,7 @@
 package jacz.peerengineservice.client.connection;
 
 import com.google.gson.Gson;
+import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.util.io.http.HttpClient;
@@ -44,11 +45,23 @@ public class ServerAPI {
 
         private final int externalMainServerPort;
 
-        public ConnectionRequest(PeerId peerId, String localIPAddress, int localMainServerPort, int externalMainServerPort) {
+        private final String clientCountryCode;
+
+        private final boolean wishRegularConnections;
+
+        public ConnectionRequest(
+                PeerId peerId,
+                String localIPAddress,
+                int localMainServerPort,
+                int externalMainServerPort,
+                CountryCode mainCountry,
+                boolean wishRegularConnections) {
             this.peerID = peerId.toString();
             this.localIPAddress = localIPAddress;
             this.localMainServerPort = localMainServerPort;
             this.externalMainServerPort = externalMainServerPort;
+            this.clientCountryCode = mainCountry.name();
+            this.wishRegularConnections = wishRegularConnections;
         }
     }
 
@@ -63,7 +76,7 @@ public class ServerAPI {
     public enum ConnectionResponseType {
         OK,
         // todo: make server return this if the public ip does not match what we are sending to him. Include public ip in connection message
-        PUBLIC_IP_MISMATCH,
+//        PUBLIC_IP_MISMATCH,
         UNREGISTERED_PEER,
         PEER_MAIN_SERVER_UNREACHABLE,
         PEER_REST_SERVER_UNREACHABLE,
@@ -166,6 +179,15 @@ public class ServerAPI {
         }
     }
 
+    public static final class RegularPeersRequest {
+
+        private final String clientCountryCode;
+
+        public RegularPeersRequest(CountryCode clientCountryCode) {
+            this.clientCountryCode = clientCountryCode.name();
+        }
+    }
+
     public static final class PeerIDInfoJSON {
 
         private String peerID;
@@ -175,37 +197,39 @@ public class ServerAPI {
         private String localRESTServerPort;
         private String externalMainServerPort;
         private String externalRESTServerPort;
+        private String clientCountryCode;
+        private String wishRegularConnections;
     }
 
     public static final class InfoResponse {
 
-        private final List<PeerIDInfo> peerIDInfoList;
+        private final List<PeerIdInfo> peerIdInfoList;
 
-        private InfoResponse(List<PeerIDInfo> peerIDInfoList) {
-            this.peerIDInfoList = peerIDInfoList;
+        private InfoResponse(List<PeerIdInfo> peerIdInfoList) {
+            this.peerIdInfoList = peerIdInfoList;
         }
 
-        public List<PeerIDInfo> getPeerIDInfoList() {
-            return peerIDInfoList;
+        public List<PeerIdInfo> getPeerIdInfoList() {
+            return peerIdInfoList;
         }
 
         private static InfoResponse buildInfoResponse(InfoResponseJSON infoResponseJson) {
-            List<PeerIDInfo> peerIDInfoList = new ArrayList<>();
+            List<PeerIdInfo> peerIdInfoList = new ArrayList<>();
             for (PeerIDInfoJSON peerIDInfoJson : infoResponseJson.peerIDInfoList) {
-                peerIDInfoList.add(PeerIDInfo.buildPeerIDInfo(peerIDInfoJson));
+                peerIdInfoList.add(PeerIdInfo.buildPeerIDInfo(peerIDInfoJson));
             }
-            return new InfoResponse(peerIDInfoList);
+            return new InfoResponse(peerIdInfoList);
         }
 
         @Override
         public String toString() {
             return "InfoResponse{" +
-                    "peerIDInfoList=" + peerIDInfoList +
+                    "peerIdInfoList=" + peerIdInfoList +
                     '}';
         }
     }
 
-    public static final class PeerIDInfo {
+    public static final class PeerIdInfo {
 
         private final PeerId peerId;
         private final String localIPAddress;
@@ -214,14 +238,18 @@ public class ServerAPI {
         private final int localRESTServerPort;
         private final int externalMainServerPort;
         private final int externalRESTServerPort;
+        private final CountryCode mainCountry;
+        private final boolean wishRegularConnections;
 
-        public PeerIDInfo(PeerId peerId,
+        public PeerIdInfo(PeerId peerId,
                           String localIPAddress,
                           String externalIPAddress,
                           int localMainServerPort,
                           int localRESTServerPort,
                           int externalMainServerPort,
-                          int externalRESTServerPort) {
+                          int externalRESTServerPort,
+                          CountryCode mainCountry,
+                          boolean wishRegularConnections) {
             this.peerId = peerId;
             this.localIPAddress = localIPAddress;
             this.externalIPAddress = externalIPAddress;
@@ -229,6 +257,8 @@ public class ServerAPI {
             this.localRESTServerPort = localRESTServerPort;
             this.externalMainServerPort = externalMainServerPort;
             this.externalRESTServerPort = externalRESTServerPort;
+            this.mainCountry = mainCountry;
+            this.wishRegularConnections = wishRegularConnections;
         }
 
         public PeerId getPeerId() {
@@ -259,21 +289,31 @@ public class ServerAPI {
             return externalRESTServerPort;
         }
 
-        private static PeerIDInfo buildPeerIDInfo(PeerIDInfoJSON peerIDInfoJson) {
-            return new PeerIDInfo(
+        public CountryCode getMainCountry() {
+            return mainCountry;
+        }
+
+        public boolean isWishRegularConnections() {
+            return wishRegularConnections;
+        }
+
+        private static PeerIdInfo buildPeerIDInfo(PeerIDInfoJSON peerIDInfoJson) {
+            return new PeerIdInfo(
                     new PeerId(peerIDInfoJson.peerID),
                     peerIDInfoJson.localIPAddress,
                     peerIDInfoJson.externalIPAddress,
                     Integer.parseInt(peerIDInfoJson.localMainServerPort),
                     -1,
                     Integer.parseInt(peerIDInfoJson.externalMainServerPort),
-                    -1
+                    -1,
+                    CountryCode.valueOf(peerIDInfoJson.clientCountryCode),
+                    Boolean.parseBoolean(peerIDInfoJson.wishRegularConnections)
             );
         }
 
         @Override
         public String toString() {
-            return "PeerIDInfo{" +
+            return "PeerIdInfo{" +
                     "peerId=" + peerId +
                     ", localIPAddress='" + localIPAddress + '\'' +
                     ", externalIPAddress='" + externalIPAddress + '\'' +
@@ -281,6 +321,8 @@ public class ServerAPI {
                     ", localRESTServerPort=" + localRESTServerPort +
                     ", externalMainServerPort=" + externalMainServerPort +
                     ", externalRESTServerPort=" + externalRESTServerPort +
+                    ", mainCountry=" + mainCountry +
+                    ", wishRegularConnections=" + wishRegularConnections +
                     '}';
         }
     }
@@ -380,8 +422,26 @@ public class ServerAPI {
             return InfoResponse.buildInfoResponse(infoResponseJson);
         } catch (Exception e) {
             // unrecognized values --> log error and re-throw
-            PeerClient.reportError("Unrecognized refresh response", result.element2);
-            throw new IOException("Unrecognized refresh response");
+            PeerClient.reportError("Unrecognized info response", result.element2);
+            throw new IOException("Unrecognized info response");
+        }
+    }
+
+    public static InfoResponse regularPeersRequest(String serverURL, RegularPeersRequest regularPeersRequest) throws IOException, ServerAccessException {
+        Duple<Integer, String> result = HttpClient.httpRequest(
+                getURL(serverURL, "regular_peers_request"),
+                HttpClient.Verb.POST,
+                HttpClient.ContentType.JSON,
+                HttpClient.ContentType.JSON,
+                new Gson().toJson(regularPeersRequest));
+        checkError(result);
+        InfoResponseJSON infoResponseJson = new Gson().fromJson(result.element2, InfoResponseJSON.class);
+        try {
+            return InfoResponse.buildInfoResponse(infoResponseJson);
+        } catch (Exception e) {
+            // unrecognized values --> log error and re-throw
+            PeerClient.reportError("Unrecognized regularPeersRequest response", result.element2);
+            throw new IOException("Unrecognized regularPeersRequest response");
         }
     }
 
@@ -396,30 +456,30 @@ public class ServerAPI {
     }
 
 
-    public static void main(String[] args) throws Exception {
-        String serverURL = "https://testserver01-1100.appspot.com/_ah/api/server/v1/";
-//        System.out.println(hello());
-
-//        RegistrationResponse registrationResponse = register(serverURL, new RegistrationRequest(new PeerId("0000000000000000000000000000000000000000003")));
+//    public static void main(String[] args) throws Exception {
+//        String serverURL = "https://testserver01-1100.appspot.com/_ah/api/server/v1/";
+////        System.out.println(hello());
 //
-//        System.out.println(registrationResponse);
-
-
-        ConnectionResponse connectionResponse = connect(serverURL, new ConnectionRequest(new PeerId("0000000000000000000000000000000000000000003"), "192.168.1.1", 50000, 50001));
-        System.out.println(connectionResponse);
-
-//        RefreshResponse refreshResponse = refresh(serverURL, new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIDvmYoJDA"));
-//        System.out.println(refreshResponse);
-
-//        UpdateResponse disconnectResponse = disconnect(serverURL, new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
-//        System.out.println(disconnectResponse);
-
-        List<PeerId> peerIdList = new ArrayList<>();
-        peerIdList.add(new PeerId("0000000000000000000000000000000000000000003"));
-        peerIdList.add(new PeerId("0000000000000000000000000000000000000000004"));
-        InfoResponse infoResponse = info(serverURL, new InfoRequest(peerIdList));
-        System.out.println(infoResponse);
-
-
-    }
+////        RegistrationResponse registrationResponse = register(serverURL, new RegistrationRequest(new PeerId("0000000000000000000000000000000000000000003")));
+////
+////        System.out.println(registrationResponse);
+//
+//
+//        ConnectionResponse connectionResponse = connect(serverURL, new ConnectionRequest(new PeerId("0000000000000000000000000000000000000000003"), "192.168.1.1", 50000, 50001));
+//        System.out.println(connectionResponse);
+//
+////        RefreshResponse refreshResponse = refresh(serverURL, new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIDvmYoJDA"));
+////        System.out.println(refreshResponse);
+//
+////        UpdateResponse disconnectResponse = disconnect(serverURL, new UpdateRequest("ahNlfnRlc3RzZXJ2ZXIwMS0xMTAwchoLEg1BY3RpdmVTZXNzaW9uGICAgIC6jYkKDA"));
+////        System.out.println(disconnectResponse);
+//
+//        List<PeerId> peerIdList = new ArrayList<>();
+//        peerIdList.add(new PeerId("0000000000000000000000000000000000000000003"));
+//        peerIdList.add(new PeerId("0000000000000000000000000000000000000000004"));
+//        InfoResponse infoResponse = info(serverURL, new InfoRequest(peerIdList));
+//        System.out.println(infoResponse);
+//
+//
+//    }
 }

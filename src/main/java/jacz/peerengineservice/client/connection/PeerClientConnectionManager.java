@@ -4,7 +4,6 @@ import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.util.ChannelConstants;
-import jacz.util.AI.evolve.DiscreteEvolvingState;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
 import jacz.util.concurrency.ThreadUtil;
@@ -38,6 +37,8 @@ public class PeerClientConnectionManager {
         DISCONNECTING
     }
 
+    private static final long DELAY = 500L;
+
     /**
      * Actions to invoke upon certain events
      */
@@ -68,7 +69,7 @@ public class PeerClientConnectionManager {
      */
     private final FriendConnectionManager friendConnectionManager;
 
-    private final DiscreteEvolvingState<ConnectionState, Boolean> dynamicState;
+    private final EvolvingState<ConnectionState, Boolean> dynamicState;
 
     public PeerClientConnectionManager(
             ConnectionEvents connectionEvents,
@@ -94,16 +95,16 @@ public class PeerClientConnectionManager {
         peerServerManager = new PeerServerManager(ownPeerId, serverURL, this, networkTopologyManager, this.connectionEvents);
         friendConnectionManager = new FriendConnectionManager(ownPeerId, serverURL, connectedPeers, peerClientPrivateInterface, this, peerRelations);
 
-        dynamicState = new DiscreteEvolvingState<>(ConnectionState.DISCONNECTED, false, new EvolvingState.Transitions<ConnectionState, Boolean>() {
+        dynamicState = new EvolvingState<>(ConnectionState.DISCONNECTED, false, new EvolvingState.Transitions<ConnectionState, Boolean>() {
             @Override
-            public void runTransition(ConnectionState state, Boolean goal, EvolvingStateController<ConnectionState, Boolean> controller) {
+            public boolean runTransition(ConnectionState state, Boolean goal, EvolvingStateController<ConnectionState, Boolean> controller) {
                 if (goal) {
                     switch (state) {
                         case DISCONNECTED:
                         case DISCONNECTING:
                             controller.setState(ConnectionState.CONNECTING);
-                            controller.evolve();
-                            break;
+//                            controller.evolve();
+                            return false;
 
                         case CONNECTING:
                             // first, connect the network topology manager
@@ -114,8 +115,8 @@ public class PeerClientConnectionManager {
                                 peerServerManager.setWishForConnect(false);
                                 friendConnectionManager.setWishForFriendSearch(false);
                                 delay();
-                                controller.evolve();
-                                break;
+//                                controller.evolve();
+                                return false;
                             }
 
                             // second, open the server for listening to incoming peer connections, then connect to the peer server
@@ -124,8 +125,8 @@ public class PeerClientConnectionManager {
                                 peerServerManager.setWishForConnect(false);
                                 friendConnectionManager.setWishForFriendSearch(false);
                                 delay();
-                                controller.evolve();
-                                break;
+//                                controller.evolve();
+                                return false;
                             }
 
                             // third, connect to the peer server
@@ -133,8 +134,8 @@ public class PeerClientConnectionManager {
                             if (!peerServerManager.isInWishedState()) {
                                 friendConnectionManager.setWishForFriendSearch(false);
                                 delay();
-                                controller.evolve();
-                                break;
+//                                controller.evolve();
+                                return false;
                             }
 
                             // fourth, activate the friend search
@@ -142,6 +143,7 @@ public class PeerClientConnectionManager {
 
                             // finally, set the state to connected
                             controller.setState(ConnectionState.CONNECTED);
+                            return true;
                     }
                 } else {
                     switch (state) {
@@ -150,32 +152,32 @@ public class PeerClientConnectionManager {
                             // disconnect all services and wait for being in wished state
                             disconnectServices();
                             controller.setState(ConnectionState.DISCONNECTING);
-                            controller.evolve();
-                            break;
+//                            controller.evolve();
+                            return false;
 
                         case DISCONNECTING:
                             if (!peerServerManager.isInWishedState()) {
                                 delay();
-                                break;
+                                return false;
                             }
 
                             if (!localServerManager.isInWishedState()) {
                                 delay();
-                                break;
+                                return false;
                             }
 
                             if (!networkTopologyManager.isInWishedState()) {
                                 delay();
-                                break;
+                                return false;
                             }
-
-                            // finally, disconnect all remaining peers
-                            friendConnectionManager.disconnectAllPeers();
 
                             // and set the state to disconnected
                             controller.setState(ConnectionState.DISCONNECTED);
+                            return true;
                     }
                 }
+                // else, everything ok
+                return true;
             }
 
             @Override
@@ -183,7 +185,6 @@ public class PeerClientConnectionManager {
                 return goal && state == ConnectionState.CONNECTED || !goal && state == ConnectionState.DISCONNECTED;
             }
         }
-
         );
     }
 
@@ -223,6 +224,8 @@ public class PeerClientConnectionManager {
         peerServerManager.stop();
         localServerManager.stop();
         friendConnectionManager.stop();
+        dynamicState.blockUntilGoalReached(500);
+        dynamicState.stop();
     }
 
     public synchronized int getListeningPort() {
@@ -267,7 +270,7 @@ public class PeerClientConnectionManager {
 
 
     private void delay() {
-        ThreadUtil.safeSleep(500);
+        ThreadUtil.safeSleep(DELAY);
     }
 
     /**
@@ -280,7 +283,7 @@ public class PeerClientConnectionManager {
         dynamicState.evolve();
     }
 
-    static Set<Set<Byte>> generateConcurrentChannelSets() {
+    public static Set<Set<Byte>> generateConcurrentChannelSets() {
         // there will be three concurrent sets. One for the request dispatcher, one for the data streaming, and one
         // for the rest of channels (including the channel for establishing connection)
         // the connection channel is concurrent from the rest

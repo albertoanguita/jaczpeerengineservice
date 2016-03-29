@@ -1,7 +1,7 @@
 package jacz.peerengineservice.client.connection;
 
+import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
-import jacz.util.AI.evolve.DiscreteEvolvingState;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
 
@@ -58,7 +58,7 @@ public class PeerServerManager {
 
     private final NetworkTopologyManager networkTopologyManager;
 
-    private final DiscreteEvolvingState<State.ConnectionToServerState, Boolean> dynamicState;
+    private final EvolvingState<State.ConnectionToServerState, Boolean> dynamicState;
 
     public PeerServerManager(
             PeerId ownPeerId,
@@ -76,9 +76,9 @@ public class PeerServerManager {
         actualConnectionData = new ActualConnectionData();
         this.networkTopologyManager = networkTopologyManager;
 
-        dynamicState = new DiscreteEvolvingState<>(State.ConnectionToServerState.DISCONNECTED, false, new EvolvingState.Transitions<State.ConnectionToServerState, Boolean>() {
+        dynamicState = new EvolvingState<>(State.ConnectionToServerState.DISCONNECTED, false, new EvolvingState.Transitions<State.ConnectionToServerState, Boolean>() {
             @Override
-            public void runTransition(State.ConnectionToServerState state, Boolean goal, EvolvingStateController<State.ConnectionToServerState, Boolean> controller) {
+            public boolean runTransition(State.ConnectionToServerState state, Boolean goal, EvolvingStateController<State.ConnectionToServerState, Boolean> controller) {
                 if (goal) {
                     switch (state) {
 
@@ -86,33 +86,36 @@ public class PeerServerManager {
                             // check that we are connected to the right peer server and that the local address is the correct one (in any case, disconnect)
                             if (!isCorrectConnectionInformation()) {
                                 disconnectFromPeerServer(controller);
-                                controller.evolve();
+//                                controller.evolve();
+                                return false;
                             }
                             break;
 
                         case UNREGISTERED:
                             registerWithPeerServer(controller);
-                            controller.evolve();
-                            break;
+//                            controller.evolve();
+                            return false;
 
                         case DISCONNECTED:
                         case WAITING_FOR_NEXT_CONNECTION_TRY:
                             // client wants us to connect to the server
-                            connectToPeerServer(controller);
-                            controller.evolve();
-                            break;
+                            return connectToPeerServer(state, controller);
                     }
                 } else {
                     // disconnect from the peer server
                     if (state == State.ConnectionToServerState.CONNECTED) {
                         disconnectFromPeerServer(controller);
-                        controller.evolve();
+//                        controller.evolve();
+                        return false;
                     } else if (state == State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY) {
                         // we don't want to connect anymore, stop the RetryConnectionReminder
                         controller.setState(State.ConnectionToServerState.DISCONNECTED);
-                        controller.evolve();
+//                        controller.evolve();
+                        return false;
                     }
                 }
+                // else, everything ok
+                return true;
             }
 
             @Override
@@ -121,9 +124,9 @@ public class PeerServerManager {
                         || !goal && (state == State.ConnectionToServerState.DISCONNECTED || state == State.ConnectionToServerState.UNREGISTERED);
             }
         });
-        dynamicState.setStateTimer(State.ConnectionToServerState.UNREGISTERED, RETRY_CONNECTION_DELAY);
-        dynamicState.setStateTimer(State.ConnectionToServerState.DISCONNECTED, RETRY_CONNECTION_DELAY);
-        dynamicState.setStateTimer(State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY, RETRY_CONNECTION_DELAY);
+        dynamicState.setEvolveStateTimer(State.ConnectionToServerState.UNREGISTERED, RETRY_CONNECTION_DELAY);
+        dynamicState.setEvolveStateTimer(State.ConnectionToServerState.DISCONNECTED, RETRY_CONNECTION_DELAY);
+        dynamicState.setEvolveStateTimer(State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY, RETRY_CONNECTION_DELAY);
         // we do not set a general timer because we want to set the timer for the connected state for refreshing the connection,
         // and we do not know the millis for that timer at compile time
     }
@@ -148,7 +151,7 @@ public class PeerServerManager {
 
     void stop() {
         setWishForConnect(false);
-        dynamicState.blockUntilStateIsSolved();
+        dynamicState.blockUntilGoalReached(500);
         dynamicState.stop();
     }
 
@@ -185,7 +188,7 @@ public class PeerServerManager {
         }
     }
 
-    private void connectToPeerServer(EvolvingStateController<State.ConnectionToServerState, Boolean> controller) {
+    private boolean connectToPeerServer(State.ConnectionToServerState state, EvolvingStateController<State.ConnectionToServerState, Boolean> controller) {
         actualConnectionData.localAddress = networkTopologyManager.getLocalAddress();
         actualConnectionData.localPort = peerClientConnectionManager.getLocalServerManager().getActualListeningPort();
         actualConnectionData.externalPort = peerClientConnectionManager.getLocalServerManager().getExternalListeningPort();
@@ -198,7 +201,9 @@ public class PeerServerManager {
                                     ownPeerId,
                                     actualConnectionData.localAddress,
                                     actualConnectionData.localPort,
-                                    actualConnectionData.externalPort
+                                    actualConnectionData.externalPort,
+                                    CountryCode.AC, // todo
+                                    true
                             )
                     );
             switch (connectionResponse.getResponse()) {
@@ -207,42 +212,47 @@ public class PeerServerManager {
                     controller.setState(State.ConnectionToServerState.CONNECTED);
                     peerServerSessionID = connectionResponse.getSessionID();
                     // set up the timer for refreshing the connection
-                    setupConnectionRefreshTimer(connectionResponse.getMinReminderTime(), connectionResponse.getMaxReminderTime(), controller);
+                    setupConnectionRefreshTimer(connectionResponse.getMinReminderTime(), connectionResponse.getMaxReminderTime());
                     connectionEvents.connectionToServerEstablished(State.ConnectionToServerState.CONNECTED);
-                    break;
+                    return false;
                 case UNREGISTERED_PEER:
                     controller.setState(State.ConnectionToServerState.UNREGISTERED);
                     connectionEvents.registrationRequired(State.ConnectionToServerState.UNREGISTERED);
-                    break;
+                    return false;
                 case PEER_MAIN_SERVER_UNREACHABLE:
-                    connectionEvents.localServerUnreachable(controller.state());
-                    break;
+                    controller.setState(State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY);
+                    connectionEvents.localServerUnreachable(state);
+                    return true;
                 case PEER_REST_SERVER_UNREACHABLE:
                     // ignore
-                    break;
+                    controller.setState(State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY);
+                    return true;
                 case WRONG_AUTHENTICATION:
                     // ignore
                     // todo
-                    break;
+                    controller.setState(State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY);
+                    return true;
                 default:
                     unrecognizedServerMessage();
-                    break;
+                    return true;
             }
         } catch (IOException | ServerAccessException e) {
             // failed to connect to server or error in the request -> try again later
             controller.setState(State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY);
             connectionEvents.unableToConnectToServer(State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY);
+            return true;
         } catch (IllegalArgumentException e) {
             // response from server not understandable
             unrecognizedServerMessage();
+            return true;
         }
     }
 
-    private void setupConnectionRefreshTimer(long minReminderTime, long maxReminderTime, final EvolvingStateController<State.ConnectionToServerState, Boolean> controller) {
-        dynamicState.setStateTimer(State.ConnectionToServerState.CONNECTED, (minReminderTime + maxReminderTime) / 2, new Runnable() {
+    private void setupConnectionRefreshTimer(long minReminderTime, long maxReminderTime) {
+        dynamicState.setRunnableStateTimer(State.ConnectionToServerState.CONNECTED, (minReminderTime + maxReminderTime) / 2, new Runnable() {
             @Override
             public void run() {
-                refreshConnection(controller);
+                refreshConnection();
             }
         });
     }
@@ -259,36 +269,35 @@ public class PeerServerManager {
         }
     }
 
-    private synchronized boolean refreshConnection(EvolvingStateController<State.ConnectionToServerState, Boolean> controller) {
-        if (controller.state() == State.ConnectionToServerState.CONNECTED) {
+    private synchronized void refreshConnection() {
+        if (dynamicState.state() == State.ConnectionToServerState.CONNECTED) {
             try {
                 ServerAPI.RefreshResponse refreshResponse =
                         ServerAPI.refresh(serverURL, new ServerAPI.UpdateRequest(peerServerSessionID));
                 switch (refreshResponse) {
 
                     case OK:
-                        return true;
+                        break;
 
                     case UNRECOGNIZED_SESSION:
                     case TOO_SOON:
                         // refresh did not succeed, we are now disconnected
-                        refreshFailed(controller);
-                        return false;
+                        refreshFailed();
+                        break;
 
                     default:
+                        refreshFailed();
                         unrecognizedServerMessage();
-                        return false;
+                        break;
                 }
             } catch (ServerAccessException | IOException e) {
                 // refresh did not succeed, we are now disconnected
-                refreshFailed(controller);
-                return false;
+                refreshFailed();
+//                return false;
             } catch (IllegalArgumentException e) {
                 unrecognizedServerMessage();
-                return false;
+//                return false;
             }
-        } else {
-            return false;
         }
     }
 
@@ -296,9 +305,9 @@ public class PeerServerManager {
         peerClientConnectionManager.unrecognizedServerMessage();
     }
 
-    private void refreshFailed(EvolvingStateController<State.ConnectionToServerState, Boolean> controller) {
-        controller.setState(State.ConnectionToServerState.DISCONNECTED);
+    private void refreshFailed() {
+        dynamicState.setState(State.ConnectionToServerState.DISCONNECTED);
         connectionEvents.failedToRefreshServerConnection(State.ConnectionToServerState.DISCONNECTED);
-        controller.evolve();
+        dynamicState.evolve();
     }
 }

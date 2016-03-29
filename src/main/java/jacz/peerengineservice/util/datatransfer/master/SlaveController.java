@@ -6,7 +6,7 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceLink;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.slave.SlaveMessage;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
-import jacz.util.concurrency.timer.SimpleTimerAction;
+import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.date_time.RemainingTimeAction;
 import jacz.util.identifier.UniqueIdentifier;
@@ -26,7 +26,7 @@ import jacz.util.numeric.range.LongRange;
  * There are several timers for controlling the behavior of the slave controller, but all their calls die at the slave controller itself, except
  * for one: timeoutTimer for dying. This call goes to the MasterResourcesStreamer, but it is properly parallelized, so it is OK.
  */
-public class SlaveController extends GenericPriorityManagerRegulatedResource implements SimpleTimerAction, RemainingTimeAction {
+public class SlaveController extends GenericPriorityManagerRegulatedResource implements TimerAction, RemainingTimeAction {
 
     /**
      * States of each SlaveController

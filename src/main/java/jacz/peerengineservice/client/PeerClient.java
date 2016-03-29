@@ -19,7 +19,6 @@ import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
 import jacz.util.event.notification.NotificationReceiver;
-import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.log.ErrorFactory;
 import jacz.util.log.ErrorHandler;
@@ -498,7 +497,7 @@ public class PeerClient {
      * @return true if the FSM was correctly set up, false otherwise (due to no available channels, client can try later)
      * @throws UnavailablePeerException the given PeerId does not correspond to a connected peer
      */
-    public synchronized <T> UniqueIdentifier registerCustomFSM(PeerId peerId, PeerFSMAction<T> peerFSMAction, String serverFSMName) throws UnavailablePeerException {
+    public synchronized <T> String registerCustomFSM(PeerId peerId, PeerFSMAction<T> peerFSMAction, String serverFSMName) throws UnavailablePeerException {
         // do not allow to register FSM for peers who are not ready yet
         if (connectedPeers.isConnectedPeer(peerId)) {
             Byte assignedChannel = connectedPeers.requestChannel(peerId);
@@ -507,7 +506,7 @@ public class PeerClient {
             }
             ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerId);
             CustomPeerFSM<T> customPeerFSM = new CustomPeerFSM<>(peerFSMAction, serverFSMName, assignedChannel);
-            UniqueIdentifier id = ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
+            String id = ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
             if (id != null) {
                 peerFSMAction.setID(id);
             }
@@ -529,7 +528,7 @@ public class PeerClient {
      * @return true if the FSM was correctly set up, false otherwise (due to no available channels, client can try later)
      * @throws UnavailablePeerException the given PeerId does not correspond to a connected peer
      */
-    public synchronized <T> UniqueIdentifier registerTimedCustomFSM(PeerId peerId, PeerTimedFSMAction<T> peerTimedFSMAction, String serverFSMName, long timeoutMillis) throws UnavailablePeerException {
+    public synchronized <T> String registerTimedCustomFSM(PeerId peerId, PeerTimedFSMAction<T> peerTimedFSMAction, String serverFSMName, long timeoutMillis) throws UnavailablePeerException {
         if (connectedPeers.isConnectedPeer(peerId)) {
             Byte assignedChannel = connectedPeers.requestChannel(peerId);
             if (assignedChannel == null) {
@@ -537,7 +536,7 @@ public class PeerClient {
             }
             ChannelConnectionPoint ccp = connectedPeers.getPeerChannelConnectionPoint(peerId);
             CustomTimedPeerFSM<T> customTimedPeerFSM = new CustomTimedPeerFSM<>(peerTimedFSMAction, serverFSMName, assignedChannel);
-            UniqueIdentifier id = ccp.registerTimedFSM(customTimedPeerFSM, timeoutMillis, "UnnamedCustomTimedPeerFSM", assignedChannel);
+            String id = ccp.registerTimedFSM(customTimedPeerFSM, timeoutMillis, "UnnamedCustomTimedPeerFSM", assignedChannel);
             if (id != null) {
                 peerTimedFSMAction.setID(id);
             }
@@ -561,7 +560,7 @@ public class PeerClient {
                         @SuppressWarnings({"unchecked"})
                         CustomPeerFSM customPeerFSM = new CustomPeerFSM(peerFSMAction, assignedChannel, outgoingChannel);
                         try {
-                            UniqueIdentifier id = ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
+                            String id = ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
                             peerFSMAction.setID(id);
                         } catch (Exception e) {
                             reportError("Could not register FSM due to exception", requestFromPeerToPeer, assignedChannel, customFSMs, ccp);
@@ -656,11 +655,11 @@ public class PeerClient {
         return connectedPeers.getPeerConnectionStatus(peerId);
     }
 
-    public synchronized void subscribeToConnectedPeers(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver) {
+    public synchronized void subscribeToConnectedPeers(String receiverID, NotificationReceiver notificationReceiver) {
         connectedPeers.subscribe(receiverID, notificationReceiver);
     }
 
-    public synchronized void subscribeToConnectedPeers(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver, long millis, double timeFactorAtEachEvent, int limit) {
+    public synchronized void subscribeToConnectedPeers(String receiverID, NotificationReceiver notificationReceiver, long millis, double timeFactorAtEachEvent, int limit) {
         connectedPeers.subscribe(receiverID, notificationReceiver, millis, timeFactorAtEachEvent, limit);
     }
 

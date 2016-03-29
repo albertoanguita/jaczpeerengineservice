@@ -15,6 +15,8 @@ public final class PeerId implements Comparable<PeerId>, Serializable {
 
     private static final int KEY_LENGTH = 32;
 
+    private static final int SIX_BIT_LENGTH = 43;
+
     // 32-byte array (43 characters in six-bit serialization format)
     private final byte[] id;
 
@@ -40,7 +42,7 @@ public final class PeerId implements Comparable<PeerId>, Serializable {
     }
 
     public static PeerId buildTestPeerId(String postID) {
-        while (!isPeerId(postID)) {
+        while (postID.length() < SIX_BIT_LENGTH) {
             postID = "0" + postID;
         }
         return new PeerId(postID);

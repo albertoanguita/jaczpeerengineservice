@@ -6,7 +6,6 @@ import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
 import jacz.util.hash.CRC;
-import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.io.serialization.Serializer;
 import jacz.util.notification.ProgressNotificationWithError;
 import jacz.util.numeric.NumericUtil;
@@ -87,7 +86,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
 
     private byte outgoingChannel;
 
-    private UniqueIdentifier fsmID;
+    private String fsmID;
 
     private final PeerId clientPeerId;
 
@@ -122,7 +121,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
         this.synchError = new SynchError(SynchError.Type.UNDEFINED, null);
     }
 
-    public void setID(UniqueIdentifier id) {
+    public void setID(String id) {
         this.fsmID = id;
     }
 

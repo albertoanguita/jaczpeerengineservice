@@ -1,4 +1,4 @@
-package jacz.peerengineservice.client.connection.peers;
+package jacz.peerengineservice.client.connection.peers.kb;
 
 /**
  * Created by Alberto on 04/03/2016.

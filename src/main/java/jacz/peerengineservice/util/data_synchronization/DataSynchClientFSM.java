@@ -8,7 +8,6 @@ import jacz.peerengineservice.client.PeerTimedFSMAction;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.hash.CRC;
 import jacz.util.hash.InvalidCRCException;
-import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.io.serialization.MutableOffset;
 import jacz.util.io.serialization.Serializer;
 import jacz.util.notification.ProgressNotificationWithError;
@@ -62,7 +61,7 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
         }
     }
 
-    private UniqueIdentifier fsmID;
+    private String fsmID;
 
     private byte outgoingChannel;
 
@@ -87,7 +86,7 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
         this.synchError = new SynchError(SynchError.Type.UNDEFINED, null);
     }
 
-    public void setID(UniqueIdentifier id) {
+    public void setID(String id) {
         this.fsmID = id;
     }
 

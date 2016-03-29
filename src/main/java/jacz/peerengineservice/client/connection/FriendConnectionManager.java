@@ -9,7 +9,7 @@ import jacz.peerengineservice.client.PeerRelations;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.util.concurrency.ThreadUtil;
-import jacz.util.concurrency.timer.SimpleTimerAction;
+import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.network.IP4Port;
 
@@ -21,7 +21,7 @@ import java.util.*;
  */
 public class FriendConnectionManager {
 
-    private static class FriendSearchReminder implements SimpleTimerAction {
+    private static class FriendSearchReminder implements TimerAction {
 
         private static final long FRIEND_SEARCH_DELAY_NORMAL = 90000L;
 
@@ -221,30 +221,30 @@ public class FriendConnectionManager {
      * @param infoResponse the list of found friends in the peer server
      */
     void reportConnectedFriendsData(ServerAPI.InfoResponse infoResponse) {
-        for (ServerAPI.PeerIDInfo peerIDInfo : infoResponse.getPeerIDInfoList()) {
-            tryToConnectToAPeer(peerIDInfo);
+        for (ServerAPI.PeerIdInfo peerIdInfo : infoResponse.getPeerIdInfoList()) {
+            tryToConnectToAPeer(peerIdInfo);
         }
     }
 
-    private void tryToConnectToAPeer(ServerAPI.PeerIDInfo peerIDInfo) {
+    private void tryToConnectToAPeer(ServerAPI.PeerIdInfo peerIdInfo) {
         // A client module is created for each received peer. If connection is achieved, a
         // Connection Client FSM is created. The init method in the FSM will take care
         // of checking if it is actually possible to proceed with the connection
 
-        if (connectedPeers.isConnectedPeer(peerIDInfo.getPeerId()) || ongoingClientConnections.contains(peerIDInfo.getPeerId())) {
+        if (connectedPeers.isConnectedPeer(peerIdInfo.getPeerId()) || ongoingClientConnections.contains(peerIdInfo.getPeerId())) {
             // check that we are not connected to this peer, or trying to connect to it
             return;
         }
 
-        IP4Port ip4Port = new IP4Port(peerIDInfo.getExternalIPAddress(), peerIDInfo.getExternalMainServerPort());
+        IP4Port ip4Port = new IP4Port(peerIdInfo.getExternalIPAddress(), peerIdInfo.getExternalMainServerPort());
         try {
             // first try public connection
-            tryConnection(ip4Port, peerIDInfo.getPeerId(), new IP4Port(peerIDInfo.getLocalIPAddress(), peerIDInfo.getLocalMainServerPort()));
+            tryConnection(ip4Port, peerIdInfo.getPeerId(), new IP4Port(peerIdInfo.getLocalIPAddress(), peerIdInfo.getLocalMainServerPort()));
         } catch (IOException e) {
             // if this didn't work, try local connection (if exists)
-            IP4Port localIP4Port = new IP4Port(peerIDInfo.getLocalIPAddress(), peerIDInfo.getLocalMainServerPort());
+            IP4Port localIP4Port = new IP4Port(peerIdInfo.getLocalIPAddress(), peerIdInfo.getLocalMainServerPort());
             try {
-                tryConnection(localIP4Port, peerIDInfo.getPeerId(), null);
+                tryConnection(localIP4Port, peerIdInfo.getPeerId(), null);
             } catch (IOException e2) {
                 // peer not available or wrong peer data received, repeat soon
                 friendSearchReminder.searchIssueDetected();

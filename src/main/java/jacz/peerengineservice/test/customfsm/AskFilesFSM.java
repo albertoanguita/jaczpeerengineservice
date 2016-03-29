@@ -3,7 +3,6 @@ package jacz.peerengineservice.test.customfsm;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
-import jacz.util.identifier.UniqueIdentifier;
 
 import java.util.Arrays;
 
@@ -108,7 +107,7 @@ public class AskFilesFSM implements PeerTimedFSMAction<AskFilesFSM.State> {
     }
 
     @Override
-    public void setID(UniqueIdentifier id) {
+    public void setID(String id) {
         System.out.println("Ask file FSM id: " + id);
     }
 

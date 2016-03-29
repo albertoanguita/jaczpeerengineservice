@@ -5,8 +5,7 @@ import jacz.peerengineservice.client.PeerClient;
 import jacz.util.event.notification.NotificationEmitter;
 import jacz.util.event.notification.NotificationProcessor;
 import jacz.util.event.notification.NotificationReceiver;
-import jacz.util.identifier.UniqueIdentifier;
-import jacz.util.identifier.UniqueIdentifierFactory;
+import jacz.util.id.AlphaNumFactory;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.*;
@@ -75,7 +74,7 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
         remoteResources = new HashMap<>();
         volatileRemoteResources = new HashMap<>();
         notificationProcessor = new NotificationProcessor();
-        peerClient.subscribeToConnectedPeers(UniqueIdentifierFactory.getOneStaticIdentifier(), this, RECEIVER_MILLIS, RECEIVER_TIME_FACTOR, RECEIVER_LIMIT);
+        peerClient.subscribeToConnectedPeers(AlphaNumFactory.getStaticId(), this, RECEIVER_MILLIS, RECEIVER_TIME_FACTOR, RECEIVER_LIMIT);
     }
 
     /**
@@ -163,17 +162,17 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
     }
 
     @Override
-    public UniqueIdentifier subscribe(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver) throws IllegalArgumentException {
+    public String subscribe(String receiverID, NotificationReceiver notificationReceiver) throws IllegalArgumentException {
         return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver);
     }
 
     @Override
-    public UniqueIdentifier subscribe(UniqueIdentifier receiverID, NotificationReceiver notificationReceiver, long millis, double timeFactorAtEachEvent, int limit) throws IllegalArgumentException {
+    public String subscribe(String receiverID, NotificationReceiver notificationReceiver, long millis, double timeFactorAtEachEvent, int limit) throws IllegalArgumentException {
         return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver, millis, timeFactorAtEachEvent, limit);
     }
 
     @Override
-    public void unsubscribe(UniqueIdentifier receiverID) {
+    public void unsubscribe(String receiverID) {
         notificationProcessor.unsubscribeReceiver(receiverID);
     }
 
@@ -182,7 +181,7 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
     }
 
     @Override
-    public void newEvent(UniqueIdentifier emitterID, int eventCount, List<List<Object>> nonGroupedMessages, List<Object> groupedMessages) {
+    public void newEvent(String emitterID, int eventCount, List<List<Object>> nonGroupedMessages, List<Object> groupedMessages) {
         // the connection status of a peer has changed. Notify all resources shared by that peer id
         // first, generate the set of affected peers. Messages are grouped, so they all come in the first list
         Set<PeerId> affectedPeers = new HashSet<>();

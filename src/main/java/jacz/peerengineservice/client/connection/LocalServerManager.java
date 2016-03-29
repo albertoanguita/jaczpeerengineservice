@@ -5,10 +5,8 @@ import jacz.commengine.clientserver.server.ServerAction;
 import jacz.commengine.clientserver.server.ServerModule;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerId;
-import jacz.util.AI.evolve.DiscreteEvolvingState;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
-import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.network.IP4Port;
 import jacz.util.numeric.NumericUtil;
 import org.bitlet.weupnp.GatewayDevice;
@@ -47,32 +45,32 @@ public class LocalServerManager {
         }
 
         @Override
-        public void newClientConnection(UniqueIdentifier clientID, ChannelConnectionPoint ccp, IP4Port ip4Port) {
+        public void newClientConnection(String clientID, ChannelConnectionPoint ccp, IP4Port ip4Port) {
             friendConnectionManager.reportClientConnectedToOurPeerServer(ccp);
         }
 
         @Override
-        public void newMessage(UniqueIdentifier clientID, ChannelConnectionPoint ccp, byte channel, Object message) {
+        public void newMessage(String clientID, ChannelConnectionPoint ccp, byte channel, Object message) {
             // ignore
         }
 
         @Override
-        public void newMessage(UniqueIdentifier clientID, ChannelConnectionPoint ccp, byte channel, byte[] data) {
+        public void newMessage(String clientID, ChannelConnectionPoint ccp, byte channel, byte[] data) {
             // ignore
         }
 
         @Override
-        public void channelFreed(UniqueIdentifier clientID, ChannelConnectionPoint ccp, byte channel) {
+        public void channelFreed(String clientID, ChannelConnectionPoint ccp, byte channel) {
             friendConnectionManager.channelFreed(ccp, channel);
         }
 
         @Override
-        public void clientDisconnected(UniqueIdentifier clientID, ChannelConnectionPoint ccp, boolean expected) {
+        public void clientDisconnected(String clientID, ChannelConnectionPoint ccp, boolean expected) {
             friendConnectionManager.peerDisconnected(ccp);
         }
 
         @Override
-        public void clientError(UniqueIdentifier clientID, ChannelConnectionPoint ccp, CommError e) {
+        public void clientError(String clientID, ChannelConnectionPoint ccp, CommError e) {
             friendConnectionManager.peerError(ccp, e);
         }
 
@@ -127,7 +125,7 @@ public class LocalServerManager {
      */
     private int listeningPort;
 
-    private final DiscreteEvolvingState<State.LocalServerConnectionsState, Boolean> dynamicState;
+    private final EvolvingState<State.LocalServerConnectionsState, Boolean> dynamicState;
 
     public LocalServerManager(
             PeerId ownPeerId,
@@ -145,9 +143,9 @@ public class LocalServerManager {
         serverModule = null;
         this.wishedConnectionInformation = wishedConnectionInformation;
         listeningPort = -1;
-        dynamicState = new DiscreteEvolvingState<>(State.LocalServerConnectionsState.CLOSED, false, new EvolvingState.Transitions<State.LocalServerConnectionsState, Boolean>() {
+        dynamicState = new EvolvingState<>(State.LocalServerConnectionsState.CLOSED, false, new EvolvingState.Transitions<State.LocalServerConnectionsState, Boolean>() {
             @Override
-            public void runTransition(State.LocalServerConnectionsState state, Boolean goal, EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
+            public boolean runTransition(State.LocalServerConnectionsState state, Boolean goal, EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
                 if (!goal) {
                     switch (state) {
                         case LISTENING:
@@ -156,22 +154,21 @@ public class LocalServerManager {
                                 destroyGatewayForwardingRule(externalPort, controller);
                                 externalPort = -1;
                             }
-                            controller.evolve();
-                            break;
+//                            controller.evolve();
+                            return false;
 
                         case OPEN:
                             // we must close our server and kick all connected clients
                             closePeerConnectionsServer(controller);
-                            controller.evolve();
-                            break;
+//                            controller.evolve();
+                            return false;
                     }
                 } else {
                     switch (state) {
                         case CLOSED:
                         case WAITING_FOR_OPENING_TRY:
                             // open the server for listening connections from other peers
-                            openPeerConnectionsServer(controller);
-                            break;
+                            return openPeerConnectionsServer(controller);
 
                         case OPEN:
                         case WAITING_FOR_NAT_RULE_TRY:
@@ -181,7 +178,8 @@ public class LocalServerManager {
                                 externalPort = createGatewayForwardingRule(LocalServerManager.this.defaultExternalPort, controller);
                                 if (LocalServerManager.this.externalPort != -1) {
                                     // the nat rule was created ok, evolve
-                                    controller.evolve();
+//                                    controller.evolve();
+                                    return false;
                                 }
                                 // if not, we will retry shortly
                             } else {
@@ -190,7 +188,8 @@ public class LocalServerManager {
                                 controller.setState(State.LocalServerConnectionsState.LISTENING);
                                 externalPort = LocalServerManager.this.wishedConnectionInformation.getLocalPort();
                                 connectionEvents.listeningConnectionsWithoutNATRule(externalPort, listeningPort, State.LocalServerConnectionsState.LISTENING);
-                                controller.evolve();
+//                                controller.evolve();
+                                return false;
                             }
                             break;
 
@@ -199,12 +198,15 @@ public class LocalServerManager {
                             if (!isCorrectConnectionInformation()) {
                                 destroyGatewayForwardingRule(externalPort, controller);
                                 closePeerConnectionsServer(controller);
-                                controller.evolve();
+//                                controller.evolve();
+                                return false;
                             }
                             // otherwise, everything ok
                             break;
                     }
                 }
+                // else, everything ok
+                return true;
             }
 
             @Override
@@ -212,9 +214,9 @@ public class LocalServerManager {
                 return goal && state == State.LocalServerConnectionsState.LISTENING || !goal && state == State.LocalServerConnectionsState.CLOSED;
             }
         });
-        dynamicState.setStateTimer(State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY, RETRY_CONNECTION_DELAY);
-        dynamicState.setStateTimer(State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY, RETRY_CONNECTION_DELAY);
-        dynamicState.setGeneralTimer(GENERAL_REMINDER);
+        dynamicState.setEvolveStateTimer(State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY, RETRY_CONNECTION_DELAY);
+        dynamicState.setEvolveStateTimer(State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY, RETRY_CONNECTION_DELAY);
+        dynamicState.setEvolveStateTimer(state -> true, GENERAL_REMINDER);
     }
 
 
@@ -249,7 +251,7 @@ public class LocalServerManager {
 
     void stop() {
         setWishForConnect(false);
-        dynamicState.blockUntilStateIsSolved();
+        dynamicState.blockUntilGoalReached(500);
         dynamicState.stop();
     }
 
@@ -258,7 +260,7 @@ public class LocalServerManager {
     }
 
 
-    private void openPeerConnectionsServer(EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
+    private boolean openPeerConnectionsServer(EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
         try {
             connectionEvents.tryingToOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.OPENING);
             listeningPort = wishedConnectionInformation.getLocalPort();
@@ -266,11 +268,13 @@ public class LocalServerManager {
             serverModule.startListeningConnections();
             controller.setState(State.LocalServerConnectionsState.OPEN);
             connectionEvents.localServerOpen(getActualListeningPort(), State.LocalServerConnectionsState.OPEN);
-            controller.evolve();
+//            controller.evolve();
+            return false;
         } catch (IOException e) {
             // the server could not be opened
             connectionEvents.couldNotOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY);
             controller.setState(State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY);
+            return true;
         }
     }
 

@@ -1,13 +1,11 @@
 package jacz.peerengineservice.test.customfsm;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.util.identifier.UniqueIdentifier;
-import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
+import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.io.serialization.Serializer;
 
-import java.io.IOException;
 import java.io.NotSerializableException;
 
 /**
@@ -95,7 +93,7 @@ public class ProvideFilesFSM implements PeerTimedFSMAction<ProvideFilesFSM.State
     }
 
     @Override
-    public void setID(UniqueIdentifier id) {
+    public void setID(String id) {
         System.out.println("Provide files FSM id: " + id);
     }
 

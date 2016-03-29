@@ -50,7 +50,7 @@ public class DataSynchronizer {
 //        DataAccessor dataAccessor = dataAccessorContainer.getAccessorForReceiving(serverPeerId, dataAccessorName);
         // same for server FSM
         DataSynchClientFSM dataSynchClientFSM = new DataSynchClientFSM(dataAccessor, serverPeerId, progress);
-        UniqueIdentifier fsmID = peerClient.registerTimedCustomFSM(
+        String fsmID = peerClient.registerTimedCustomFSM(
                 serverPeerId,
                 dataSynchClientFSM,
                 DataSynchServerFSM.CUSTOM_FSM_NAME,
