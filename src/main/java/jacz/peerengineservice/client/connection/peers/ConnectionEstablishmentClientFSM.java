@@ -104,9 +104,6 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         }
     }
 
-    static final class TerminationMessage implements Serializable {
-    }
-
     /**
      * FriendConnectionManager which is trying to connect to another peer (server peer)
      */

@@ -1,5 +1,6 @@
 package jacz.peerengineservice.client.connection;
 
+import com.neovisionaries.i18n.CountryCode;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.PeerId;
 import jacz.util.event.notification.NotificationEmitter;
@@ -7,8 +8,10 @@ import jacz.util.event.notification.NotificationProcessor;
 import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.lists.tuple.Duple;
 import jacz.util.maps.DoubleKeyMap;
+import jacz.util.maps.ObjectCount;
 import jacz.util.sets.availableelements.AvailableElementsByte;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -37,12 +40,15 @@ public class ConnectedPeers implements NotificationEmitter {
 //         */
 //        private final ChannelConnectionPoint ccp;
 
+        private CountryCode peerMainCountry;
+
         /**
          * Available channels of this client
          */
         private final AvailableElementsByte availableChannels;
 
-        public PeerConnectionData(Byte... occupiedChannels) {
+        public PeerConnectionData(CountryCode peerMainCountry, Byte... occupiedChannels) {
+            this.peerMainCountry = peerMainCountry;
 //            this.status = status;
 //            this.ccp = ccp;
             availableChannels = new AvailableElementsByte(occupiedChannels);
@@ -54,6 +60,11 @@ public class ConnectedPeers implements NotificationEmitter {
      * (only connected peers are stored here)
      */
     private final DoubleKeyMap<PeerId, ChannelConnectionPoint, PeerConnectionData> connectedPeers;
+
+    /**
+     * Count of connected peers by main countries
+     */
+    private final ObjectCount<CountryCode> contriesCount;
 
     /**
      * Initially occupied channels for new connections
@@ -68,6 +79,7 @@ public class ConnectedPeers implements NotificationEmitter {
 
     public ConnectedPeers(Byte... occupiedChannels) {
         connectedPeers = new DoubleKeyMap<>();
+        contriesCount = new ObjectCount<>();
         this.occupiedChannels = occupiedChannels;
         notificationProcessor = new NotificationProcessor();
     }
@@ -82,11 +94,21 @@ public class ConnectedPeers implements NotificationEmitter {
      * @param peerId ID of the peer to which we just connected
      * @param ccp    ChannelConnectionPoint object of the connected peer
      */
-    public synchronized void setConnectedPeer(PeerId peerId, ChannelConnectionPoint ccp) {
+    public synchronized void setConnectedPeer(PeerId peerId, ChannelConnectionPoint ccp, CountryCode peerMainCountry) {
         // the initially occupied channels are the channel for the RequestDispatcher and the channel for the connection
         // process (the latter will be released shortly)
-        connectedPeers.put(peerId, ccp, new PeerConnectionData(occupiedChannels));
+        connectedPeers.put(peerId, ccp, new PeerConnectionData(peerMainCountry, occupiedChannels));
+        contriesCount.addObject(peerMainCountry);
         notificationProcessor.newEvent(peerId);
+    }
+
+    // todo invoke when a peer changes his country
+    public synchronized void setConnectedPeerMainCountry(PeerId peerId, CountryCode peerMainCountry) {
+        if (connectedPeers.get(peerId).peerMainCountry != peerMainCountry) {
+            contriesCount.subtractObject(connectedPeers.get(peerId).peerMainCountry);
+            contriesCount.addObject(peerMainCountry);
+            connectedPeers.get(peerId).peerMainCountry = peerMainCountry;
+        }
     }
 
     /**
@@ -106,6 +128,14 @@ public class ConnectedPeers implements NotificationEmitter {
      */
     public synchronized Set<PeerId> getConnectedPeers() {
         return new HashSet<>(connectedPeers.keySet());
+    }
+
+    public int getConnectedPeersCountryCount(CountryCode mainCountry) {
+        return contriesCount.getObjectCount(mainCountry);
+    }
+
+    public int getConnectedPeersCountryCountExcept(Collection<CountryCode> countries) {
+        return connectedPeers.size() - contriesCount.getObjectCount(countries);
     }
 
     /**

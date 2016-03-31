@@ -227,7 +227,7 @@ public class PeerConnectionManager {
     }
 
 
-    ConnectionEstablishmentServerFSM.ConnectionResult newRequestConnectionAsServer(ConnectionEstablishmentClientFSM.ConnectionRequest2 connectionRequest, ChannelConnectionPoint ccp) {
+    ConnectionEstablishmentServerFSM.ConnectionResult newRequestConnectionAsServer(ConnectionEstablishmentClientFSM.ConnectionRequest2 connectionRequest) {
         // the server invokes this one. This PeerClient didn't know about this connection, so it must be confirmed
         // if we have higher priority in the connection process, check that we are not already trying to connect to
         // this same peer as clients
@@ -278,7 +278,7 @@ public class PeerConnectionManager {
                 CountryCode clientMainCountry = connectionRequest.clientMainCountry;
                 if (peerConnectionConfig.getMainCountry().equals(clientMainCountry)) {
                     // this peer offers the same country as us
-                    if (peerKnowledgeBase.getRegularPeersCount(PeerKnowledgeBase.ConnectedQuery.CONNECTED, clientMainCountry) < peerConnectionConfig.getMaxRegularConnections()) {
+                    if (connectedPeers.getConnectedPeersCountryCount(clientMainCountry) < peerConnectionConfig.getMaxRegularConnections()) {
                         // allowed to connect
                         return new ConnectionEstablishmentServerFSM.ConnectionResult(
                                 ConnectionEstablishmentServerFSM.ConnectionResultType.OK,
@@ -289,7 +289,7 @@ public class PeerConnectionManager {
                     }
                 } else if (peerConnectionConfig.getAdditionalCountries().contains(clientMainCountry)) {
                     // this client offers a country in the list of additional countries
-                    if (peerKnowledgeBase.getRegularPeersCount(PeerKnowledgeBase.ConnectedQuery.CONNECTED, clientMainCountry) < peerConnectionConfig.getMaxRegularConnectionsForAdditionalCountries()) {
+                    if (connectedPeers.getConnectedPeersCountryCount(clientMainCountry) < peerConnectionConfig.getMaxRegularConnectionsForAdditionalCountries()) {
                         // allowed to connect
                         return new ConnectionEstablishmentServerFSM.ConnectionResult(
                                 ConnectionEstablishmentServerFSM.ConnectionResultType.OK,
@@ -300,10 +300,17 @@ public class PeerConnectionManager {
                     }
                 } else {
                     // this peer offers a country we are not interested in
-
+                    if (connectedPeers.getConnectedPeersCountryCountExcept(peerConnectionConfig.getAllCountries()) < peerConnectionConfig.getMaxRegularConnectionsForAdditionalCountries()) {
+                        // allowed to connect
+                        return new ConnectionEstablishmentServerFSM.ConnectionResult(
+                                ConnectionEstablishmentServerFSM.ConnectionResultType.OK,
+                                buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret));
+                    } else {
+                        // full
+                        return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.REGULAR_SPOTS_TEMPORARILY_FULL);
+                    }
                 }
                 // todo
-                return null;
             case BLOCKED:
                 // deny always
                 return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.BLOCKED);
@@ -362,6 +369,11 @@ public class PeerConnectionManager {
         return new ConnectionEstablishmentServerFSM.DetailAcceptedConnection(ownPublicKey, peerConnectionConfig.isWishRegularConnections(), peerEntryFacade.getRelationship(), "encode");
     }
 
+    void connectionAsServerCompleted(PeerId peerId, ChannelConnectionPoint ccp, CountryCode clientMainCountry) {
+        // todo invoke
+        connectionCompleted(peerId, ccp, clientMainCountry);
+    }
+
     /**
      * This method is invoked by the connection client FSM to report that connection has been established with a
      * server peer.
@@ -374,6 +386,19 @@ public class PeerConnectionManager {
         // the client invokes this one. This PeerClient itself asked for it, so no confirmation is returned
         // if something is wrong, the PeerClient must deal with it itself, since connection is already established
         ongoingClientConnections.remove(peerId);
+        // todo Update pkb with returned information
+        connectionCompleted(peerId, ccp);
+    }
+
+    /**
+     * This method creates a new connection (as client or server). It first makes a few checks
+     *
+     * @param peerId                   ID of the peer to which we connected
+     * @param ccp                      ChannelConnectionPoint object of the connected peer
+     */
+    private void connectionCompleted(PeerId peerId, ChannelConnectionPoint ccp, CountryCode peerMainCountry) {
+        // the client invokes this one. This PeerClient itself asked for it, so no confirmation is returned
+        // if something is wrong, the PeerClient must deal with it itself, since connection is already established
         if (!wishForConnection.get()) {
             // we no longer wish to connect to peers
             ccp.disconnect();
@@ -384,8 +409,7 @@ public class PeerConnectionManager {
             // check he is now blocked
             ccp.disconnect();
         } else {
-            // todo Update pkb with returned information
-            newConnection(peerId, ccp);
+            newConnection(peerId, ccp, peerMainCountry);
         }
     }
 
@@ -424,13 +448,13 @@ public class PeerConnectionManager {
      * @param peerId ID of the peer to which we connected
      * @param ccp    ChannelConnectionPoint object of the peer to which we connected
      */
-    private void newConnection(PeerId peerId, ChannelConnectionPoint ccp) {
+    private void newConnection(PeerId peerId, ChannelConnectionPoint ccp, CountryCode clientCountryCode) {
         // the request dispatcher for this connections is registered, the connection manager is notified, and the
         // peer is marked in the list of connected peers
         // also our client is informed of this new connection
         // finally, the blocked channels of this connection are resumed, so data transfer can begin
         ccp.registerGenericFSM(new PeerRequestDispatcherFSM(peerClientPrivateInterface, peerId), "PeerRequestDispatcherFSM", ChannelConstants.REQUEST_DISPATCHER_CHANNEL);
-        connectedPeers.setConnectedPeer(peerId, ccp);
+        connectedPeers.setConnectedPeer(peerId, ccp, clientCountryCode);
         peerClientPrivateInterface.newPeerConnected(peerId, ccp);
         resumeChannels(ccp);
     }

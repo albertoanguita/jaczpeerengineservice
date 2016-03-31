@@ -21,8 +21,10 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         // Initial state: waiting for peers to try to connect to us. Here, we will receive the data from peers
         // attempting connection to us
         WAITING_FOR_REQUEST,
-        // Connection process was successful
+        // The client request was accepted. Waiting for client to confirm the connection
         REQUEST_ACCEPTED,
+        // The client confirmed the connection
+        CONNECTION_SUCCESSFUL,
         // the request was denied
         REQUEST_DENIED,
         // we responded to a ping request -> finished
@@ -140,6 +142,11 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
 
     private PeerId ownPeerId;
 
+    /**
+     * Once we receive the client's connection request, we store it in case the connection is confirmed
+     */
+    private ConnectionEstablishmentClientFSM.ConnectionRequest2 clientConnectionRequest;
+
     public ConnectionEstablishmentServerFSM(PeerConnectionManager peerConnectionManager, PeerId ownPeerId) {
         this.peerConnectionManager = peerConnectionManager;
         this.ownPeerId = ownPeerId;
@@ -149,17 +156,29 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
     public State processMessage(State state, byte channel, Object message, ChannelConnectionPoint ccp) throws IllegalArgumentException {
         if (state == State.WAITING_FOR_REQUEST) {
             if (message instanceof ConnectionEstablishmentClientFSM.ConnectionRequest2) {
-                ConnectionEstablishmentClientFSM.ConnectionRequest2 connectionRequest = (ConnectionEstablishmentClientFSM.ConnectionRequest2) message;
-                return processInitialRequest(connectionRequest);
-            } else if (message instanceof ConnectionEstablishmentClientFSM.TerminationMessage) {
-                // todo do we need this??
-                // this connection process must terminate
-                return State.ERROR;
+                clientConnectionRequest = (ConnectionEstablishmentClientFSM.ConnectionRequest2) message;
+                return processInitialRequest(clientConnectionRequest, ccp);
             } else if (message instanceof PingRequest) {
                 // a ping request, probably from a PortTestServer --> answer with a true and finish
                 PingRequest pingRequest = (PingRequest) message;
                 ccp.write(pingRequest.channel, ownPeerId);
                 return State.PING_ANSWERED;
+            } else {
+                // incorrect data format received
+                return State.ERROR;
+            }
+        } else if (state == State.REQUEST_ACCEPTED) {
+            if (message instanceof Boolean) {
+                Boolean clientConfirmation = (Boolean) message;
+                if (clientConfirmation) {
+                    // the client confirms the connection
+                    peerConnectionManager.connectionAsServerCompleted(clientConnectionRequest.clientPeerId, ccp, clientConnectionRequest.clientMainCountry);
+                    return State.CONNECTION_SUCCESSFUL;
+                } else {
+                    // the client dismissed this connection due to failed authentication
+                    // todo notify client
+                    return State.ERROR;
+                }
             } else {
                 // incorrect data format received
                 return State.ERROR;
@@ -170,18 +189,17 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         }
     }
 
-    private State processInitialRequest(ConnectionEstablishmentClientFSM.ConnectionRequest2 connectionRequest) {
-        if (!connectionRequest.serverPeerId.equals(ownPeerId)) {
-            // incorrect own id
-            return State.ERROR;
-        }
-        ConnectionResult connectionResult = peerConnectionManager.newRequestConnectionAsServer(connectionRequest.clientPeerId, ccp);
+    private State processInitialRequest(ConnectionEstablishmentClientFSM.ConnectionRequest2 connectionRequest, ChannelConnectionPoint ccp) {
+        ConnectionResult connectionResult = peerConnectionManager.newRequestConnectionAsServer(connectionRequest);
         if (connectionResult != null) {
-            // ok to connect -> send result to client and finish
             ccp.write(ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL, connectionResult);
-            return State.SUCCESS;
+            if (connectionResult.connectionResultType == ConnectionResultType.OK) {
+                return State.REQUEST_ACCEPTED;
+            } else {
+                return State.REQUEST_DENIED;
+            }
         } else {
-            // connection denied
+            // connection failed
             return State.ERROR;
         }
     }
@@ -203,11 +221,11 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
     public boolean isFinalState(State state, ChannelConnectionPoint ccp) {
         switch (state) {
 
-            case REQUEST_ACCEPTED:
-            case REQUEST_DENIED:
+            case CONNECTION_SUCCESSFUL:
             case PING_ANSWERED:
                 return true;
 
+            case REQUEST_DENIED:
             case ERROR:
                 ccp.disconnect();
                 return true;

@@ -91,7 +91,17 @@ public class PeerConnectionConfig implements NotificationEmitter {
     }
 
     public List<CountryCode> getAdditionalCountries() {
-        return additionalCountries;
+        return new ArrayList<>(additionalCountries);
+    }
+
+    public boolean isAdditionalCountry(CountryCode country) {
+        return additionalCountries.contains(country);
+    }
+
+    public List<CountryCode> getAllCountries() {
+        List<CountryCode> allCountries = getAdditionalCountries();
+        allCountries.add(mainCountry);
+        return allCountries;
     }
 
     public void setAdditionalCountries(List<CountryCode> additionalCountries) {
