@@ -43,7 +43,6 @@ public class PeerKnowledgeBase {
     }
 
     private void newSession() {
-        // todo change info source from server to own_records
         // todo clear connection attempts
         // todo change wish_connection from not_now to yes
         // todo change is_connected to false
@@ -70,10 +69,6 @@ public class PeerKnowledgeBase {
     public int getFavoritePeersCount(ConnectedQuery connectedQuery) {
         return getPeersCount(Management.Relationship.FAVORITE, connectedQuery, null);
     }
-
-//    public List<PeerEntryFacade> getRegularPeers(ConnectedQuery connectedQuery, LanguageCode language) {
-//        return getPeers(Management.Relationship.REGULAR, connectedQuery, language.toString(), null, false);
-//    }
 
     public List<PeerEntryFacade> getRegularPeers(ConnectedQuery connectedQuery) {
         return getPeers(Management.Relationship.REGULAR, connectedQuery, null);

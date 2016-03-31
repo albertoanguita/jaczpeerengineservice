@@ -8,7 +8,7 @@ import jacz.util.AI.evolve.EvolvingStateController;
 import java.io.IOException;
 
 /**
- * Created by Alberto on 01/03/2016.
+ * This class defines an evolving state for handling connection with the central server
  */
 public class PeerServerManager {
 

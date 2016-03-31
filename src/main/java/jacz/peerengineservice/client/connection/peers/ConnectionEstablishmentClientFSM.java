@@ -46,41 +46,62 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
 
     static final class ConnectionRequest implements Serializable {
 
+        /**
+         * Our peer id
+         */
         final PeerId clientPeerId;
 
+        /**
+         * The target server peer id
+         */
         final PeerId serverPeerId;
 
-        ConnectionRequest(PeerId clientPeerId, PeerId serverPeerId) {
-            this.clientPeerId = clientPeerId;
-            this.serverPeerId = serverPeerId;
-        }
-    }
-
-    static final class ConnectionRequest2 implements Serializable {
-
-        final PeerId clientPeerId;
-
-        final PeerId serverPeerId;
-
+        /**
+         * Our public key, for authentication
+         */
         final PublicKey clientPublicKey;
 
+        /**
+         * The server secret retrieved from the central server (not too long ago, so the server peer also knows it)
+         */
         final String centralServerSecret;
 
+        /**
+         * The server secret, encoded with our private key, so the server peer can authenticate us
+         */
         final String encodedCentralServerSecret;
 
+        /**
+         * Our wish for regular connections
+         */
         final boolean clientWishRegularConnections;
 
-        final boolean serverWishRegularConnections;
+        /**
+         * Our knowledge of the server peer wish for regular connections (null if unknown)
+         */
+        final Boolean serverWishRegularConnections;
 
+        /**
+         * Our own address, encoded as a string. Includes external and local address
+         */
         final String clientAddress;
 
+        /**
+         * Our own main country, as stated in the configuration options
+         */
         final CountryCode clientMainCountry;
 
+        /**
+         * Our knowledge of the server peer main country (null if unknown)
+         */
         final CountryCode serverMainCountry;
 
+        /**
+         * Our relation with the server peer
+         */
         final Management.Relationship clientToServerRelationship;
 
-        ConnectionRequest2(
+        ConnectionRequest(
                 PeerId clientPeerId,
                 PeerId serverPeerId,
                 PublicKey clientPublicKey,
@@ -94,7 +115,7 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
             this.serverPeerId = serverPeerId;
             this.clientPublicKey = clientPublicKey;
             this.clientWishRegularConnections = clientWishRegularConnections;
-            this.serverWishRegularConnections = peerEntryFacade.getWishForConnections();
+            this.serverWishRegularConnections = peerEntryFacade.isWishForRegularConnections();
             this.clientAddress = clientAddress;
             this.clientMainCountry = clientMainCountry;
             this.centralServerSecret = centralServerSecret;
@@ -119,23 +140,58 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
      */
     private final PeerId serverPeerId;
 
+    private final PublicKey ownPublicKey;
+
+    private final String centralServerSecret;
+
+    private final String encodedCentralServerSecret;
+
+    private final boolean clientWishRegularConnections;
+
+    private final String clientAddress;
+
+    private final CountryCode clientMainCountry;
+
+    private final PeerEntryFacade peerEntryFacade;
+
+
     private final IP4Port secondaryIP4Port;
 
     /**
      * Class constructor
-     *
-     * @param peerConnectionManager peerConnectionManager which is trying to connect to another peer
+     *  @param peerConnectionManager peerConnectionManager which is trying to connect to another peer
      * @param ownPeerId             our own ID
      * @param serverPeerId          the ID of the peer we are trying to connect to
+     * @param ownPublicKey
+     * @param centralServerSecret
+     * @param encodedCentralServerSecret
+     * @param clientWishRegularConnections
+     * @param clientAddress
+     * @param clientMainCountry
+     * @param peerEntryFacade
      */
     public ConnectionEstablishmentClientFSM(
             PeerConnectionManager peerConnectionManager,
             PeerId ownPeerId,
             PeerId serverPeerId,
+            PublicKey ownPublicKey,
+            String centralServerSecret,
+            String encodedCentralServerSecret,
+            Boolean clientWishRegularConnections,
+            String clientAddress,
+            CountryCode clientMainCountry,
+            PeerEntryFacade peerEntryFacade,
             IP4Port secondaryIP4Port) {
         this.peerConnectionManager = peerConnectionManager;
         this.ownPeerId = ownPeerId;
         this.serverPeerId = serverPeerId;
+        this.ownPublicKey = ownPublicKey;
+        this.centralServerSecret = centralServerSecret;
+        this.encodedCentralServerSecret = encodedCentralServerSecret;
+        this.clientWishRegularConnections = clientWishRegularConnections;
+        this.clientAddress = clientAddress;
+        this.clientMainCountry = clientMainCountry;
+        this.peerEntryFacade = peerEntryFacade;
         this.secondaryIP4Port = secondaryIP4Port;
     }
 
@@ -148,9 +204,7 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
                 case OK:
                     if (connectionResult.responseDetail instanceof ConnectionEstablishmentServerFSM.DetailAcceptedConnection) {
                         ConnectionEstablishmentServerFSM.DetailAcceptedConnection detailAcceptedConnection = (ConnectionEstablishmentServerFSM.DetailAcceptedConnection) connectionResult.responseDetail;
-                        // todo check server auth
-                        peerConnectionManager.connectionAsClientCompleted(serverPeerId, ccp, detailAcceptedConnection);
-                        return State.CONNECTION_ACCEPTED;
+                        return processDetailAcceptedConnection(detailAcceptedConnection, ccp);
                     } else {
                         return State.ERROR;
                     }
@@ -162,22 +216,22 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
                     } else {
                         return State.ERROR;
                     }
-                case WRONG_AUTHENTICATION:
+                case WRONG_AUTHENTICATION_ID_KEY_NOT_MATCHING:
+                case WRONG_AUTHENTICATION_INVALID_CENTRAL_SERVER_SECRET:
+                case WRONG_AUTHENTICATION_FALSE_PEER:
                     return State.CONNECTION_DENIED;
                 case REGULAR_SPOTS_TEMPORARILY_FULL:
-                    // todo update pkb
-                    return State.CONNECTION_DENIED;
-                case REJECT_REGULARS:
-                    // todo update pkb
+                    // todo transaction
+                    peerEntryFacade.setRelationshipToUs(Management.Relationship.REGULAR);
+                    peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.NOT_NOW);
                     return State.CONNECTION_DENIED;
                 case BLOCKED:
-                    // todo update pkb
+                    peerEntryFacade.setRelationshipToUs(Management.Relationship.BLOCKED);
                     return State.CONNECTION_DENIED;
                 case DENY:
-                    // todo update pkb
+                    // peer no longer available, no need to update any info
                     return State.CONNECTION_DENIED;
                 case ALREADY_CONNECTED:
-                    // todo notify manager
                     return State.CONNECTION_DENIED;
                 default:
                     // log error
@@ -191,6 +245,16 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         }
     }
 
+    private State processDetailAcceptedConnection(
+            ConnectionEstablishmentServerFSM.DetailAcceptedConnection detailAcceptedConnection,
+            ChannelConnectionPoint ccp) {
+        // todo check server auth
+        // send confirmation message
+        ccp.write(ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL, true);
+        peerConnectionManager.connectionAsClientCompleted(serverPeerId, ccp, detailAcceptedConnection.serverToClientRelationship, peerEntryFacade.getMainCountry());
+        return State.CONNECTION_ACCEPTED;
+    }
+
     @Override
     public State processMessage(State state, byte channel, byte[] data, ChannelConnectionPoint ccp) throws IllegalArgumentException {
         // unexpected data
@@ -202,7 +266,9 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         // first we must ask permission to the PeerClientConnectionManager for proceeding with this new connection
         // if we are granted access, send our own PeerId to the server peer (only the client performs this in the INIT)
         // if the PeerClientConnectionManager does not grant permission, terminate the connection process
-        ccp.write(ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL, new ConnectionRequest(ownPeerId, serverPeerId));
+        ccp.write(
+                ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL,
+                new ConnectionRequest(ownPeerId, serverPeerId, ownPublicKey, centralServerSecret, encodedCentralServerSecret, clientWishRegularConnections, clientAddress, clientMainCountry, peerEntryFacade));
         return State.REQUEST_SENT;
     }
 
@@ -212,14 +278,12 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         switch (state) {
 
             case CONNECTION_ACCEPTED:
-                peerConnectionManager.connectionAsClientCompleted(serverPeerId, ccp, true);
                 return true;
 
             case CONNECTION_DENIED:
-                return true;
-
             case ERROR:
-                error();
+                connectionFailed();
+                ccp.disconnect();
                 return true;
 
             default:
@@ -229,20 +293,19 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
 
     @Override
     public void disconnected(ChannelConnectionPoint ccp) {
-        error();
+        connectionFailed();
     }
 
 
     @Override
     public void timedOut(State state, ChannelConnectionPoint ccp) {
-        error();
+        connectionFailed();
     }
 
     /**
      * Reports the PeerClientConnectionManager that this connection is no longer ongoing
      */
-    private void error() {
-        // todo check when this must be run
+    private void connectionFailed() {
         peerConnectionManager.connectionAsClientFailed(serverPeerId, secondaryIP4Port, serverPeerId);
     }
 }

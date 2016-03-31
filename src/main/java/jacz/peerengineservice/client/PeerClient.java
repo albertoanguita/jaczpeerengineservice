@@ -133,6 +133,7 @@ public class PeerClient {
                 peerClientPrivateInterface,
                 connectedPeers,
                 ownPeerId,
+                peerEncryption,
                 serverURL,
                 networkConfiguration,
                 peerRelations);

@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * todo synchronize
+ * todo synchronize, remove public from set methods
  */
 public class PeerConnectionConfig implements NotificationEmitter {
 
@@ -78,7 +78,7 @@ public class PeerConnectionConfig implements NotificationEmitter {
         return wishRegularConnections;
     }
 
-    public void setWishRegularConnections(boolean wishRegularConnections) {
+    void setWishRegularConnections(boolean wishRegularConnections) {
         this.wishRegularConnections = wishRegularConnections;
     }
 

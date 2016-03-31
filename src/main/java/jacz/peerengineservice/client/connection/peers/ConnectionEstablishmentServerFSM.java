@@ -9,6 +9,7 @@ import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
 
 import java.io.Serializable;
+import java.security.PublicKey;
 
 /**
  * This FSM allows negotiating with other peers who want to connect to our PeerClient. This FSM implements the server
@@ -49,7 +50,7 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         // we would like to accept, but we are full for his offer
         REGULAR_SPOTS_TEMPORARILY_FULL,
         // this client does not accept regular connections
-//        REJECT_REGULARS,
+//        REJECT_REGULARS, --> INCORRECT!!
         // this client has blocked the requester
         BLOCKED,
         // we are no longer accepting any connections
@@ -77,15 +78,12 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
 
     static class ResponseDetail implements Serializable {
 
-        final String serverPublicKey;
-
-        final boolean serverWishRegularConnections;
+        final PublicKey serverPublicKey;
 
         final Management.Relationship serverToClientRelationship;
 
-        public ResponseDetail(String serverPublicKey, boolean serverWishRegularConnections, Management.Relationship serverToClientRelationship) {
+        public ResponseDetail(PublicKey serverPublicKey, Management.Relationship serverToClientRelationship) {
             this.serverPublicKey = serverPublicKey;
-            this.serverWishRegularConnections = serverWishRegularConnections;
             this.serverToClientRelationship = serverToClientRelationship;
         }
     }
@@ -97,16 +95,19 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
 
         final PeerId serverPeerId;
 
+        final boolean serverWishRegularConnections;
+
         final CountryCode serverMainCountry;
 
         public DetailCorrectedInformation(
-                String serverPublicKey,
+                PublicKey serverPublicKey,
                 boolean serverWishRegularConnections,
                 Management.Relationship serverToClientRelationship,
                 PeerId serverPeerId,
                 CountryCode serverMainCountry) {
-            super(serverPublicKey, serverWishRegularConnections, serverToClientRelationship);
+            super(serverPublicKey, serverToClientRelationship);
             this.serverPeerId = serverPeerId;
+            this.serverWishRegularConnections = serverWishRegularConnections;
             this.serverMainCountry = serverMainCountry;
         }
     }
@@ -116,11 +117,10 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         final String encodedCentralServerSecret;
 
         public DetailAcceptedConnection(
-                String serverPublicKey,
-                boolean serverWishRegularConnections,
+                PublicKey serverPublicKey,
                 Management.Relationship serverToClientRelationship,
                 String encodedCentralServerSecret) {
-            super(serverPublicKey, serverWishRegularConnections, serverToClientRelationship);
+            super(serverPublicKey, serverToClientRelationship);
             this.encodedCentralServerSecret = encodedCentralServerSecret;
         }
     }
@@ -145,7 +145,7 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
     /**
      * Once we receive the client's connection request, we store it in case the connection is confirmed
      */
-    private ConnectionEstablishmentClientFSM.ConnectionRequest2 clientConnectionRequest;
+    private ConnectionEstablishmentClientFSM.ConnectionRequest clientConnectionRequest;
 
     public ConnectionEstablishmentServerFSM(PeerConnectionManager peerConnectionManager, PeerId ownPeerId) {
         this.peerConnectionManager = peerConnectionManager;
@@ -155,8 +155,8 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
     @Override
     public State processMessage(State state, byte channel, Object message, ChannelConnectionPoint ccp) throws IllegalArgumentException {
         if (state == State.WAITING_FOR_REQUEST) {
-            if (message instanceof ConnectionEstablishmentClientFSM.ConnectionRequest2) {
-                clientConnectionRequest = (ConnectionEstablishmentClientFSM.ConnectionRequest2) message;
+            if (message instanceof ConnectionEstablishmentClientFSM.ConnectionRequest) {
+                clientConnectionRequest = (ConnectionEstablishmentClientFSM.ConnectionRequest) message;
                 return processInitialRequest(clientConnectionRequest, ccp);
             } else if (message instanceof PingRequest) {
                 // a ping request, probably from a PortTestServer --> answer with a true and finish
@@ -189,7 +189,7 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         }
     }
 
-    private State processInitialRequest(ConnectionEstablishmentClientFSM.ConnectionRequest2 connectionRequest, ChannelConnectionPoint ccp) {
+    private State processInitialRequest(ConnectionEstablishmentClientFSM.ConnectionRequest connectionRequest, ChannelConnectionPoint ccp) {
         ConnectionResult connectionResult = peerConnectionManager.newRequestConnectionAsServer(connectionRequest);
         if (connectionResult != null) {
             ccp.write(ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL, connectionResult);

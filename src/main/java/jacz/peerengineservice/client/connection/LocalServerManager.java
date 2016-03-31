@@ -5,6 +5,8 @@ import jacz.commengine.clientserver.server.ServerAction;
 import jacz.commengine.clientserver.server.ServerModule;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerId;
+import jacz.peerengineservice.client.connection.peers.PeerConnectionManager;
+import jacz.peerengineservice.client.connection.peers.kb.PeerAddress;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
 import jacz.util.network.IP4Port;
@@ -14,7 +16,8 @@ import org.bitlet.weupnp.GatewayDevice;
 import java.io.IOException;
 
 /**
- * Created by Alberto on 01/03/2016.
+ * This class implements an evolving state in charge of opening and maintaining the local server that allows other
+ * peers to connect with us
  */
 public class LocalServerManager {
 
@@ -27,7 +30,7 @@ public class LocalServerManager {
      */
     private static class PeerClientServerActionImpl implements ServerAction {
 
-        private final FriendConnectionManager friendConnectionManager;
+        private final PeerConnectionManager peerConnectionManager;
 
         private final ConnectionEventsBridge connectionEvents;
 
@@ -35,18 +38,18 @@ public class LocalServerManager {
         /**
          * Class constructor
          *
-         * @param friendConnectionManager the FriendConnectionManager that handles friends events
+         * @param peerConnectionManager the peerConnectionManager that handles friends events
          */
         public PeerClientServerActionImpl(
-                FriendConnectionManager friendConnectionManager,
+                PeerConnectionManager peerConnectionManager,
                 ConnectionEventsBridge connectionEvents) {
-            this.friendConnectionManager = friendConnectionManager;
+            this.peerConnectionManager = peerConnectionManager;
             this.connectionEvents = connectionEvents;
         }
 
         @Override
         public void newClientConnection(String clientID, ChannelConnectionPoint ccp, IP4Port ip4Port) {
-            friendConnectionManager.reportClientConnectedToOurPeerServer(ccp);
+            peerConnectionManager.reportClientConnectedToOurPeerServer(ccp);
         }
 
         @Override
@@ -61,17 +64,17 @@ public class LocalServerManager {
 
         @Override
         public void channelFreed(String clientID, ChannelConnectionPoint ccp, byte channel) {
-            friendConnectionManager.channelFreed(ccp, channel);
+            peerConnectionManager.channelFreed(ccp, channel);
         }
 
         @Override
         public void clientDisconnected(String clientID, ChannelConnectionPoint ccp, boolean expected) {
-            friendConnectionManager.peerDisconnected(ccp);
+            peerConnectionManager.peerDisconnected(ccp);
         }
 
         @Override
         public void clientError(String clientID, ChannelConnectionPoint ccp, CommError e) {
-            friendConnectionManager.peerError(ccp, e);
+            peerConnectionManager.peerError(ccp, e);
         }
 
         @Override
@@ -154,13 +157,11 @@ public class LocalServerManager {
                                 destroyGatewayForwardingRule(externalPort, controller);
                                 externalPort = -1;
                             }
-//                            controller.evolve();
                             return false;
 
                         case OPEN:
                             // we must close our server and kick all connected clients
                             closePeerConnectionsServer(controller);
-//                            controller.evolve();
                             return false;
                     }
                 } else {
@@ -178,7 +179,6 @@ public class LocalServerManager {
                                 externalPort = createGatewayForwardingRule(LocalServerManager.this.defaultExternalPort, controller);
                                 if (LocalServerManager.this.externalPort != -1) {
                                     // the nat rule was created ok, evolve
-//                                    controller.evolve();
                                     return false;
                                 }
                                 // if not, we will retry shortly
@@ -188,7 +188,6 @@ public class LocalServerManager {
                                 controller.setState(State.LocalServerConnectionsState.LISTENING);
                                 externalPort = LocalServerManager.this.wishedConnectionInformation.getLocalPort();
                                 connectionEvents.listeningConnectionsWithoutNATRule(externalPort, listeningPort, State.LocalServerConnectionsState.LISTENING);
-//                                controller.evolve();
                                 return false;
                             }
                             break;
@@ -198,7 +197,6 @@ public class LocalServerManager {
                             if (!isCorrectConnectionInformation()) {
                                 destroyGatewayForwardingRule(externalPort, controller);
                                 closePeerConnectionsServer(controller);
-//                                controller.evolve();
                                 return false;
                             }
                             // otherwise, everything ok
@@ -237,6 +235,11 @@ public class LocalServerManager {
         return dynamicState.state() == State.LocalServerConnectionsState.LISTENING ? externalPort : null;
     }
 
+    public synchronized PeerAddress getPeerAddress() {
+        // todo
+        return null;
+    }
+
     void setWishForConnect(boolean wishForConnect) {
         dynamicState.setGoal(wishForConnect, true);
     }
@@ -264,11 +267,10 @@ public class LocalServerManager {
         try {
             connectionEvents.tryingToOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.OPENING);
             listeningPort = wishedConnectionInformation.getLocalPort();
-            serverModule = new ServerModule(listeningPort, new PeerClientServerActionImpl(peerClientConnectionManager.getFriendConnectionManager(), connectionEvents), PeerClientConnectionManager.generateConcurrentChannelSets());
+            serverModule = new ServerModule(listeningPort, new PeerClientServerActionImpl(peerClientConnectionManager.getPeerConnectionManager(), connectionEvents), PeerClientConnectionManager.generateConcurrentChannelSets());
             serverModule.startListeningConnections();
             controller.setState(State.LocalServerConnectionsState.OPEN);
             connectionEvents.localServerOpen(getActualListeningPort(), State.LocalServerConnectionsState.OPEN);
-//            controller.evolve();
             return false;
         } catch (IOException e) {
             // the server could not be opened

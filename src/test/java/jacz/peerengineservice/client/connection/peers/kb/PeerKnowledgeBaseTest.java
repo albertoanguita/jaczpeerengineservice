@@ -48,7 +48,6 @@ public class PeerKnowledgeBaseTest {
         // retrieve just built entry
         PeerEntryFacade peerEntryFacade = pkb.getPeerEntryFacade(peerId01);
         Assert.assertEquals(peerId01, peerEntryFacade.getPeerId());
-        Assert.assertEquals(null, peerEntryFacade.getPublicKey());
 //        Assert.assertEquals(null, peerEntryFacade.getMainLanguage());
         Assert.assertEquals(null, peerEntryFacade.getMainCountry());
         Assert.assertEquals(Management.Relationship.REGULAR, peerEntryFacade.getRelationship());
@@ -56,12 +55,10 @@ public class PeerKnowledgeBaseTest {
         Assert.assertFalse(peerEntryFacade.isConnected());
         Assert.assertEquals(null, peerEntryFacade.getLastSession());
         Assert.assertEquals(null, peerEntryFacade.getLastConnectionAttempt());
-        Assert.assertEquals(Management.ConnectionWish.YES, peerEntryFacade.getWishForConnections());
+        Assert.assertEquals(Management.ConnectionWish.YES, peerEntryFacade.getWishForRegularConnections());
         Assert.assertEquals(0, peerEntryFacade.getAffinity());
         Assert.assertEquals(null, peerEntryFacade.getPeerAddress());
-        Assert.assertEquals(Management.InfoSource.OWN_RECORDS, peerEntryFacade.getInfoSource());
 
-        peerEntryFacade.setPublicKey("pk");
 //        peerEntryFacade.setMainLanguage(LanguageCode.es);
         peerEntryFacade.setMainCountry(CountryCode.ES);
         peerEntryFacade.setRelationship(Management.Relationship.FAVORITE);
@@ -69,13 +66,11 @@ public class PeerKnowledgeBaseTest {
         peerEntryFacade.setConnected(false);
         peerEntryFacade.setConnected(true);
         peerEntryFacade.updateConnectionAttempt();
-        peerEntryFacade.setWishForConnections(Management.ConnectionWish.NOT_NOW);
+        peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.NOT_NOW);
         peerEntryFacade.setAffinity(23);
         peerEntryFacade.setPeerAddress(new PeerAddress(new IP4Port("205.103.101.94", 32000), new IP4Port("192.168.1.27", 50000)));
-        peerEntryFacade.setInfoSource(Management.InfoSource.SERVER);
 
         Assert.assertEquals(peerId01, peerEntryFacade.getPeerId());
-        Assert.assertEquals("pk", peerEntryFacade.getPublicKey());
 //        Assert.assertEquals(LanguageCode.es, peerEntryFacade.getMainLanguage());
         Assert.assertEquals(CountryCode.ES, peerEntryFacade.getMainCountry());
         Assert.assertEquals(Management.Relationship.FAVORITE, peerEntryFacade.getRelationship());
@@ -83,11 +78,10 @@ public class PeerKnowledgeBaseTest {
         Assert.assertTrue(peerEntryFacade.isConnected());
         Assert.assertTrue(new Date().getTime() - peerEntryFacade.getLastSession().getTime() < 100);
         Assert.assertTrue((new Date().getTime() - peerEntryFacade.getLastConnectionAttempt().getTime() < 100));
-        Assert.assertEquals(Management.ConnectionWish.NOT_NOW, peerEntryFacade.getWishForConnections());
+        Assert.assertEquals(Management.ConnectionWish.NOT_NOW, peerEntryFacade.getWishForRegularConnections());
         Assert.assertEquals(23, peerEntryFacade.getAffinity());
         Assert.assertEquals(new IP4Port("205.103.101.94", 32000).toString(), peerEntryFacade.getPeerAddress().getExternalAddress().toString());
         Assert.assertEquals(new IP4Port("192.168.1.27", 50000).toString(), peerEntryFacade.getPeerAddress().getLocalAddress().toString());
-        Assert.assertEquals(Management.InfoSource.SERVER, peerEntryFacade.getInfoSource());
 
         // set up relations with rest of peers
         peerEntryFacade = pkb.getPeerEntryFacade(peerId02);

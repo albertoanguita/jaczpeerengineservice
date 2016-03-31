@@ -4,7 +4,7 @@ import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.Table;
 
 /**
- * Created by Alberto on 02/03/2016.
+ * Active JDBC main table for the peer knowledge base
  */
 @Table("peer_entries")
 public class PeerEntry extends Model {

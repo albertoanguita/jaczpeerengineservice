@@ -1,8 +1,10 @@
 package jacz.peerengineservice.client.connection;
 
+import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.PeerRelations;
+import jacz.peerengineservice.client.connection.peers.PeerConnectionManager;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
@@ -67,7 +69,8 @@ public class PeerClientConnectionManager {
     /**
      * Manages the connections with friend peers
      */
-    private final FriendConnectionManager friendConnectionManager;
+    private final FriendConnectionManager friendConnectionManager; // todo remove
+    private final PeerConnectionManager peerConnectionManager;
 
     private final EvolvingState<ConnectionState, Boolean> dynamicState;
 
@@ -76,6 +79,7 @@ public class PeerClientConnectionManager {
             PeerClientPrivateInterface peerClientPrivateInterface,
             ConnectedPeers connectedPeers,
             PeerId ownPeerId,
+            PeerEncryption ownPeerEncryption,
             String serverURL,
             NetworkConfiguration networkConfiguration,
             PeerRelations peerRelations) {
@@ -94,6 +98,7 @@ public class PeerClientConnectionManager {
                 this.connectionEvents);
         peerServerManager = new PeerServerManager(ownPeerId, serverURL, this, networkTopologyManager, this.connectionEvents);
         friendConnectionManager = new FriendConnectionManager(ownPeerId, serverURL, connectedPeers, peerClientPrivateInterface, this, peerRelations);
+        peerConnectionManager = new PeerConnectionManager(ownPeerId, ownPeerEncryption, , serverURL, , , connectedPeers, peerClientPrivateInterface);
 
         dynamicState = new EvolvingState<>(ConnectionState.DISCONNECTED, false, new EvolvingState.Transitions<ConnectionState, Boolean>() {
             @Override
@@ -103,7 +108,6 @@ public class PeerClientConnectionManager {
                         case DISCONNECTED:
                         case DISCONNECTING:
                             controller.setState(ConnectionState.CONNECTING);
-//                            controller.evolve();
                             return false;
 
                         case CONNECTING:
@@ -115,7 +119,6 @@ public class PeerClientConnectionManager {
                                 peerServerManager.setWishForConnect(false);
                                 friendConnectionManager.setWishForFriendSearch(false);
                                 delay();
-//                                controller.evolve();
                                 return false;
                             }
 
@@ -125,7 +128,6 @@ public class PeerClientConnectionManager {
                                 peerServerManager.setWishForConnect(false);
                                 friendConnectionManager.setWishForFriendSearch(false);
                                 delay();
-//                                controller.evolve();
                                 return false;
                             }
 
@@ -134,7 +136,6 @@ public class PeerClientConnectionManager {
                             if (!peerServerManager.isInWishedState()) {
                                 friendConnectionManager.setWishForFriendSearch(false);
                                 delay();
-//                                controller.evolve();
                                 return false;
                             }
 
@@ -152,7 +153,6 @@ public class PeerClientConnectionManager {
                             // disconnect all services and wait for being in wished state
                             disconnectServices();
                             controller.setState(ConnectionState.DISCONNECTING);
-//                            controller.evolve();
                             return false;
 
                         case DISCONNECTING:
@@ -190,6 +190,10 @@ public class PeerClientConnectionManager {
 
     FriendConnectionManager getFriendConnectionManager() {
         return friendConnectionManager;
+    }
+
+    PeerConnectionManager getPeerConnectionManager() {
+        return peerConnectionManager;
     }
 
     LocalServerManager getLocalServerManager() {

@@ -12,7 +12,8 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Created by Alberto on 02/03/2016.
+ * Interface to the entries of the peer knowledge base. Objects of this class give access to a single entry,
+ * corresponding to a single peer
  */
 public class PeerEntryFacade {
 
@@ -39,10 +40,9 @@ public class PeerEntryFacade {
         // set all default fields
         peerEntry.setString(Management.RELATIONSHIP.name, Management.Relationship.REGULAR.name());
         peerEntry.setString(Management.RELATIONSHIP_TO_US.name, Management.Relationship.REGULAR.name());
-        peerEntry.setString(Management.WISH_CONNECTIONS.name, Management.ConnectionWish.YES.name());
+        peerEntry.setString(Management.WISH_REGULAR_CONNECTIONS.name, Management.ConnectionWish.YES.name());
         peerEntry.setBoolean(Management.IS_CONNECTED.name, false);
         peerEntry.setInteger(Management.AFFINITY.name, 0);
-        peerEntry.setString(Management.INFO_SOURCE.name, Management.InfoSource.OWN_RECORDS.name());
     }
 
     static List<PeerEntryFacade> buildList(List<? extends Model> peerEntries, String dbPath) {
@@ -106,17 +106,22 @@ public class PeerEntryFacade {
         ActiveJDBCController.disconnect(dbPath);
     }
 
-    public Management.ConnectionWish getWishForConnections() {
+    public Management.ConnectionWish getWishForRegularConnections() {
         ActiveJDBCController.connect(dbPath);
-        String wishValue = peerEntry.getString(Management.WISH_CONNECTIONS.name);
+        String wishValue = peerEntry.getString(Management.WISH_REGULAR_CONNECTIONS.name);
         Management.ConnectionWish wish = wishValue != null ? Management.ConnectionWish.valueOf(wishValue) : null;
         ActiveJDBCController.disconnect(dbPath);
         return wish;
     }
 
-    public void setWishForConnections(Management.ConnectionWish wish) {
+    public Boolean isWishForRegularConnections() {
+        Management.ConnectionWish connectionWish = getWishForRegularConnections();
+        return connectionWish != null ? connectionWish.isConnectionWish() : null;
+    }
+
+    public void setWishForRegularConnections(Management.ConnectionWish wish) {
         ActiveJDBCController.connect(dbPath);
-        peerEntry.setString(Management.WISH_CONNECTIONS.name, wish.name());
+        peerEntry.setString(Management.WISH_REGULAR_CONNECTIONS.name, wish.name());
         peerEntry.saveIt();
         ActiveJDBCController.disconnect(dbPath);
     }
@@ -191,21 +196,6 @@ public class PeerEntryFacade {
     public void setPeerAddress(PeerAddress peerAddress) {
         ActiveJDBCController.connect(dbPath);
         peerEntry.setString(Management.ADDRESS.name, peerAddress.serialize());
-        peerEntry.saveIt();
-        ActiveJDBCController.disconnect(dbPath);
-    }
-
-    public Management.InfoSource getInfoSource() {
-        ActiveJDBCController.connect(dbPath);
-        String infoSourceValue = peerEntry.getString(Management.INFO_SOURCE.name);
-        Management.InfoSource infoSource = infoSourceValue != null ? Management.InfoSource.valueOf(infoSourceValue) : null;
-        ActiveJDBCController.disconnect(dbPath);
-        return infoSource;
-    }
-
-    public void setInfoSource(Management.InfoSource infoSource) {
-        ActiveJDBCController.connect(dbPath);
-        peerEntry.setString(Management.INFO_SOURCE.name, infoSource.name());
         peerEntry.saveIt();
         ActiveJDBCController.disconnect(dbPath);
     }

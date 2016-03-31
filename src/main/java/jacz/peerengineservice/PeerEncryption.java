@@ -52,6 +52,14 @@ public final class PeerEncryption implements VersionedObject {
         }
     }
 
+    public PublicKey getPublicKey() {
+        return keyPair.getPublic();
+    }
+
+    public PrivateKey getPrivateKey() {
+        return keyPair.getPrivate();
+    }
+
     public byte[] getPublicDigest() {
         return keyPair.getPublic().getEncoded();
     }

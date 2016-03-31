@@ -1,6 +1,7 @@
 package jacz.peerengineservice.client.connection.peers;
 
 import com.neovisionaries.i18n.CountryCode;
+import jacz.peerengineservice.client.connection.ConnectedPeers;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.util.AI.evolve.EvolvingState;
@@ -75,7 +76,7 @@ public class RegularsConnectionManager {
 
     private final PeerConnectionManager peerConnectionManager;
 
-    private final PeerKnowledgeBase peerKnowledgeBase;
+    private final ConnectedPeers connectedPeers;
 
     private final PeerConnectionConfig peerConnectionConfig;
 
@@ -83,9 +84,9 @@ public class RegularsConnectionManager {
 
     private final EvolvingState<State, Boolean> dynamicState;
 
-    public RegularsConnectionManager(PeerConnectionManager peerConnectionManager, PeerKnowledgeBase peerKnowledgeBase, PeerConnectionConfig peerConnectionConfig) {
+    public RegularsConnectionManager(PeerConnectionManager peerConnectionManager, PeerKnowledgeBase peerKnowledgeBase, ConnectedPeers connectedPeers, PeerConnectionConfig peerConnectionConfig) {
         this.peerConnectionManager = peerConnectionManager;
-        this.peerKnowledgeBase = peerKnowledgeBase;
+        this.connectedPeers = connectedPeers;
         this.peerConnectionConfig = peerConnectionConfig;
         dynamicState = new EvolvingState<>(new State(), false, new EvolvingState.Transitions<State, Boolean>() {
             @Override
@@ -196,7 +197,7 @@ public class RegularsConnectionManager {
         } else {
             connectionsGoal = peerConnectionConfig.getMaxRegularConnectionsForAdditionalCountries();
         }
-        return connectionsGoal - peerKnowledgeBase.getRegularPeersCount(PeerKnowledgeBase.ConnectedQuery.CONNECTED, country);
+        return connectionsGoal - connectedPeers.getConnectedPeersCountryCount(country);
     }
 
     private void attemptMoreConnections() {

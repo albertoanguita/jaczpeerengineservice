@@ -47,26 +47,12 @@ public class FavoritesConnectionManager {
     }
 
     private void connectToFavoritePeers() {
-        List<PeerEntryFacade> failedConnections = new ArrayList<>();
         for (PeerEntryFacade peerEntryFacade : peerKnowledgeBase.getFavoritePeers(PeerKnowledgeBase.ConnectedQuery.DISCONNECTED)) {
             // go through all disconnected favorite peers and try to connect to them
             if (!peerConnectionManager.discardConnectionAttempt(peerEntryFacade)) {
-                if (!peerConnectionManager.attemptConnection(peerEntryFacade)) {
-                    // check if the address info was provided directly from the server, or from other peer/our own records
-                    if (addressInfoIsNotFromServer(peerEntryFacade)) {
-                        failedConnections.add(peerEntryFacade);
-                    }
-                }
+                peerConnectionManager.attemptConnection(peerEntryFacade);
             }
         }
-        // finally, update the address for those favorite peers whose connection failed
-        // todo this should belong to 'failed connections as client'
-        peerConnectionManager.updatePeersAddress(failedConnections);
-    }
-
-    private boolean addressInfoIsNotFromServer(PeerEntryFacade peerEntryFacade) {
-        // todo
-        return false;
     }
 
     public void setConnectionGoal(boolean connect) {

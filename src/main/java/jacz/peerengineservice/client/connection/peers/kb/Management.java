@@ -8,6 +8,19 @@ import org.javalite.activejdbc.Base;
  */
 public class Management {
 
+    static class TableField {
+
+        final String name;
+
+        final String type;
+
+        public TableField(String name, String type) {
+            this.name = name;
+            this.type = type;
+        }
+    }
+
+
     static final String TABLE_NAME = "peer_entries";
 
     static final TableField PEER_ID = new TableField("id", "TEXT NOT NULL PRIMARY KEY");
@@ -18,7 +31,7 @@ public class Management {
 
     static final TableField RELATIONSHIP_TO_US = new TableField("relationship_to_us", "TEXT NOT NULL");
 
-    static final TableField WISH_CONNECTIONS = new TableField("wish_regular_connections", "TEXT NOT NULL");
+    static final TableField WISH_REGULAR_CONNECTIONS = new TableField("wish_regular_connections", "TEXT NOT NULL");
 
     static final TableField IS_CONNECTED = new TableField("is_connected", "BOOLEAN NOT NULL");
 
@@ -30,8 +43,6 @@ public class Management {
 
     static final TableField ADDRESS = new TableField("address", "TEXT");
 
-    static final TableField INFO_SOURCE = new TableField("info_source", "TEXT");
-
     public enum Relationship {
         FAVORITE,
         REGULAR,
@@ -41,15 +52,12 @@ public class Management {
     public enum ConnectionWish {
         YES,
         NOT_NOW,
-        NO
-    }
+        NO;
 
-    public enum InfoSource {
-        OWN_RECORDS,
-        ANOTHER_PEER,
-        SERVER
+        public boolean isConnectionWish() {
+            return this == YES || this == NOT_NOW;
+        }
     }
-
 
     public static void dropAndCreateKBDatabase(String path) {
         dropKBDatabase(path);
@@ -70,13 +78,12 @@ public class Management {
         appendField(create, MAIN_COUNTRY, false);
         appendField(create, RELATIONSHIP, false);
         appendField(create, RELATIONSHIP_TO_US, false);
-        appendField(create, WISH_CONNECTIONS, false);
+        appendField(create, WISH_REGULAR_CONNECTIONS, false);
         appendField(create, IS_CONNECTED, false);
         appendField(create, LAST_SESSION, false);
         appendField(create, LAST_CONNECTION_ATTEMPT, false);
         appendField(create, AFFINITY, false);
-        appendField(create, ADDRESS, false);
-        appendField(create, INFO_SOURCE, true);
+        appendField(create, ADDRESS, true);
         Base.exec(create.toString());
 
         ActiveJDBCController.disconnect(dbPath);
