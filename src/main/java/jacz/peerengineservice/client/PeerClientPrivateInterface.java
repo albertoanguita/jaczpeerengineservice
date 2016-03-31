@@ -4,7 +4,6 @@ import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.RequestFromPeerToPeer;
-import jacz.peerengineservice.util.ConnectionStatus;
 
 /**
  * This class handles the messages that the PeerClientConnectionManager send to its corresponding PeerClient. It is
@@ -246,8 +245,8 @@ public class PeerClientPrivateInterface {
 
     ////////////////////////////////// FRIEND CONNECTION MANAGER  //////////////////////////////////
 
-    public synchronized void newPeerConnected(PeerId peerId, ChannelConnectionPoint ccp, ConnectionStatus status) {
-        peerClient.newPeerConnected(peerId, ccp, status);
+    public synchronized void newPeerConnected(PeerId peerId, ChannelConnectionPoint ccp) {
+        peerClient.newPeerConnected(peerId, ccp);
     }
 
     /**

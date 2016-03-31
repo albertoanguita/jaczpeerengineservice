@@ -1,4 +1,4 @@
-package jacz.peerengineservice.client.connection;
+package jacz.peerengineservice.client.connection.peers;
 
 import com.neovisionaries.i18n.CountryCode;
 import com.neovisionaries.i18n.LanguageCode;
@@ -13,6 +13,8 @@ import java.util.List;
  * todo synchronize
  */
 public class PeerConnectionConfig implements NotificationEmitter {
+
+    private static final int MIN_REGULAR_CONNECTIONS_FOR_OTHER_COUNTRIES = 5;
 
     public enum  Event {
         LOWER_MAX_CONNECTIONS,
@@ -98,6 +100,12 @@ public class PeerConnectionConfig implements NotificationEmitter {
 
     public int getMaxRegularConnectionsForAdditionalCountries() {
         return maxRegularConnectionsForAdditionalCountries;
+    }
+
+    public int getMaxRegularConnectionsForOtherCountries() {
+        return Math.max(
+                additionalCountries.size() * maxRegularConnectionsForAdditionalCountries + 1,
+                MIN_REGULAR_CONNECTIONS_FOR_OTHER_COUNTRIES);
     }
 
     public void setMaxRegularConnectionsForAdditionalCountries(int maxRegularConnectionsForAdditionalLanguages) {

@@ -1,7 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.PeerId;
-import jacz.util.identifier.UniqueIdentifier;
 
 /**
  * This class provides information about an active upload (but no control over it)
@@ -23,7 +22,7 @@ public class UploadManager {
         requestingPeer = slaveResourceStreamer.getResourceRequest().getRequestingPeer();
     }
 
-    public UniqueIdentifier getId() {
+    public String getId() {
         return slaveResourceStreamer.getId();
     }
 

@@ -6,10 +6,9 @@ import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.master.MasterMessage;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
-import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.concurrency.timer.Timer;
-import jacz.util.identifier.UniqueIdentifier;
-import jacz.util.identifier.UniqueIdentifierFactory;
+import jacz.util.concurrency.timer.TimerAction;
+import jacz.util.id.AlphaNumFactory;
 import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.numeric.range.LongRangeQueue;
@@ -113,7 +112,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
 
     static final String HASH_ALGORITHM = "SHA-256";
 
-    private final UniqueIdentifier id;
+    private final String id;
 
     private final jacz.peerengineservice.util.datatransfer.ResourceStreamingManager resourceStreamingManager;
 
@@ -144,7 +143,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
     private final jacz.peerengineservice.util.datatransfer.ResourceRequest resourceRequest;
 
     public SlaveResourceStreamer(jacz.peerengineservice.util.datatransfer.ResourceStreamingManager resourceStreamingManager, jacz.peerengineservice.util.datatransfer.ResourceRequest request) {
-        id = UniqueIdentifierFactory.getOneStaticIdentifier();
+        id = AlphaNumFactory.getStaticId();
         this.resourceStreamingManager = resourceStreamingManager;
         this.resourceRequest = request;
         timeoutTimer = new Timer(SURVIVE_TIME_MILLIS, this);
@@ -302,7 +301,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         return 0l;
     }
 
-    public UniqueIdentifier getId() {
+    public String getId() {
         return id;
     }
 

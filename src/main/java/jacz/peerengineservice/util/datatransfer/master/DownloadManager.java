@@ -2,7 +2,6 @@ package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
-import jacz.util.identifier.UniqueIdentifier;
 
 /**
  * This class gives the client the ability to control a single download. It also contains the statistics about the
@@ -61,7 +60,7 @@ public class DownloadManager {
         masterResourceStreamer.setPriority(priority);
     }
 
-    public UniqueIdentifier getId() {
+    public String getId() {
         return masterResourceStreamer.getId();
     }
 

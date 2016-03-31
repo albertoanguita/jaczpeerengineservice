@@ -8,7 +8,6 @@ import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.connection.*;
 import jacz.peerengineservice.util.ChannelConstants;
-import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.data_synchronization.DataAccessorContainer;
 import jacz.peerengineservice.util.data_synchronization.DataSynchServerFSM;
@@ -245,10 +244,6 @@ public class PeerClient {
     public synchronized void addFriendPeer(final PeerId peerId) {
         peerRelations.addFriendPeer(peerId);
         searchFriends();
-        if (connectedPeers.getPeerConnectionStatus(peerId) == ConnectionStatus.UNVALIDATED) {
-            connectedPeers.setPeerConnectionStatus(peerId, ConnectionStatus.CORRECT);
-            sendObjectMessage(peerId, new ValidationMessage());
-        }
         generalEvents.peerAddedAsFriend(peerId, peerRelations);
     }
 
@@ -476,11 +471,11 @@ public class PeerClient {
         resourceStreamingManager.getUploadsManager().stopTimer();
     }
 
-    void newPeerConnected(final PeerId peerId, final ChannelConnectionPoint ccp, final ConnectionStatus status) {
+    void newPeerConnected(final PeerId peerId, final ChannelConnectionPoint ccp) {
         // first notify the resource streaming manager, so it sets up the necessary FSMs for receiving resource data. Then, notify the client
         dataSynchronizer.getDataAccessorContainer().peerConnected(peerId);
         resourceStreamingManager.newPeerConnected(ccp);
-        generalEvents.newPeerConnected(peerId, status);
+        generalEvents.newPeerConnected(peerId);
         // send the other peer own nick, to ensure he has our latest value
         sendObjectMessage(peerId, new NewNickMessage(peersPersonalData.getOwnNick()));
     }
@@ -550,7 +545,7 @@ public class PeerClient {
         if (customFSMs.containsKey(serverFSMName)) {
             // requestFromPeerToPeer a channel for the new required custom FSM
             // the channel should be sent in the init method of the custom FSM, not our responsibility
-            PeerFSMAction<?> peerFSMAction = customFSMs.get(serverFSMName).buildPeerFSMAction(peerId, connectedPeers.getPeerConnectionStatus(peerId));
+            PeerFSMAction<?> peerFSMAction = customFSMs.get(serverFSMName).buildPeerFSMAction(peerId);
             if (peerFSMAction != null) {
                 Byte assignedChannel = connectedPeers.requestChannel(peerId);
                 if (assignedChannel != null) {
@@ -625,13 +620,7 @@ public class PeerClient {
      */
     synchronized void newObjectMessageReceived(final PeerId peerId, final Object message) {
         if (connectedPeers.isConnectedPeer(peerId)) {
-            if (message instanceof ValidationMessage) {
-                // validation messages are handled here
-                if (connectedPeers.getPeerConnectionStatus(peerId) == ConnectionStatus.WAITING_FOR_REMOTE_VALIDATION) {
-                    connectedPeers.setPeerConnectionStatus(peerId, ConnectionStatus.CORRECT);
-                    generalEvents.peerValidatedUs(peerId);
-                }
-            } else if (message instanceof NewNickMessage) {
+            if (message instanceof NewNickMessage) {
                 // new nick from other peer received
                 final NewNickMessage newNickMessage = (NewNickMessage) message;
                 if (peersPersonalData.setPeersNicks(peerId, newNickMessage.nick)) {
@@ -648,12 +637,12 @@ public class PeerClient {
      * of him (CORRECT), he is not a friend of us but we are a friend of him (UNVALIDATED) or he is our friend but we are waiting for
      * him to make us his friend (WAITING_FOR_REMOTE_VALIDATION)
      *
-     * @param peerId peer whose connection status we want to retrieve
-     * @return the connection status of the given peer, or null if we are not connected to this peer
+//     * @param peerId peer whose connection status we want to retrieve
+//     * @return the connection status of the given peer, or null if we are not connected to this peer
      */
-    public synchronized ConnectionStatus getPeerConnectionStatus(PeerId peerId) {
-        return connectedPeers.getPeerConnectionStatus(peerId);
-    }
+//    public synchronized ConnectionStatus getPeerConnectionStatus(PeerId peerId) {
+//        return connectedPeers.getPeerConnectionStatus(peerId);
+//    }
 
     public synchronized void subscribeToConnectedPeers(String receiverID, NotificationReceiver notificationReceiver) {
         connectedPeers.subscribe(receiverID, notificationReceiver);

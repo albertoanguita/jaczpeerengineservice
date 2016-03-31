@@ -1,7 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
-import jacz.util.identifier.UniqueIdentifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +42,7 @@ public class DownloadsManager extends TransfersManager<DownloadManager> {
      *
      * @param id id of the download to remove
      */
-    synchronized void removeDownload(String store, UniqueIdentifier id) {
+    synchronized void removeDownload(String store, String id) {
         removeTransfer(store, id);
     }
 

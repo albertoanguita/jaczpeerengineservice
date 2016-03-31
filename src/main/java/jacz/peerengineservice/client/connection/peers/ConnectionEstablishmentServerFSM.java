@@ -38,11 +38,16 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         // we are not who the requester thinks we are -> deny
         INCORRECT_SERVER_INFO,
         // the requester failed in the authentication process -> validation could not be done -> deny
-        WRONG_AUTHENTICATION,
+        // - the peer id does not match with the given public key
+        WRONG_AUTHENTICATION_ID_KEY_NOT_MATCHING,
+        // - the given central server secret is not accepted
+        WRONG_AUTHENTICATION_INVALID_CENTRAL_SERVER_SECRET,
+        // - the central server secret was not encoded with the corresponding private key
+        WRONG_AUTHENTICATION_FALSE_PEER,
         // we would like to accept, but we are full for his offer
         REGULAR_SPOTS_TEMPORARILY_FULL,
         // this client does not accept regular connections
-        REJECT_REGULARS,
+//        REJECT_REGULARS,
         // this client has blocked the requester
         BLOCKED,
         // we are no longer accepting any connections
@@ -69,6 +74,18 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
     }
 
     static class ResponseDetail implements Serializable {
+
+        final String serverPublicKey;
+
+        final boolean serverWishRegularConnections;
+
+        final Management.Relationship serverToClientRelationship;
+
+        public ResponseDetail(String serverPublicKey, boolean serverWishRegularConnections, Management.Relationship serverToClientRelationship) {
+            this.serverPublicKey = serverPublicKey;
+            this.serverWishRegularConnections = serverWishRegularConnections;
+            this.serverToClientRelationship = serverToClientRelationship;
+        }
     }
 
     /**
@@ -78,47 +95,31 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
 
         final PeerId serverPeerId;
 
-        final String serverPublicKey;
-
-        final Management.ConnectionWish serverWishRegularConnections;
-
         final CountryCode serverMainCountry;
 
-        final Management.Relationship serverToClientRelationship;
-
         public DetailCorrectedInformation(
-                PeerId serverPeerId,
                 String serverPublicKey,
-                Management.ConnectionWish serverWishRegularConnections,
-                CountryCode serverMainCountry,
-                Management.Relationship serverToClientRelationship) {
+                boolean serverWishRegularConnections,
+                Management.Relationship serverToClientRelationship,
+                PeerId serverPeerId,
+                CountryCode serverMainCountry) {
+            super(serverPublicKey, serverWishRegularConnections, serverToClientRelationship);
             this.serverPeerId = serverPeerId;
-            this.serverPublicKey = serverPublicKey;
-            this.serverWishRegularConnections = serverWishRegularConnections;
             this.serverMainCountry = serverMainCountry;
-            this.serverToClientRelationship = serverToClientRelationship;
         }
     }
 
     static final class DetailAcceptedConnection extends ResponseDetail {
 
-        final Management.ConnectionWish serverWishRegularConnections;
-
-        final String serverPublicKey;
-
-        final Management.Relationship serverToClientRelationship;
-
-        final String encodedServerSecret;
+        final String encodedCentralServerSecret;
 
         public DetailAcceptedConnection(
-                Management.ConnectionWish serverWishRegularConnections,
                 String serverPublicKey,
+                boolean serverWishRegularConnections,
                 Management.Relationship serverToClientRelationship,
-                String encodedServerSecret) {
-            this.serverWishRegularConnections = serverWishRegularConnections;
-            this.serverPublicKey = serverPublicKey;
-            this.serverToClientRelationship = serverToClientRelationship;
-            this.encodedServerSecret = encodedServerSecret;
+                String encodedCentralServerSecret) {
+            super(serverPublicKey, serverWishRegularConnections, serverToClientRelationship);
+            this.encodedCentralServerSecret = encodedCentralServerSecret;
         }
     }
 

@@ -4,7 +4,6 @@ import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.id.AlphaNumFactory;
-import jacz.util.identifier.UniqueIdentifier;
 
 import java.util.ArrayList;
 import java.util.HashMap;

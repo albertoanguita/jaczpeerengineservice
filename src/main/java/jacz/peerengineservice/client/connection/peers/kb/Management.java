@@ -12,8 +12,6 @@ public class Management {
 
     static final TableField PEER_ID = new TableField("id", "TEXT NOT NULL PRIMARY KEY");
 
-    static final TableField PUBLIC_KEY = new TableField("public_key", "TEXT");
-
     static final TableField MAIN_COUNTRY = new TableField("main_country", "TEXT");
 
     static final TableField RELATIONSHIP = new TableField("relationship", "TEXT NOT NULL");
@@ -69,8 +67,6 @@ public class Management {
 
         StringBuilder create = new StringBuilder("CREATE TABLE ").append(TABLE_NAME).append("(");
         appendField(create, PEER_ID, false);
-        appendField(create, PUBLIC_KEY, false);
-//        appendField(create, MAIN_LANGUAGE, false);
         appendField(create, MAIN_COUNTRY, false);
         appendField(create, RELATIONSHIP, false);
         appendField(create, RELATIONSHIP_TO_US, false);

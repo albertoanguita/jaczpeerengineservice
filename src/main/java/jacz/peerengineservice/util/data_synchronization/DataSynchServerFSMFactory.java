@@ -3,7 +3,6 @@ package jacz.peerengineservice.util.data_synchronization;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerFSMAction;
 import jacz.peerengineservice.client.PeerFSMFactory;
-import jacz.peerengineservice.util.ConnectionStatus;
 
 /**
  * Routes synch requests to corresponding FSMs
@@ -17,13 +16,8 @@ public class DataSynchServerFSMFactory implements PeerFSMFactory {
     }
 
     @Override
-    public PeerFSMAction buildPeerFSMAction(PeerId clientPeerId, ConnectionStatus requestingPeerStatus) {
-        if (requestingPeerStatus.isFriend()) {
-            return new DataSynchServerFSM(clientPeerId, dataAccessorContainer);
-        } else {
-            DataSynchronizer.logger.info("SERVER SYNCH REQUEST DENIED. clientPeer: " + clientPeerId + ". dataAccessorName: " + null + ". fsmID: " + null + ". synchError: " + new SynchError(SynchError.Type.NO_PERMISSION, null));
-            return null;
-        }
+    public PeerFSMAction buildPeerFSMAction(PeerId clientPeerId) {
+        return new DataSynchServerFSM(clientPeerId, dataAccessorContainer);
     }
 
     @Override

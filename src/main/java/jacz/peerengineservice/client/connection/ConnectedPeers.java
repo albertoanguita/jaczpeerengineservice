@@ -2,13 +2,16 @@ package jacz.peerengineservice.client.connection;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.PeerId;
-import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.util.event.notification.NotificationEmitter;
 import jacz.util.event.notification.NotificationProcessor;
 import jacz.util.event.notification.NotificationReceiver;
+import jacz.util.lists.tuple.Duple;
+import jacz.util.maps.DoubleKeyMap;
 import jacz.util.sets.availableelements.AvailableElementsByte;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * This class stores the relation of connected peers. Information can be modified and retrieved in a thread-safe manner
@@ -22,43 +25,39 @@ public class ConnectedPeers implements NotificationEmitter {
      * Available channels should be initialized with all available except one, which is reserved for handling new requests
      * (usually channel 0)
      */
-    private class PeerConnectionData {
+    private static class PeerConnectionData {
 
-        /**
-         * The connection status of this peer with respect to us (for internal authorization purposes)
-         */
-        private ConnectionStatus status;
-
-        /**
-         * ChannelConnectionPoint used to reach this client
-         */
-        private final ChannelConnectionPoint ccp;
+//        /**
+//         * The connection status of this peer with respect to us (for internal authorization purposes)
+//         */
+//        private ConnectionStatus status;
+//
+//        /**
+//         * ChannelConnectionPoint used to reach this client
+//         */
+//        private final ChannelConnectionPoint ccp;
 
         /**
          * Available channels of this client
          */
         private final AvailableElementsByte availableChannels;
 
-        public PeerConnectionData(ConnectionStatus status, ChannelConnectionPoint ccp, Byte... occupiedChannels) {
-            this.status = status;
-            this.ccp = ccp;
+        public PeerConnectionData(Byte... occupiedChannels) {
+//            this.status = status;
+//            this.ccp = ccp;
             availableChannels = new AvailableElementsByte(occupiedChannels);
         }
     }
 
     /**
-     * List of connected peers, with their corresponding connection information (only connected peers are stored here)
+     * List of connected peers, with their corresponding ccp and  connection information
+     * (only connected peers are stored here)
      */
-    private final Map<PeerId, PeerConnectionData> connectedPeers;
+    private final DoubleKeyMap<PeerId, ChannelConnectionPoint, PeerConnectionData> connectedPeers;
 
     /**
-     * Table for relating ChannelConnectionPoint objects to their corresponding PeerIDs. This table is necessary
-     * because some messages received from the connection sub-package (such as freeChannels, disconnection or error)
-     * do not carry the PeerId information (since it is unknown at that level), and can only provide the
-     * ChannelConnectionPoint object corresponding to a connected peer
+     * Initially occupied channels for new connections
      */
-    private final Map<ChannelConnectionPoint, PeerId> ccpToPeerID;
-
     private final Byte[] occupiedChannels;
 
     /**
@@ -68,8 +67,7 @@ public class ConnectedPeers implements NotificationEmitter {
 
 
     public ConnectedPeers(Byte... occupiedChannels) {
-        connectedPeers = new HashMap<>();
-        ccpToPeerID = new HashMap<>();
+        connectedPeers = new DoubleKeyMap<>();
         this.occupiedChannels = occupiedChannels;
         notificationProcessor = new NotificationProcessor();
     }
@@ -83,15 +81,12 @@ public class ConnectedPeers implements NotificationEmitter {
      *
      * @param peerId ID of the peer to which we just connected
      * @param ccp    ChannelConnectionPoint object of the connected peer
-     * @param status the connection status to give to this new peer connection
      */
-    public synchronized void setConnectedPeer(PeerId peerId, ChannelConnectionPoint ccp, ConnectionStatus status) {
+    public synchronized void setConnectedPeer(PeerId peerId, ChannelConnectionPoint ccp) {
         // the initially occupied channels are the channel for the RequestDispatcher and the channel for the connection
         // process (the latter will be released shortly)
-        PeerConnectionData pcd = new PeerConnectionData(status, ccp, occupiedChannels);
-        connectedPeers.put(peerId, pcd);
+        connectedPeers.put(peerId, ccp, new PeerConnectionData(occupiedChannels));
         notificationProcessor.newEvent(peerId);
-        ccpToPeerID.put(ccp, peerId);
     }
 
     /**
@@ -161,13 +156,13 @@ public class ConnectedPeers implements NotificationEmitter {
      * @param peerId peer whose connection status we want to retrieve
      * @return the connection status of the given peer (DISCONNECTED if we are not connected to this peer)
      */
-    public synchronized ConnectionStatus getPeerConnectionStatus(PeerId peerId) {
-        if (isConnectedPeer(peerId)) {
-            return connectedPeers.get(peerId).status;
-        } else {
-            return ConnectionStatus.DISCONNECTED;
-        }
-    }
+//    public synchronized ConnectionStatus getPeerConnectionStatus(PeerId peerId) {
+//        if (isConnectedPeer(peerId)) {
+//            return connectedPeers.get(peerId).status;
+//        } else {
+//            return ConnectionStatus.DISCONNECTED;
+//        }
+//    }
 
     /**
      * Retrieves the connection status from a connected peer. The connection status indicates if this peer is a friend of us and we are a friend
@@ -177,12 +172,12 @@ public class ConnectedPeers implements NotificationEmitter {
      * @param peerId           peer whose connection status we want to retrieve
      * @param connectionStatus new status
      */
-    public synchronized void setPeerConnectionStatus(PeerId peerId, ConnectionStatus connectionStatus) {
-        if (isConnectedPeer(peerId)) {
-            connectedPeers.get(peerId).status = connectionStatus;
-            notificationProcessor.newEvent(peerId);
-        }
-    }
+//    public synchronized void setPeerConnectionStatus(PeerId peerId, ConnectionStatus connectionStatus) {
+//        if (isConnectedPeer(peerId)) {
+//            connectedPeers.get(peerId).status = connectionStatus;
+//            notificationProcessor.newEvent(peerId);
+//        }
+//    }
 
     /**
      * This method requests an incoming channel for communicating with a connected peer. Channels are requested, for
@@ -208,9 +203,8 @@ public class ConnectedPeers implements NotificationEmitter {
      * @param channel the freed channel
      */
     public synchronized void channelFreed(ChannelConnectionPoint ccp, byte channel) {
-        if (ccpToPeerID.containsKey(ccp)) {
-            PeerId peerId = ccpToPeerID.get(ccp);
-            connectedPeers.get(peerId).availableChannels.freeElement(channel);
+        if (connectedPeers.containsSecondaryKey(ccp)) {
+            connectedPeers.getSecondary(ccp).availableChannels.freeElement(channel);
         }
     }
 
@@ -222,7 +216,7 @@ public class ConnectedPeers implements NotificationEmitter {
      */
     public synchronized ChannelConnectionPoint getPeerChannelConnectionPoint(PeerId peerId) {
         if (isConnectedPeer(peerId)) {
-            return connectedPeers.get(peerId).ccp;
+            return connectedPeers.getSecondaryKey(peerId);
         } else {
             return null;
         }
@@ -236,12 +230,10 @@ public class ConnectedPeers implements NotificationEmitter {
      * @param ccp ChannelConnectionPoint associated to the peer who got disconnected
      */
     public synchronized PeerId peerDisconnected(ChannelConnectionPoint ccp) {
-        if (ccpToPeerID.containsKey(ccp)) {
-            PeerId peerId = ccpToPeerID.get(ccp);
-            connectedPeers.remove(peerId);
-            ccpToPeerID.remove(ccp);
-            notificationProcessor.newEvent(peerId);
-            return peerId;
+        if (connectedPeers.containsSecondaryKey(ccp)) {
+            Duple<PeerId, PeerConnectionData> entry = connectedPeers.removeSecondary(ccp);
+            notificationProcessor.newEvent(entry.element1);
+            return entry.element1;
         } else {
             return null;
         }
@@ -249,12 +241,12 @@ public class ConnectedPeers implements NotificationEmitter {
 
     public synchronized void disconnectPeer(PeerId peerId) {
         if (connectedPeers.containsKey(peerId)) {
-            connectedPeers.get(peerId).ccp.disconnect();
+            connectedPeers.getSecondaryKey(peerId).disconnect();
         }
     }
 
     public synchronized void disconnectAllPeers() {
-        for (ChannelConnectionPoint ccp : ccpToPeerID.keySet()) {
+        for (ChannelConnectionPoint ccp : connectedPeers.secondaryKeySet()) {
             ccp.disconnect();
         }
     }

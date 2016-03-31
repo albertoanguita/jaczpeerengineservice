@@ -62,34 +62,6 @@ public class PeerEntryFacade {
         return peerId;
     }
 
-    public String getPublicKey() {
-        ActiveJDBCController.connect(dbPath);
-        String publicKey = peerEntry.getString(Management.PUBLIC_KEY.name);
-        ActiveJDBCController.disconnect(dbPath);
-        return publicKey;
-    }
-
-    public void setPublicKey(String publicKey) {
-        ActiveJDBCController.connect(dbPath);
-        peerEntry.setString(Management.PUBLIC_KEY.name, publicKey);
-        peerEntry.saveIt();
-        ActiveJDBCController.disconnect(dbPath);
-    }
-
-//    public LanguageCode getMainLanguage() {
-//        ActiveJDBCController.connect(dbPath);
-//        String mainLanguage = peerEntry.getString(Management.MAIN_LANGUAGE.name);
-//        ActiveJDBCController.disconnect(dbPath);
-//        return mainLanguage != null ? LanguageCode.valueOf(mainLanguage) : null;
-//    }
-//
-//    public void setMainLanguage(LanguageCode mainLanguage) {
-//        ActiveJDBCController.connect(dbPath);
-//        peerEntry.setString(Management.MAIN_LANGUAGE.name, mainLanguage.toString());
-//        peerEntry.saveIt();
-//        ActiveJDBCController.disconnect(dbPath);
-//    }
-
     public CountryCode getMainCountry() {
         ActiveJDBCController.connect(dbPath);
         String mainCountry = peerEntry.getString(Management.MAIN_COUNTRY.name);

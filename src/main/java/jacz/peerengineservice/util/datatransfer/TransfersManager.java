@@ -1,9 +1,8 @@
 package jacz.peerengineservice.util.datatransfer;
 
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
-import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.concurrency.timer.Timer;
-import jacz.util.identifier.UniqueIdentifier;
+import jacz.util.concurrency.timer.TimerAction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,7 +17,7 @@ public abstract class TransfersManager<T> implements TimerAction {
     /**
      * Active uploads, indexed by store name and resource streamer id (slave id or master id)
      */
-    private Map<String, Map<UniqueIdentifier, T>> activeTransfers;
+    private Map<String, Map<String, T>> activeTransfers;
 
     /**
      * Timer for periodic reports
@@ -36,9 +35,9 @@ public abstract class TransfersManager<T> implements TimerAction {
      * @param store    resource store corresponding to this upload
      * @param transfer slave that is added
      */
-    synchronized void addTransfer(String store, UniqueIdentifier id, T transfer) {
+    synchronized void addTransfer(String store, String id, T transfer) {
         if (!activeTransfers.containsKey(store)) {
-            activeTransfers.put(store, new HashMap<UniqueIdentifier, T>());
+            activeTransfers.put(store, new HashMap<>());
         }
         activeTransfers.get(store).put(id, transfer);
     }
@@ -49,7 +48,7 @@ public abstract class TransfersManager<T> implements TimerAction {
      * @param store store then this upload is located
      * @param id    id of the download to remove
      */
-    synchronized T removeTransfer(String store, UniqueIdentifier id) {
+    synchronized T removeTransfer(String store, String id) {
         return activeTransfers.get(store).remove(id);
     }
 

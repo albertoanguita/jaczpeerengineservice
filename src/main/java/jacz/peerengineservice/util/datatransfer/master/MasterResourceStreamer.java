@@ -12,8 +12,7 @@ import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.hash.HashFunction;
-import jacz.util.identifier.UniqueIdentifier;
-import jacz.util.identifier.UniqueIdentifierFactory;
+import jacz.util.id.AlphaNumFactory;
 import jacz.util.notification.ProgressNotification;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.numeric.range.LongRangeList;
@@ -69,7 +68,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     /**
      * private ID for proper hashing of objects
      */
-    private final UniqueIdentifier id;
+    private final String id;
 
     /**
      * The resource streaming manager that created this object (will assign incoming channels)
@@ -167,7 +166,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm) {
-        id = UniqueIdentifierFactory.getOneStaticIdentifier();
+        id = AlphaNumFactory.getStaticId();
         this.resourceStreamingManager = resourceStreamingManager;
         this.specificPeerDownload = specificPeerDownload;
         this.storeName = storeName;
@@ -228,7 +227,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         return resourceWriter;
     }
 
-    public UniqueIdentifier getId() {
+    public String getId() {
         return id;
     }
 

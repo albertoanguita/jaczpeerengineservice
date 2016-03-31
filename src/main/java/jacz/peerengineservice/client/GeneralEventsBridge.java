@@ -2,7 +2,6 @@ package jacz.peerengineservice.client;
 
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerId;
-import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,12 +67,12 @@ public class GeneralEventsBridge implements GeneralEvents {
     }
 
     @Override
-    public void newPeerConnected(final PeerId peerId, final ConnectionStatus status) {
-        logger.info("NEW PEER CONNECTED. Peer: " + peerId + ". Status: " + status);
+    public void newPeerConnected(final PeerId peerId) {
+        logger.info("NEW PEER CONNECTED. Peer: " + peerId);
         sequentialTaskExecutor.executeTask(new Runnable() {
             @Override
             public void run() {
-                generalEvents.newPeerConnected(peerId, status);
+                generalEvents.newPeerConnected(peerId);
             }
         });
     }
@@ -100,16 +99,16 @@ public class GeneralEventsBridge implements GeneralEvents {
         });
     }
 
-    @Override
-    public void peerValidatedUs(final PeerId peerId) {
-        logger.info("PEER VALIDATED US. Peer: " + peerId);
-        sequentialTaskExecutor.executeTask(new Runnable() {
-            @Override
-            public void run() {
-                generalEvents.peerValidatedUs(peerId);
-            }
-        });
-    }
+//    @Override
+//    public void peerValidatedUs(final PeerId peerId) {
+//        logger.info("PEER VALIDATED US. Peer: " + peerId);
+//        sequentialTaskExecutor.executeTask(new Runnable() {
+//            @Override
+//            public void run() {
+//                generalEvents.peerValidatedUs(peerId);
+//            }
+//        });
+//    }
 
     @Override
     public void peerDisconnected(final PeerId peerId, final CommError error) {

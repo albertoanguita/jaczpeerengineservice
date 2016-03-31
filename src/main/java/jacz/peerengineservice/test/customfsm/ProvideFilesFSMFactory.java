@@ -3,7 +3,6 @@ package jacz.peerengineservice.test.customfsm;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerFSMAction;
 import jacz.peerengineservice.client.PeerFSMFactory;
-import jacz.peerengineservice.util.ConnectionStatus;
 
 /**
  *
@@ -11,7 +10,7 @@ import jacz.peerengineservice.util.ConnectionStatus;
 public class ProvideFilesFSMFactory implements PeerFSMFactory {
 
     @Override
-    public PeerFSMAction<?> buildPeerFSMAction(PeerId clientPeer, ConnectionStatus requestingPeerStatus) {
+    public PeerFSMAction<?> buildPeerFSMAction(PeerId clientPeer) {
         return new ProvideFilesFSM();
     }
 

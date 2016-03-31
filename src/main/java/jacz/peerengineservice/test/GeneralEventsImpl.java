@@ -4,7 +4,6 @@ import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.GeneralEvents;
 import jacz.peerengineservice.client.PeerRelations;
-import jacz.peerengineservice.util.ConnectionStatus;
 
 /**
  * Created by Alberto on 10/12/2015.
@@ -45,8 +44,8 @@ public class GeneralEventsImpl implements GeneralEvents {
     }
 
     @Override
-    public void newPeerConnected(PeerId peerId, ConnectionStatus status) {
-        System.out.println(initMessage + "New peer connected: " + formatPeer(peerId) + ", " + status);
+    public void newPeerConnected(PeerId peerId) {
+        System.out.println(initMessage + "New peer connected: " + formatPeer(peerId));
     }
 
     @Override
@@ -59,10 +58,10 @@ public class GeneralEventsImpl implements GeneralEvents {
         System.out.println("Peer " + formatPeer(peerId) + " changed his nick to " + nick);
     }
 
-    @Override
-    public void peerValidatedUs(PeerId peerId) {
-        System.out.println("Peer " + formatPeer(peerId) + " has validated us, connection status is now " + client.getPeerClient().getPeerConnectionStatus(peerId));
-    }
+//    @Override
+//    public void peerValidatedUs(PeerId peerId) {
+//        System.out.println("Peer " + formatPeer(peerId) + " has validated us, connection status is now " + client.getPeerClient().getPeerConnectionStatus(peerId));
+//    }
 
     @Override
     public void peerDisconnected(PeerId peerId, CommError error) {

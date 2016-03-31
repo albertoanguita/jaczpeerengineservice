@@ -6,11 +6,10 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceLink;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.slave.SlaveMessage;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
-import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.concurrency.timer.Timer;
+import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.date_time.RemainingTimeAction;
-import jacz.util.identifier.UniqueIdentifier;
-import jacz.util.identifier.UniqueIdentifierFactory;
+import jacz.util.id.AlphaNumFactory;
 import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.numeric.range.LongRange;
 
@@ -63,7 +62,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     /**
      * Unique identifier required for some tasks (segment assignment)
      */
-    private final UniqueIdentifier id;
+    private final String id;
 
     /**
      * The master resource streamer for which this slave data works
@@ -147,7 +146,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     private boolean alive;
 
     SlaveController(MasterResourceStreamer masterResourceStreamer, boolean sizeIsKnown, ResourceLink resourceLink, ResourceProvider resourceProvider, short subchannel, long requestLifeMillis, ResourcePartScheduler resourcePartScheduler, boolean active) {
-        id = UniqueIdentifierFactory.getOneStaticIdentifier();
+        id = AlphaNumFactory.getStaticId();
         this.masterResourceStreamer = masterResourceStreamer;
         this.sizeIsKnown = sizeIsKnown;
         this.resourceLink = resourceLink;
@@ -166,7 +165,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         alive = true;
     }
 
-    UniqueIdentifier getId() {
+    String getId() {
         return id;
     }
 

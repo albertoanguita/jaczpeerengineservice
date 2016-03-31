@@ -1,7 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
-import jacz.util.identifier.UniqueIdentifier;
 
 import java.util.List;
 
@@ -36,7 +35,7 @@ public class UploadsManager extends TransfersManager<UploadManager> {
      * @param store store then this upload is located
      * @param id    id of the download to remove
      */
-    synchronized UploadManager removeUpload(String store, UniqueIdentifier id) {
+    synchronized UploadManager removeUpload(String store, String id) {
         return removeTransfer(store, id);
     }
 

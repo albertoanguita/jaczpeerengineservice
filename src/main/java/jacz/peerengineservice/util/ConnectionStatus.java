@@ -5,6 +5,7 @@ package jacz.peerengineservice.util;
  * <p/>
  * The client is not able to modify these states, as they are for internal use of the Peer engine (although they are
  * readable by the client)
+ * todo remove
  */
 public enum ConnectionStatus {
 

@@ -16,9 +16,8 @@ import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
 import jacz.util.concurrency.ManuallyRemovedElementBag;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskSemaphore;
-import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.concurrency.timer.Timer;
-import jacz.util.identifier.UniqueIdentifier;
+import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.io.serialization.MutableOffset;
 import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.io.serialization.Serializer;
@@ -166,7 +165,7 @@ public class ResourceStreamingManager {
          * <p/>
          * For each resource, a set of master resource streamers is maintained, since the same resource can be downloaded by several masters
          */
-        private final Map<String, Map<String, Map<UniqueIdentifier, MasterResourceStreamer>>> activeDownloads;
+        private final Map<String, Map<String, Map<String, MasterResourceStreamer>>> activeDownloads;
 
         /**
          * The resource streaming manager that owns the active download set
@@ -193,11 +192,11 @@ public class ResourceStreamingManager {
             String storeName = masterResourceStreamer.getStoreName();
             String resourceID = masterResourceStreamer.getResourceID();
             if (!activeDownloads.containsKey(storeName)) {
-                activeDownloads.put(storeName, new HashMap<String, Map<UniqueIdentifier, MasterResourceStreamer>>());
+                activeDownloads.put(storeName, new HashMap<>());
             }
-            Map<String, Map<UniqueIdentifier, MasterResourceStreamer>> resourceIDMap = activeDownloads.get(storeName);
+            Map<String, Map<String, MasterResourceStreamer>> resourceIDMap = activeDownloads.get(storeName);
             if (!resourceIDMap.containsKey(resourceID)) {
-                resourceIDMap.put(resourceID, new HashMap<UniqueIdentifier, MasterResourceStreamer>());
+                resourceIDMap.put(resourceID, new HashMap<>());
             }
             resourceIDMap.get(resourceID).put(masterResourceStreamer.getId(), masterResourceStreamer);
         }
@@ -245,7 +244,7 @@ public class ResourceStreamingManager {
          */
         public synchronized Long wakeUp(Timer timer) {
             // copy the active downloads map so it can be modified while performing the provider updates
-            final Map<String, Map<String, Map<UniqueIdentifier, MasterResourceStreamer>>> activeDownloadsCopy = new HashMap<>();
+            final Map<String, Map<String, Map<String, MasterResourceStreamer>>> activeDownloadsCopy = new HashMap<>();
             for (String storeName : activeDownloads.keySet()) {
                 activeDownloadsCopy.put(storeName, new HashMap<>(activeDownloads.get(storeName)));
             }
@@ -253,7 +252,7 @@ public class ResourceStreamingManager {
                 @Override
                 public void run() {
                     for (String storeName : activeDownloadsCopy.keySet()) {
-                        Map<String, Map<UniqueIdentifier, MasterResourceStreamer>> activeDownloadsForOneStore = activeDownloadsCopy.get(storeName);
+                        Map<String, Map<String, MasterResourceStreamer>> activeDownloadsForOneStore = activeDownloadsCopy.get(storeName);
                         for (String resourceID : activeDownloadsForOneStore.keySet()) {
                             resourceStreamingManager.reportProvidersForOneActiveDownload(storeName, resourceID);
                         }

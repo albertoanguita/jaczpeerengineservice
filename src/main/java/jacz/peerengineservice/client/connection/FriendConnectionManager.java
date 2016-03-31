@@ -369,8 +369,8 @@ public class FriendConnectionManager {
         // also our client is informed of this new connection
         // finally, the blocked channels of this connection are resumed, so data transfer can begin
         ccp.registerGenericFSM(new PeerRequestDispatcherFSM(peerClientPrivateInterface, peerId), "PeerRequestDispatcherFSM", ChannelConstants.REQUEST_DISPATCHER_CHANNEL);
-        connectedPeers.setConnectedPeer(peerId, ccp, status);
-        peerClientPrivateInterface.newPeerConnected(peerId, ccp, status);
+        connectedPeers.setConnectedPeer(peerId, ccp);
+        peerClientPrivateInterface.newPeerConnected(peerId, ccp);
         resumeChannels(ccp);
     }
 

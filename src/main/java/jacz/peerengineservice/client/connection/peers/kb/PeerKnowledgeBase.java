@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Alberto on 02/03/2016.
- */
+ * todo cache written data, like in datastore
+*/
 public class PeerKnowledgeBase {
 
     public enum ConnectedQuery {

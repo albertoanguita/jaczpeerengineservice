@@ -2,7 +2,6 @@ package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.slave.ResourceChunk;
-import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.numeric.ContinuousDegree;
 import jacz.util.numeric.NumericUtil;
@@ -32,7 +31,7 @@ class ResourcePartScheduler {
         /**
          * Identifier for this slave data
          */
-        private final UniqueIdentifier id;
+        private final String id;
 
         /**
          * Shared segments by this slave (including downloaded or assigned ones)
@@ -49,11 +48,11 @@ class ResourcePartScheduler {
          */
         private ResourcePart assignedPart;
 
-        SlaveData(UniqueIdentifier id) {
+        SlaveData(String id) {
             this(id, new ResourcePart(), new ResourcePart(), new ResourcePart());
         }
 
-        SlaveData(UniqueIdentifier id, ResourcePart sharedPart, ResourcePart usefulPart, ResourcePart assignedPart) {
+        SlaveData(String id, ResourcePart sharedPart, ResourcePart usefulPart, ResourcePart assignedPart) {
             this.id = id;
             setSharedPart(sharedPart, usefulPart);
             this.assignedPart = assignedPart;
@@ -228,7 +227,7 @@ class ResourcePartScheduler {
     /**
      * Active slaves that share parts of the resource being downloaded
      */
-    private final Map<UniqueIdentifier, SlaveData> activeSlaves;
+    private final Map<String, SlaveData> activeSlaves;
 
     /**
      * Size of the resource being downloaded (null means unknown)
@@ -367,7 +366,7 @@ class ResourcePartScheduler {
         }
     }
 
-    private void addAssignmentToSlave(UniqueIdentifier slaveID, LongRange assignedSegment) {
+    private void addAssignmentToSlave(String slaveID, LongRange assignedSegment) {
         if (checkSizeIsKnown()) {
             if (activeSlaves.containsKey(slaveID)) {
                 remainingPart.remove(assignedSegment);
@@ -407,7 +406,7 @@ class ResourcePartScheduler {
 
         // no segments are assigned until we know the total size of the resource
         if (checkSizeIsKnown()) {
-            UniqueIdentifier slaveID = slaveController.getId();
+            String slaveID = slaveController.getId();
             if (activeSlaves.containsKey(slaveID)) {
                 // this slave is too slow -> do not assign anything and remove previous assignation
                 if (slaveTooSlow(activeSlaves.get(slaveID), averageSpeed)) {
@@ -442,7 +441,7 @@ class ResourcePartScheduler {
                     Map<SlaveData, Boolean> slavesNotSharingAll = new HashMap<>(0);
                     int slaveSharingAllCount = 0;
                     int totalSlaveCount = activeSlaves.size() - 1;
-                    for (UniqueIdentifier aSlaveID : activeSlaves.keySet()) {
+                    for (String aSlaveID : activeSlaves.keySet()) {
                         // skip the slave of this assignation, only count the rest
                         if (aSlaveID.equals(slaveID)) {
                             continue;
@@ -518,7 +517,7 @@ class ResourcePartScheduler {
         }
     }
 
-    private void updateAttributesDueToNewAssignment(UniqueIdentifier slaveID, LongRange assignedSegment) {
+    private void updateAttributesDueToNewAssignment(String slaveID, LongRange assignedSegment) {
         addAssignmentToSlave(slaveID, assignedSegment);
         // this segment is no longer useful for all other slaves
         for (SlaveData slaveData : activeSlaves.values()) {

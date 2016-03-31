@@ -12,6 +12,7 @@ import jacz.peerengineservice.util.ChannelConstants;
 import jacz.util.network.IP4Port;
 
 import java.io.Serializable;
+import java.security.PublicKey;
 
 /**
  * This FSM negotiates the first part of a connection with a peerClient. Info about the PeerId is obtained.
@@ -61,17 +62,15 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
 
         final PeerId serverPeerId;
 
-        final String clientPublicKey;
-
-        final boolean weHaveServerPublicKey;
+        final PublicKey clientPublicKey;
 
         final String centralServerSecret;
 
         final String encodedCentralServerSecret;
 
-        final Management.ConnectionWish clientWishRegularConnections;
+        final boolean clientWishRegularConnections;
 
-        final Management.ConnectionWish serverWishRegularConnections;
+        final boolean serverWishRegularConnections;
 
         final String clientAddress;
 
@@ -84,17 +83,16 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         ConnectionRequest2(
                 PeerId clientPeerId,
                 PeerId serverPeerId,
-                String clientPublicKey,
+                PublicKey clientPublicKey,
                 String centralServerSecret,
                 String encodedCentralServerSecret,
-                Management.ConnectionWish clientWishRegularConnections,
+                boolean clientWishRegularConnections,
                 String clientAddress,
                 CountryCode clientMainCountry,
                 PeerEntryFacade peerEntryFacade) {
             this.clientPeerId = clientPeerId;
             this.serverPeerId = serverPeerId;
             this.clientPublicKey = clientPublicKey;
-            this.weHaveServerPublicKey = peerEntryFacade.getPublicKey() != null;
             this.clientWishRegularConnections = clientWishRegularConnections;
             this.serverWishRegularConnections = peerEntryFacade.getWishForConnections();
             this.clientAddress = clientAddress;

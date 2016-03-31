@@ -153,9 +153,7 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
         Set<PeerId> peers = new HashSet<>();
         if (resourceShare.containsKey(resourceID)) {
             for (PeerId peerId : resourceShare.get(resourceID)) {
-                if (peerClient.getPeerConnectionStatus(peerId) == ConnectionStatus.CORRECT) {
-                    peers.add(peerId);
-                }
+                peers.add(peerId);
             }
         }
         return peers;

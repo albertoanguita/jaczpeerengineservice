@@ -12,7 +12,6 @@ import jacz.peerengineservice.client.connection.peers.kb.PeerAddress;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.peerengineservice.util.ChannelConstants;
-import jacz.peerengineservice.util.ConnectionStatus;
 import jacz.util.network.IP4Port;
 
 import java.io.IOException;
@@ -35,6 +34,11 @@ public class PeerConnectionManager {
      * Our own ID. Cannot be modified after construction time
      */
     private final PeerId ownPeerId;
+
+    /**
+     * Our public key for authentication with other peers
+     */
+    private final String ownPublicKey;
 
     /**
      * URL (including version) of the server
@@ -67,8 +71,9 @@ public class PeerConnectionManager {
     private final PeerClientPrivateInterface peerClientPrivateInterface;
 
 
-    public PeerConnectionManager(PeerId ownPeerId, String serverURL, PeerConnectionConfig peerConnectionConfig, String peerKnowledgeBasePath, ConnectedPeers connectedPeers, PeerClientPrivateInterface peerClientPrivateInterface) {
+    public PeerConnectionManager(PeerId ownPeerId, String ownPublicKey, String serverURL, PeerConnectionConfig peerConnectionConfig, String peerKnowledgeBasePath, ConnectedPeers connectedPeers, PeerClientPrivateInterface peerClientPrivateInterface) {
         this.ownPeerId = ownPeerId;
+        this.ownPublicKey = ownPublicKey;
         this.serverURL = serverURL;
         this.peerKnowledgeBase = new PeerKnowledgeBase(peerKnowledgeBasePath);
         this.peerConnectionConfig = peerConnectionConfig;
@@ -222,38 +227,89 @@ public class PeerConnectionManager {
     }
 
 
-    ConnectionEstablishmentServerFSM.ConnectionResult newRequestConnectionAsServer(PeerId remotePeerId, ChannelConnectionPoint ccp) {
+    ConnectionEstablishmentServerFSM.ConnectionResult newRequestConnectionAsServer(ConnectionEstablishmentClientFSM.ConnectionRequest2 connectionRequest, ChannelConnectionPoint ccp) {
         // the server invokes this one. This PeerClient didn't know about this connection, so it must be confirmed
         // if we have higher priority in the connection process, check that we are not already trying to connect to
         // this same peer as clients
         // todo: first update the pkb with the received information
-        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(remotePeerId);
+
+        // first check the basic situations: no longer connected, already connected
         if (!wishForConnection.get()) {
             // not connected
-            return ConnectionEstablishmentServerFSM.ConnectionResult.DENY;
-        } else if (connectedPeers.isConnectedPeer(remotePeerId)) {
+            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.DENY);
+        } else if (connectedPeers.isConnectedPeer(connectionRequest.clientPeerId)) {
             // already connected
-            return ConnectionEstablishmentServerFSM.ConnectionResult.ALREADY_CONNECTED;
-        } else if ((ownPeerId.hasHigherPriorityThan(remotePeerId) && ongoingClientConnections.contains(remotePeerId))) {
+            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.ALREADY_CONNECTED);
+        } else if ((ownPeerId.hasHigherPriorityThan(connectionRequest.clientPeerId) && ongoingClientConnections.contains(connectionRequest.clientPeerId))) {
             // ongoing connection with higher priority
-            return ConnectionEstablishmentServerFSM.ConnectionResult.ALREADY_CONNECTED;
+            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.ALREADY_CONNECTED);
         }
-        // check our relation with this peer
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(connectionRequest.clientPeerId);
+
+        // check incorrect information passed by client and referring to us
+        if (incorrectInfoFromClient(connectionRequest)) {
+            return new ConnectionEstablishmentServerFSM.ConnectionResult(
+                    ConnectionEstablishmentServerFSM.ConnectionResultType.INCORRECT_SERVER_INFO,
+                    buildCorrectedInfo(peerEntryFacade));
+        }
+
+        // check client authentication
+        // first, check that the public key corresponds to the client id
+        if (!connectionRequest.clientPeerId.equals(new PeerId(connectionRequest.clientPublicKey.getEncoded()))) {
+            // provided key does not correspond to provided client peer id
+            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.WRONG_AUTHENTICATION_ID_KEY_NOT_MATCHING);
+        }
+        // second, check that the provided central server secret is good
+        // todo
+        // third, check that the central server secret is truly encoded by this peer
+        // todo
+
+        // information and authentication are good -> check our relation with this peer
         Management.Relationship relationship = peerEntryFacade.getRelationship();
         switch (relationship) {
 
             case FAVORITE:
                 // accept connection always
-                return ConnectionEstablishmentServerFSM.ConnectionResult.OK;
+                return new ConnectionEstablishmentServerFSM.ConnectionResult(
+                        ConnectionEstablishmentServerFSM.ConnectionResultType.OK,
+                        buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret));
             case REGULAR:
                 // check what this peer offers to us, and see if we have room for his offer
+                CountryCode clientMainCountry = connectionRequest.clientMainCountry;
+                if (peerConnectionConfig.getMainCountry().equals(clientMainCountry)) {
+                    // this peer offers the same country as us
+                    if (peerKnowledgeBase.getRegularPeersCount(PeerKnowledgeBase.ConnectedQuery.CONNECTED, clientMainCountry) < peerConnectionConfig.getMaxRegularConnections()) {
+                        // allowed to connect
+                        return new ConnectionEstablishmentServerFSM.ConnectionResult(
+                                ConnectionEstablishmentServerFSM.ConnectionResultType.OK,
+                                buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret));
+                    } else {
+                        // full
+                        return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.REGULAR_SPOTS_TEMPORARILY_FULL);
+                    }
+                } else if (peerConnectionConfig.getAdditionalCountries().contains(clientMainCountry)) {
+                    // this client offers a country in the list of additional countries
+                    if (peerKnowledgeBase.getRegularPeersCount(PeerKnowledgeBase.ConnectedQuery.CONNECTED, clientMainCountry) < peerConnectionConfig.getMaxRegularConnectionsForAdditionalCountries()) {
+                        // allowed to connect
+                        return new ConnectionEstablishmentServerFSM.ConnectionResult(
+                                ConnectionEstablishmentServerFSM.ConnectionResultType.OK,
+                                buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret));
+                    } else {
+                        // full
+                        return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.REGULAR_SPOTS_TEMPORARILY_FULL);
+                    }
+                } else {
+                    // this peer offers a country we are not interested in
+
+                }
                 // todo
                 return null;
             case BLOCKED:
                 // deny always
-                return ConnectionEstablishmentServerFSM.ConnectionResult.BLOCKED;
+                return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.BLOCKED);
             default:
-                return ConnectionEstablishmentServerFSM.ConnectionResult.DENY;
+                // cannot happen
+                return null;
         }
 
 
@@ -282,6 +338,30 @@ public class PeerConnectionManager {
 //        }
     }
 
+    private boolean incorrectInfoFromClient(ConnectionEstablishmentClientFSM.ConnectionRequest2 connectionRequest) {
+        // check cases of info incorrectness
+        // - wrong server peer id
+        // - wrong serverWishRegularConnections
+        // - wrong server main country
+        return (!connectionRequest.serverPeerId.equals(ownPeerId)
+                || connectionRequest.serverWishRegularConnections != peerConnectionConfig.isWishRegularConnections()
+                || !connectionRequest.serverMainCountry.equals(peerConnectionConfig.getMainCountry()));
+    }
+
+    private ConnectionEstablishmentServerFSM.DetailCorrectedInformation buildCorrectedInfo(PeerEntryFacade peerEntryFacade) {
+        return new ConnectionEstablishmentServerFSM.DetailCorrectedInformation(
+                ownPublicKey,
+                peerConnectionConfig.isWishRegularConnections(),
+                peerEntryFacade.getRelationship(),
+                ownPeerId,
+                peerConnectionConfig.getMainCountry());
+    }
+
+    private ConnectionEstablishmentServerFSM.DetailAcceptedConnection buildAcceptedConnectionDetail(PeerEntryFacade peerEntryFacade, String centralServerSecret) {
+        // todo build encoded
+        return new ConnectionEstablishmentServerFSM.DetailAcceptedConnection(ownPublicKey, peerConnectionConfig.isWishRegularConnections(), peerEntryFacade.getRelationship(), "encode");
+    }
+
     /**
      * This method is invoked by the connection client FSM to report that connection has been established with a
      * server peer.
@@ -304,9 +384,8 @@ public class PeerConnectionManager {
             // check he is now blocked
             ccp.disconnect();
         } else {
-            // todo remove validated. Update pkb with returned information
-            ConnectionStatus status = validated ? ConnectionStatus.CORRECT : ConnectionStatus.WAITING_FOR_REMOTE_VALIDATION;
-            newConnection(peerId, ccp, status);
+            // todo Update pkb with returned information
+            newConnection(peerId, ccp);
         }
     }
 
@@ -344,16 +423,15 @@ public class PeerConnectionManager {
      *
      * @param peerId ID of the peer to which we connected
      * @param ccp    ChannelConnectionPoint object of the peer to which we connected
-     * @param status the connection status to give to this new peer connection
      */
-    private void newConnection(PeerId peerId, ChannelConnectionPoint ccp, ConnectionStatus status) {
+    private void newConnection(PeerId peerId, ChannelConnectionPoint ccp) {
         // the request dispatcher for this connections is registered, the connection manager is notified, and the
         // peer is marked in the list of connected peers
         // also our client is informed of this new connection
         // finally, the blocked channels of this connection are resumed, so data transfer can begin
         ccp.registerGenericFSM(new PeerRequestDispatcherFSM(peerClientPrivateInterface, peerId), "PeerRequestDispatcherFSM", ChannelConstants.REQUEST_DISPATCHER_CHANNEL);
-        connectedPeers.setConnectedPeer(peerId, ccp, status);
-        peerClientPrivateInterface.newPeerConnected(peerId, ccp, status);
+        connectedPeers.setConnectedPeer(peerId, ccp);
+        peerClientPrivateInterface.newPeerConnected(peerId, ccp);
         resumeChannels(ccp);
     }
 

@@ -3,7 +3,6 @@ package jacz.peerengineservice.util.data_synchronization;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.PeerClient;
-import jacz.util.identifier.UniqueIdentifier;
 import jacz.util.notification.ProgressNotificationWithError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
