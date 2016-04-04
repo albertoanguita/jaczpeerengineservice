@@ -1,8 +1,10 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.files.FileUtil;
+import jacz.util.files.FileGenerator;
 import jacz.util.files.RandomAccess;
 import jacz.util.numeric.range.LongRangeList;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,23 +24,24 @@ public class BasicFileWriter extends SingleSessionResourceWriter {
     private boolean hasFailed;
 
     public BasicFileWriter(String expectedFilePath) throws IOException {
-        this(FileUtil.getFileDirectory(expectedFilePath), FileUtil.getFileName(expectedFilePath));
+//        this(FileUtil.getFileDirectory(expectedFilePath), FileUtil.getFileName(expectedFilePath));
+        this(new File(expectedFilePath).getParent(), FilenameUtils.getName(expectedFilePath));
     }
 
     public BasicFileWriter(String expectedFilePath, HashMap<String, Serializable> userDictionary) throws IOException {
-        this(FileUtil.getFileDirectory(expectedFilePath), FileUtil.getFileName(expectedFilePath), userDictionary);
+        this(new File(expectedFilePath).getParent(), FilenameUtils.getName(expectedFilePath), userDictionary);
     }
 
     public BasicFileWriter(String downloadDir, String expectedFileName) throws IOException {
-        this(downloadDir, expectedFileName, new HashMap<String, Serializable>());
+        this(downloadDir, expectedFileName, new HashMap<>());
     }
 
     public BasicFileWriter(String downloadDir, String expectedFileName, HashMap<String, Serializable> userDictionary) throws IOException {
         super(userDictionary);
         hasFailed = false;
-        String fileWithoutExtension = FileUtil.getFileNameWithoutExtension(expectedFileName);
-        String extension = FileUtil.getFileExtension(expectedFileName);
-        finalPath = FileUtil.createFile(downloadDir, fileWithoutExtension, extension, " (", ")", true).element1;
+        String fileWithoutExtension = FilenameUtils.getBaseName(expectedFileName);
+        String extension = FilenameUtils.getExtension(expectedFileName);
+        finalPath = FileGenerator.createFile(downloadDir, fileWithoutExtension, extension, " (", ")", true).element1;
         file = new File(finalPath);
         if (!file.isFile()) {
             try {
@@ -82,7 +85,7 @@ public class BasicFileWriter extends SingleSessionResourceWriter {
     @Override
     public void cancel() {
         try {
-            FileUtil.deleteFile(finalPath);
+            FileUtils.forceDelete(new File(finalPath));
         } catch (IOException e) {
             // ignore, do not throw this exception, it is not so important not being able to delete the meta file
         }

@@ -98,7 +98,7 @@ public class PeerClientConnectionManager {
                 this.connectionEvents);
         peerServerManager = new PeerServerManager(ownPeerId, serverURL, this, networkTopologyManager, this.connectionEvents);
         friendConnectionManager = new FriendConnectionManager(ownPeerId, serverURL, connectedPeers, peerClientPrivateInterface, this, peerRelations);
-        peerConnectionManager = new PeerConnectionManager(ownPeerId, ownPeerEncryption, , serverURL, , , connectedPeers, peerClientPrivateInterface);
+//        peerConnectionManager = new PeerConnectionManager(ownPeerId, ownPeerEncryption, , serverURL, , , connectedPeers, peerClientPrivateInterface);
 
         dynamicState = new EvolvingState<>(ConnectionState.DISCONNECTED, false, new EvolvingState.Transitions<ConnectionState, Boolean>() {
             @Override

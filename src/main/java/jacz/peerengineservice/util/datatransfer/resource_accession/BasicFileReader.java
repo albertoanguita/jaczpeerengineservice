@@ -1,6 +1,5 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.files.FileUtil;
 import jacz.util.files.RandomAccess;
 import jacz.util.io.serialization.Serializer;
 import jacz.util.numeric.range.LongRange;
@@ -24,7 +23,7 @@ public class BasicFileReader implements ResourceReader {
     private final DataCache dataCache;
 
     public BasicFileReader(String path) throws FileNotFoundException {
-        if (!FileUtil.isFile(path)) {
+        if (!new File(path).isFile()) {
             throw new FileNotFoundException();
         }
         file = new File(path);

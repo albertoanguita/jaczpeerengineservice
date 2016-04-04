@@ -4,11 +4,12 @@ import jacz.util.concurrency.concurrency_controller.ConcurrencyController;
 import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWrite;
 import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.concurrency.task_executor.TaskSemaphore;
-import jacz.util.files.FileUtil;
+import jacz.util.files.FileGenerator;
 import jacz.util.io.serialization.VersionedObjectSerializer;
 import jacz.util.io.serialization.VersionedSerializationException;
 import jacz.util.lists.tuple.Duple;
 import jacz.util.numeric.range.LongRangeList;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -155,30 +156,26 @@ public class TempFileManager {
      */
     public synchronized Set<String> getExistingTempFiles() {
         Set<String> tempFiles = new HashSet<>();
-        try {
-            String[] filesInBaseDir = FileUtil.getDirectoryContents(baseDir);
-            for (String file : filesInBaseDir) {
-                if (file.endsWith(TEMP_FILE_INDEX_NAME_END) && FileUtil.isFile(baseDir + file)) {
-                    // an index file was found -> look for its data file
-                    String tempFile = generateIndexFilePath(file);
-                    try {
-                        TempIndex tempIndex = readIndexFile(tempFile);
-                        String tempDataFilePath = tempIndex.getTempDataFilePath();
-                        if (FileUtil.isFile(tempDataFilePath)) {
-                            // the data file also exists -> valid temp file
-                            tempFileManagerEventsBridge.indexFileRecovered(tempFile);
-                            tempFiles.add(file);
-                        }
-                    } catch (IOException | VersionedSerializationException e) {
-                        // error reading the file, ignore
-                    }
+        String[] extensions = new String[1];
+        extensions[0] = TEMP_FILE_INDEX_NAME_END;
+        Collection<File> filesInBaseDir = FileUtils.listFiles(new File(baseDir), extensions, false);
+        for (File file : filesInBaseDir) {
+            // an index file was found -> look for its data file
+            String fineName = file.getName();
+            String tempFile = generateIndexFilePath(fineName);
+            try {
+                TempIndex tempIndex = readIndexFile(tempFile);
+                String tempDataFilePath = tempIndex.getTempDataFilePath();
+                if (new File(tempDataFilePath).isFile()) {
+                    // the data file also exists -> valid temp file
+                    tempFileManagerEventsBridge.indexFileRecovered(tempFile);
+                    tempFiles.add(fineName);
                 }
+            } catch (IOException | VersionedSerializationException e) {
+                // error reading the file, ignore
             }
-            return tempFiles;
-        } catch (FileNotFoundException e) {
-            // could not read from base dir -> return an empty set
-            return tempFiles;
         }
+        return tempFiles;
     }
 
     /**
@@ -191,7 +188,7 @@ public class TempFileManager {
      */
     public synchronized String createNewTempFile(HashMap<String, Serializable> userDictionary) throws IOException {
         // generate the file names and the actual files
-        List<Duple<String, String>> fileNames = FileUtil.createFiles(
+        List<Duple<String, String>> fileNames = FileGenerator.createFiles(
                 baseDir,
                 buildBaseFileNameList(),
                 buildExtensionList(),
@@ -316,7 +313,7 @@ public class TempFileManager {
     public synchronized void removeTempFile(String tempFileName) throws IOException {
         String dataFile = completeTempFile(tempFileName);
         try {
-            FileUtil.deleteFile(dataFile);
+            FileUtils.forceDelete(new File(dataFile));
         } catch (FileNotFoundException e) {
             // ignore
         }

@@ -1,8 +1,8 @@
 package jacz.peerengineservice.util.tempfile_api;
 
-import jacz.util.files.FileUtil;
+import org.apache.commons.io.FileUtils;
 
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -24,10 +24,10 @@ class CompleterTask extends TempIndexTask {
             finalPath = tempIndex.getTempDataFilePath();
         }
         try {
-            FileUtil.deleteFile(indexFilePath);
-            FileUtil.deleteFile(TempFileManager.generateBackupPath(indexFilePath));
-        } catch (FileNotFoundException e) {
-            // ignore this exception, cannot happen
+            FileUtils.forceDelete(new File(indexFilePath));
+            FileUtils.forceDelete(new File(TempFileManager.generateBackupPath(indexFilePath)));
+        } catch (IOException e) {
+            // ignore this exception, cannot happen or we do not care
         }
     }
 
