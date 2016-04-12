@@ -5,7 +5,7 @@ import jacz.peerengineservice.util.datatransfer.GenericPriorityManagerRegulatedR
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceLink;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.slave.SlaveMessage;
-import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
+import jacz.util.concurrency.task_executor.ThreadExecutor;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.date_time.RemainingTimeAction;
@@ -163,6 +163,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         this.resourcePartScheduler.addSlave(this);
         this.active = active;
         alive = true;
+        ThreadExecutor.registerClient(this.getClass().getName());
     }
 
     String getId() {
@@ -376,6 +377,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         stopResourceSegmentQueueWithMonitoring();
         resourcePartScheduler.removeSlave(this);
         alive = false;
+        ThreadExecutor.shutdownClient(this.getClass().getName());
     }
 
     private synchronized void stopTimeoutTimer() {
@@ -501,7 +503,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     }
 
     private void die(final boolean mustReportSlave) {
-        ParallelTaskExecutor.executeTask(new Runnable() {
+        ThreadExecutor.submit(new Runnable() {
             @Override
             public void run() {
                 masterResourceStreamer.removeSlave(subchannel, mustReportSlave);

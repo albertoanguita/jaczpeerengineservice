@@ -10,7 +10,7 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWrite
 import jacz.peerengineservice.util.datatransfer.slave.ResourceChunk;
 import jacz.util.concurrency.daemon.Daemon;
 import jacz.util.concurrency.daemon.DaemonAction;
-import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
+import jacz.util.concurrency.task_executor.ThreadExecutor;
 import jacz.util.hash.HashFunction;
 import jacz.util.id.AlphaNumFactory;
 import jacz.util.notification.ProgressNotification;
@@ -214,6 +214,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         active = true;
         alive = true;
         state = DownloadState.RUNNING;
+        ThreadExecutor.registerClient(this.getClass().getName());
         if (error) {
             reportErrorWriting();
         }
@@ -269,13 +270,12 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @param resourceProviders collection of resource providers offering the desired resource
      */
     public void reportAvailableResourceProviders(final Collection<? extends ResourceProvider> resourceProviders) {
-        Runnable parallelTask = new Runnable() {
+        ThreadExecutor.submit(new Runnable() {
             @Override
             public void run() {
                 reportAvailableResourceProvidersSynch(resourceProviders);
             }
-        };
-        ParallelTaskExecutor.executeTask(parallelTask);
+        });
     }
 
     /**
@@ -328,7 +328,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private synchronized void addSlave(ResourceLink resourceLink, ResourceProvider resourceProvider, short subchannel) {
         final SlaveController slaveController = new SlaveController(this, resourceSize != null, resourceLink, resourceProvider, subchannel, resourceLink.recommendedMillisForRequest(), resourcePartScheduler, active);
         activeSlaves.put(subchannel, slaveController);
-        ParallelTaskExecutor.executeTask(new Runnable() {
+        ThreadExecutor.submit(new Runnable() {
             @Override
             public void run() {
                 resourceStreamingManager.getDownloadPriorityManager().addRegulatedResource(MasterResourceStreamer.this, slaveController);
@@ -349,14 +349,14 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 activeSlaves.get(subchannel).getResourceLink().die();
             }
             final SlaveController slaveController = activeSlaves.remove(subchannel);
-            ParallelTaskExecutor.executeTask(new Runnable() {
+            ThreadExecutor.submit(new Runnable() {
                 @Override
                 public void run() {
                     slaveController.finishExecution();
                 }
             });
             resourceStreamingManager.freeSubchannel(subchannel);
-            ParallelTaskExecutor.executeTask(new Runnable() {
+            ThreadExecutor.submit(new Runnable() {
                 @Override
                 public void run() {
                     resourceStreamingManager.getDownloadPriorityManager().removeRegulatedResource(MasterResourceStreamer.this, slaveController);
@@ -675,7 +675,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private synchronized void freeAssignedResources() {
         // free all subchannels and report the ResourceStreamingManager that this download must be removed. We parallelize this call to avoid
         // locks
-        ParallelTaskExecutor.executeTask(new Runnable() {
+        ThreadExecutor.submit(new Runnable() {
             @Override
             public void run() {
                 resourceStreamingManager.freeAllSubchannels(MasterResourceStreamer.this);
@@ -686,6 +686,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         for (SlaveController slaveController : slavesToRemove) {
             removeSlave(slaveController.getSubchannel(), true);
         }
+        downloadReports.stop();
+        ThreadExecutor.shutdownClient(this.getClass().getName());
         alive = false;
     }
 

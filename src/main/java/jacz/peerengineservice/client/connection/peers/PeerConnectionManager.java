@@ -6,13 +6,15 @@ import jacz.commengine.clientserver.client.ClientModule;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
+import jacz.peerengineservice.client.GeneralEvents;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.connection.*;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
-import jacz.peerengineservice.client.connection.peers.kb.PeerAddress;
+import jacz.peerengineservice.client.connection.PeerAddress;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.peerengineservice.util.ChannelConstants;
+import jacz.peerengineservice.util.PeerRelationship;
 import jacz.util.network.IP4Port;
 
 import java.io.IOException;
@@ -23,14 +25,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * This class is in charge of achieving connections with other peers. It takes care of maintaining the peer knowledge
  * base and checking authentication. Changes in connection config are done through here.
- *
+ * <p/>
  * todo add connection attempts info
- *
+ * <p/>
  * todo disconnect from blocked peers. Make another evolving state class that, when we add a blocked peer, starts
  * checking regularly (starts every 5 seconds). Each check we double the check time. Finally, when we reach 5 minutes,
  * we stop checking
  * It might not be possible to modify timers while running transitions... check timer implementation
- *
+ * <p/>
  * todo synch
  */
 public class PeerConnectionManager {
@@ -57,7 +59,7 @@ public class PeerConnectionManager {
     /**
      * Our peer address
      */
-    private final PeerAddress ownPeerAddress;
+    private PeerAddress ownPeerAddress;
 
     /**
      * URL (including version) of the server
@@ -89,19 +91,24 @@ public class PeerConnectionManager {
 
     private final PeerClientPrivateInterface peerClientPrivateInterface;
 
+    private final PeerClientConnectionManager peerClientConnectionManager;
+
+    private final GeneralEvents generalEvents;
+
 
     public PeerConnectionManager(
             PeerId ownPeerId,
             PeerEncryption ownPeerEncryption,
-            PeerAddress ownPeerAddress,
             String serverURL,
             PeerConnectionConfig peerConnectionConfig,
             String peerKnowledgeBasePath,
             ConnectedPeers connectedPeers,
-            PeerClientPrivateInterface peerClientPrivateInterface) {
+            PeerClientPrivateInterface peerClientPrivateInterface,
+            PeerClientConnectionManager peerClientConnectionManager,
+            GeneralEvents generalEvents) {
         this.ownPeerId = ownPeerId;
         this.ownPeerEncryption = ownPeerEncryption;
-        this.ownPeerAddress = ownPeerAddress;
+        this.ownPeerAddress = null;
         this.serverURL = serverURL;
         this.peerKnowledgeBase = new PeerKnowledgeBase(peerKnowledgeBasePath);
         this.peerConnectionConfig = peerConnectionConfig;
@@ -111,22 +118,28 @@ public class PeerConnectionManager {
         this.connectedPeers = connectedPeers;
         this.wishForConnection = new AtomicBoolean(false);
         this.peerClientPrivateInterface = peerClientPrivateInterface;
+        this.peerClientConnectionManager = peerClientConnectionManager;
+        this.generalEvents = generalEvents;
     }
 
-    public void setWishForConnection(boolean enabled) {
+    public void setWishForConnect(boolean enabled) {
         wishForConnection.set(enabled);
-        favoritesConnectionManager.setConnectionGoal(enabled);
-        regularsConnectionManager.setConnectionGoal(enabled);
+        if (enabled) {
+            // gather our own peer address
+            ownPeerAddress = peerClientConnectionManager.getPeerAddress();
+        }
+//        favoritesConnectionManager.setConnectionGoal(enabled);
+//        regularsConnectionManager.setConnectionGoal(enabled);
     }
 
     public void setWishForRegularsConnection(boolean enabled) {
         peerConnectionConfig.setWishRegularConnections(enabled);
-        regularsConnectionManager.connectionConfigHasChanged();
+//        regularsConnectionManager.connectionConfigHasChanged();
     }
 
     public void setMaxRegularConnections(int maxRegularConnections) {
         peerConnectionConfig.setMaxRegularConnections(maxRegularConnections);
-        regularsConnectionManager.connectionConfigHasChanged();
+//        regularsConnectionManager.connectionConfigHasChanged();
     }
 
     boolean discardConnectionAttempt(PeerEntryFacade peerEntryFacade) {
@@ -246,7 +259,7 @@ public class PeerConnectionManager {
     private static void pauseChannelsExceptConnection(ChannelConnectionPoint ccp) {
         // currently we use only two channel sets: one for the connection process and request dispatcher, and one
         // for everything else (data streaming and custom FSMs). Simply pause the data streaming channel
-        for (byte channel : FriendConnectionManager.getConcurrentChannelsExceptConnection()) {
+        for (byte channel : getConcurrentChannelsExceptConnection()) {
             ccp.getChannelModule().pause(channel);
         }
     }
@@ -260,7 +273,7 @@ public class PeerConnectionManager {
      */
     private static void resumeChannels(ChannelConnectionPoint ccp) {
         // again, we resume the concurrent channel sets except the one made for the connection process
-        for (byte channel : FriendConnectionManager.getConcurrentChannelsExceptConnection()) {
+        for (byte channel : getConcurrentChannelsExceptConnection()) {
             ccp.getChannelModule().resume(channel);
         }
     }
@@ -515,10 +528,9 @@ public class PeerConnectionManager {
         // finally, the blocked channels of this connection are resumed, so data transfer can begin
         ccp.registerGenericFSM(new PeerRequestDispatcherFSM(peerClientPrivateInterface, peerId), "PeerRequestDispatcherFSM", ChannelConstants.REQUEST_DISPATCHER_CHANNEL);
         connectedPeers.setConnectedPeer(peerId, ccp, clientCountryCode);
-        peerClientPrivateInterface.newPeerConnected(peerId, ccp);
+        peerClientPrivateInterface.newPeerConnected(peerId, ccp, getPeerRelationship(peerId));
         resumeChannels(ccp);
     }
-
 
     /**
      * This method allows to notify that any of the currently used ChannelConnectionPoints with other peers has freed some channels.
@@ -551,7 +563,106 @@ public class PeerConnectionManager {
 
 
     public void stop() {
+        setWishForConnect(false);
         favoritesConnectionManager.stop();
         regularsConnectionManager.stop();
     }
+
+    public static byte[] getConcurrentChannelsExceptConnection() {
+        byte[] concurrentChannels = new byte[2];
+        concurrentChannels[0] = ChannelConstants.REQUEST_DISPATCHER_CHANNEL;
+        concurrentChannels[1] = ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL;
+        return concurrentChannels;
+    }
+
+    public synchronized PeerRelationship getPeerRelationship(PeerId peerId) {
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
+        Management.Relationship usToHim = peerEntryFacade.getRelationship();
+        Management.Relationship himToUs = peerEntryFacade.getRelationshipToUs();
+        if (usToHim == Management.Relationship.BLOCKED) {
+            return PeerRelationship.BLOCKED;
+        } else if (usToHim == Management.Relationship.REGULAR && himToUs == Management.Relationship.REGULAR) {
+            return PeerRelationship.REGULARS;
+        } else if (usToHim == Management.Relationship.REGULAR && himToUs == Management.Relationship.FAVORITE) {
+            return PeerRelationship.REGULAR_TO_FAVORITE;
+        } else if (usToHim == Management.Relationship.FAVORITE && himToUs == Management.Relationship.REGULAR) {
+            return PeerRelationship.FAVORITE_TO_REGULAR;
+        } else {
+            return PeerRelationship.FAVORITES;
+        }
+    }
+
+    public synchronized boolean isFavoritePeer(PeerId peerId) {
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
+        return peerEntryFacade.getRelationship() == Management.Relationship.FAVORITE;
+    }
+
+    public synchronized boolean isRegularPeer(PeerId peerId) {
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
+        return peerEntryFacade.getRelationship() == Management.Relationship.REGULAR;
+    }
+
+    public synchronized boolean isBlockedPeer(PeerId peerId) {
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
+        return peerEntryFacade.getRelationship() == Management.Relationship.BLOCKED;
+    }
+
+    public synchronized Set<PeerId> getFavoritePeers() {
+        Set<PeerId> peers = new HashSet<>();
+        for (PeerEntryFacade peerEntryFacade : peerKnowledgeBase.getFavoritePeers(PeerKnowledgeBase.ConnectedQuery.ALL)) {
+            peers.add(peerEntryFacade.getPeerId());
+        }
+        return peers;
+    }
+
+    public synchronized void addFavoritePeer(final PeerId peerId) {
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
+        if (peerEntryFacade.getRelationship() != Management.Relationship.FAVORITE) {
+            peerEntryFacade.setRelationship(Management.Relationship.FAVORITE);
+            searchFriends();
+            generalEvents.peerAddedAsFriend(peerId);
+        }
+    }
+
+    public synchronized void removeFavoritePeer(final PeerId peerId) {
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
+        if (peerEntryFacade.getRelationship() == Management.Relationship.FAVORITE) {
+            peerEntryFacade.setRelationship(Management.Relationship.REGULAR);
+            searchFriends();
+            generalEvents.peerRemovedAsFriend(peerId);
+        }
+    }
+
+    public synchronized Set<PeerId> getBlockedPeers() {
+        Set<PeerId> peers = new HashSet<>();
+        for (PeerEntryFacade peerEntryFacade : peerKnowledgeBase.getBlockedPeers(PeerKnowledgeBase.ConnectedQuery.ALL)) {
+            peers.add(peerEntryFacade.getPeerId());
+        }
+        return peers;
+    }
+
+    public synchronized void addBlockedPeer(final PeerId peerId) {
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
+        if (peerEntryFacade.getRelationship() != Management.Relationship.BLOCKED) {
+            peerEntryFacade.setRelationship(Management.Relationship.BLOCKED);
+            searchFriends();
+            generalEvents.peerAddedAsBlocked(peerId);
+        }
+    }
+
+    public synchronized void removeBlockedPeer(final PeerId peerId) {
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
+        if (peerEntryFacade.getRelationship() == Management.Relationship.BLOCKED) {
+            peerEntryFacade.setRelationship(Management.Relationship.REGULAR);
+            searchFriends();
+            generalEvents.peerRemovedAsBlocked(peerId);
+        }
+    }
+
+    public synchronized void searchFriends() {
+        // todo currently unavailable
+
+    }
+
+
 }

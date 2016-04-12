@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.datatransfer;
 
 import jacz.peerengineservice.util.ForeignStoreShare;
-import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
+import jacz.util.concurrency.task_executor.ThreadExecutor;
 import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.id.AlphaNumFactory;
 
@@ -100,6 +100,7 @@ class ForeignShareManager implements NotificationReceiver {
         receiverID = AlphaNumFactory.getStaticId();
         this.resourceStreamingManager = resourceStreamingManager;
         alive = true;
+        ThreadExecutor.registerClient(this.getClass().getName());
     }
 
     /**
@@ -158,6 +159,7 @@ class ForeignShareManager implements NotificationReceiver {
         for (String store : new ArrayList<>(storeShares.keySet())) {
             removeStore(store);
         }
+        ThreadExecutor.shutdownClient(this.getClass().getName());
     }
 
     @Override
@@ -177,7 +179,7 @@ class ForeignShareManager implements NotificationReceiver {
             for (Object message : groupedMessages) {
                 affectedResources.add((String) message);
             }
-            ParallelTaskExecutor.executeTask(new Runnable() {
+            ThreadExecutor.submit(new Runnable() {
                 @Override
                 public void run() {
                     resourceStreamingManager.reportProvidersShareChanges(finalResourceStore, affectedResources);

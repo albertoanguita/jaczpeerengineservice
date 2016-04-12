@@ -1,18 +1,17 @@
 package jacz.peerengineservice.client.connection.peers.kb;
 
-import jacz.util.io.serialization.Serializer;
 import jacz.util.io.serialization.StrCast;
 import jacz.util.network.IP4Port;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
 /**
  * Stores the internet address(es) of a peer
+ * todo
  */
-public class PeerAddress {
+public class PeerAddressRemove {
 
     private static final String SEPARATOR = "/";
 
@@ -22,18 +21,18 @@ public class PeerAddress {
 
     private final IP4Port localAddress;
 
-    public PeerAddress(IP4Port externalAddress, IP4Port localAddress) {
+    public PeerAddressRemove(IP4Port externalAddress, IP4Port localAddress) {
         this.externalAddress = externalAddress;
         this.localAddress = localAddress;
     }
 
-    public PeerAddress(String serialization) throws IOException {
+    public PeerAddressRemove(String serialization) throws IOException {
         StringTokenizer strTok = new StringTokenizer(serialization, SEPARATOR);
         externalAddress = deserializeAddress(strTok);
         localAddress = deserializeAddress(strTok);
     }
 
-    public PeerAddress() throws IOException {
+    public PeerAddressRemove() throws IOException {
         externalAddress = null;
         localAddress = null;
     }

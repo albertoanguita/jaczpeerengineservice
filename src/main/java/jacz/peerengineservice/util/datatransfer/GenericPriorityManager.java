@@ -76,7 +76,7 @@ public class GenericPriorityManager implements TimerAction {
 
     public synchronized void addRegulatedResource(GenericPriorityManagerStakeholder stakeholder, GenericPriorityManagerRegulatedResource regulatedResource) {
         if (!resources.containsKey(stakeholder)) {
-            resources.put(stakeholder, new HashSet<GenericPriorityManagerRegulatedResource>());
+            resources.put(stakeholder, new HashSet<>());
         }
         resources.get(stakeholder).add(regulatedResource);
     }

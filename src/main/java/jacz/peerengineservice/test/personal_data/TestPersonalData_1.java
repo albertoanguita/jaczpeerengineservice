@@ -31,12 +31,12 @@ public class TestPersonalData_1 {
         client.startClient();
 
         ThreadUtil.safeSleep(15000);
-        client.getPeerClient().setNick("albertooooo");
+        client.getPeerClient().setOwnNick("albertooooo");
 
         ThreadUtil.safeSleep(10000);
-        client.getPeerClient().setNick("alberto2");
+        client.getPeerClient().setOwnNick("alberto2");
 
         ThreadUtil.safeSleep(5000);
-        client.getPeerClient().setNick("alberto3");
+        client.getPeerClient().setOwnNick("alberto3");
     }
 }

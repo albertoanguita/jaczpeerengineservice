@@ -6,7 +6,6 @@ import jacz.commengine.clientserver.server.ServerModule;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.PeerConnectionManager;
-import jacz.peerengineservice.client.connection.peers.kb.PeerAddress;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
 import jacz.util.network.IP4Port;
@@ -17,7 +16,27 @@ import java.io.IOException;
 
 /**
  * This class implements an evolving state in charge of opening and maintaining the local server that allows other
- * peers to connect with us
+ * peers to connect with us. It also ensures that the server is accessible from the world, creating NAT rules if needed.
+ * <p/>
+ * The code receives a NetworkConfiguration containing the user choice for the local port and the external port.
+ * This is how this class handles these two attributes:
+ * - localPort: if zero, then a random local port will be assigned by the underlying server implementation. The actual
+ * chosen port will then be figured out, and will be available to the client for checking
+ * - externalPort: this value is used as a "default" value for the actual external port. However, it is often not used
+ * by this code. It is only used when:
+ * -- there is a router in the network, and the previous value of local port was set to zero (random). In this case
+ * the external port behaves like a default external port for creating the NAT rule (the actual NAT controller will
+ * decide the final port value)
+ * -- there is a router in the network, and the local port was a fixed value. In this case, the code assumes that the
+ * user has previously set a NAT rule manually (this is not checked). The given external port will be notified to other
+ * codes requiring its value as the actual external port
+ * <p/>
+ * If there is no router in the network, the external port value is ignored (the local port will be reported as
+ * external port to outside services)
+ * <p/>
+ * Upon changes in any value of the network configuration, the code disconnects the server and restarts the
+ * connection process. The PeerClientConnectionManager is responsible for reporting these changes (we do not detect
+ * them)
  */
 public class LocalServerManager {
 
@@ -25,8 +44,8 @@ public class LocalServerManager {
      * Used by the ServerModule of the PeerClientConnectionManager, to listen to new connections from other peers. This
      * class also handles every event related to used ChannelConnectionPoints of peers currently connected to use
      * (received messages, freed channels, etc). Received messages are ignored since every communication with other
-     * peers is carried out through FSMs, not through direct messaging. The freeing of a channel does have to be notified
-     * to the PeerClient.
+     * peers is carried out through FSMs, not through direct messaging. The freeing of a channel does have to be
+     * notified to the PeerClient.
      */
     private static class PeerClientServerActionImpl implements ServerAction {
 
@@ -100,13 +119,18 @@ public class LocalServerManager {
 
     private final PeerId ownPeerId;
 
-    private final int defaultExternalPort;
+//    private final int defaultExternalPort;
 
-    private int externalPort;
+    private int actualExternalPort;
 
-    private final NetworkTopologyManager networkTopologyManager;
+    /**
+     * Indicates if a gateway NAT rule has been manually created. Used for destroying NAT rule upon closing
+     */
+    private boolean gatewayRuleCreated;
 
     private final PeerClientConnectionManager peerClientConnectionManager;
+
+    private final NetworkConfiguration networkConfiguration;
 
     /**
      * Actions to invoke upon certain events
@@ -121,7 +145,7 @@ public class LocalServerManager {
     /**
      * Collection of all information related to connection to the server, as provided by the user
      */
-    private ConnectionInformation wishedConnectionInformation;
+//    private ConnectionInformation wishedConnectionInformation;
 
     /**
      * Collection of all information related to connection to the server (what we are currently using)
@@ -132,19 +156,18 @@ public class LocalServerManager {
 
     public LocalServerManager(
             PeerId ownPeerId,
-            int defaultExternalPort,
-            final NetworkTopologyManager networkTopologyManager,
             PeerClientConnectionManager peerClientConnectionManager,
-            ConnectionInformation wishedConnectionInformation,
+            NetworkConfiguration networkConfiguration,
             final ConnectionEventsBridge connectionEvents) {
         this.ownPeerId = ownPeerId;
-        this.defaultExternalPort = defaultExternalPort;
-        externalPort = -1;
-        this.networkTopologyManager = networkTopologyManager;
+//        this.defaultExternalPort = defaultExternalPort;
+        actualExternalPort = -1;
+        gatewayRuleCreated = false;
         this.peerClientConnectionManager = peerClientConnectionManager;
+        this.networkConfiguration = networkConfiguration;
         this.connectionEvents = connectionEvents;
         serverModule = null;
-        this.wishedConnectionInformation = wishedConnectionInformation;
+//        this.wishedConnectionInformation = wishedConnectionInformation;
         listeningPort = -1;
         dynamicState = new EvolvingState<>(State.LocalServerConnectionsState.CLOSED, false, new EvolvingState.Transitions<State.LocalServerConnectionsState, Boolean>() {
             @Override
@@ -153,10 +176,7 @@ public class LocalServerManager {
                     switch (state) {
                         case LISTENING:
                             // we must close our server and kick all connected clients
-                            if (externalPort != -1) {
-                                destroyGatewayForwardingRule(externalPort, controller);
-                                externalPort = -1;
-                            }
+                            destroyGatewayForwardingRule(actualExternalPort, controller);
                             return false;
 
                         case OPEN:
@@ -174,28 +194,60 @@ public class LocalServerManager {
                         case OPEN:
                         case WAITING_FOR_NAT_RULE_TRY:
                             // check gateway
-                            if (listeningPort == 0 && LocalServerManager.this.networkTopologyManager.hasGateway()) {
-                                // we must create a NAT rule in the gateway for connection to be able to reach us
-                                externalPort = createGatewayForwardingRule(LocalServerManager.this.defaultExternalPort, controller);
-                                if (LocalServerManager.this.externalPort != -1) {
-                                    // the nat rule was created ok, evolve
+                            if (LocalServerManager.this.peerClientConnectionManager.getNetworkTopologyManager().hasGateway()) {
+                                // there is a gateway in the network. Both local port and external port are used
+                                if (networkConfiguration.getLocalPort() == 0) {
+                                    // local port is random -> we must create a NAT rule in the gateway
+                                    actualExternalPort = createGatewayForwardingRule(networkConfiguration.getExternalPort(), controller);
+                                    if (actualExternalPort != -1) {
+                                        // the nat rule was created ok, evolve
+                                        gatewayRuleCreated = true;
+                                        return false;
+                                    }
+                                    // if not, we will retry shortly
+                                } else {
+                                    // we assume that there is a correct NAT rule that routes traffic from the
+                                    // gateway's external port to the machine local port
+                                    // we can move to LISTENING state
+                                    actualExternalPort = networkConfiguration.getExternalPort();
+                                    controller.setState(State.LocalServerConnectionsState.LISTENING);
+                                    connectionEvents.listeningConnectionsWithoutNATRule(actualExternalPort, listeningPort, State.LocalServerConnectionsState.LISTENING);
                                     return false;
                                 }
-                                // if not, we will retry shortly
+
                             } else {
-                                // fixed port (rely on user to appropriately forward ports) or no gateway,
+                                // no gateway -> external port takes value from local port (rely on user to
+                                // appropriately forward ports)
                                 // we can move to LISTENING state
+                                actualExternalPort = networkConfiguration.getLocalPort();
                                 controller.setState(State.LocalServerConnectionsState.LISTENING);
-                                externalPort = LocalServerManager.this.wishedConnectionInformation.getLocalPort();
-                                connectionEvents.listeningConnectionsWithoutNATRule(externalPort, listeningPort, State.LocalServerConnectionsState.LISTENING);
+                                connectionEvents.listeningConnectionsWithoutNATRule(actualExternalPort, listeningPort, State.LocalServerConnectionsState.LISTENING);
                                 return false;
                             }
+
+
+//                            if (listeningPort == 0 && LocalServerManager.this.peerClientConnectionManager.getNetworkTopologyManager().hasGateway()) {
+//                                // we must create a NAT rule in the gateway for connection to be able to reach us
+//                                actualExternalPort = createGatewayForwardingRule(LocalServerManager.this.defaultExternalPort, controller);
+//                                if (actualExternalPort != -1) {
+//                                    // the nat rule was created ok, evolve
+//                                    return false;
+//                                }
+//                                // if not, we will retry shortly
+//                            } else {
+//                                // fixed port (rely on user to appropriately forward ports) or no gateway,
+//                                // we can move to LISTENING state
+//                                controller.setState(State.LocalServerConnectionsState.LISTENING);
+//                                actualExternalPort = LocalServerManager.this.wishedConnectionInformation.getLocalPort();
+//                                connectionEvents.listeningConnectionsWithoutNATRule(actualExternalPort, listeningPort, State.LocalServerConnectionsState.LISTENING);
+//                                return false;
+//                            }
                             break;
 
                         case LISTENING:
                             // check the correct listening port is being used
                             if (!isCorrectConnectionInformation()) {
-                                destroyGatewayForwardingRule(externalPort, controller);
+                                destroyGatewayForwardingRule(actualExternalPort, controller);
                                 closePeerConnectionsServer(controller);
                                 return false;
                             }
@@ -218,26 +270,21 @@ public class LocalServerManager {
     }
 
 
-    public int getDefaultExternalPort() {
-        return defaultExternalPort;
-    }
+//    public int getDefaultExternalPort() {
+//        return defaultExternalPort;
+//    }
 
     /**
      * When the local server is open, it returns the port at which this server listens for new connections
      *
      * @return the local listening port
      */
-    synchronized Integer getActualListeningPort() {
+    synchronized Integer getActualLocalPort() {
         return serverModule != null ? serverModule.getActualListeningPort() : null;
     }
 
-    synchronized Integer getExternalListeningPort() {
-        return dynamicState.state() == State.LocalServerConnectionsState.LISTENING ? externalPort : null;
-    }
-
-    public synchronized PeerAddress getPeerAddress() {
-        // todo
-        return null;
+    synchronized Integer getActualExternalPort() {
+        return dynamicState.state() == State.LocalServerConnectionsState.LISTENING ? actualExternalPort : null;
     }
 
     void setWishForConnect(boolean wishForConnect) {
@@ -249,7 +296,7 @@ public class LocalServerManager {
     }
 
     private boolean isCorrectConnectionInformation() {
-        return listeningPort == wishedConnectionInformation.getLocalPort();
+        return listeningPort == networkConfiguration.getLocalPort();
     }
 
     void stop() {
@@ -265,16 +312,16 @@ public class LocalServerManager {
 
     private boolean openPeerConnectionsServer(EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
         try {
-            connectionEvents.tryingToOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.OPENING);
-            listeningPort = wishedConnectionInformation.getLocalPort();
+            connectionEvents.tryingToOpenLocalServer(networkConfiguration.getLocalPort(), State.LocalServerConnectionsState.OPENING);
+            listeningPort = networkConfiguration.getLocalPort();
             serverModule = new ServerModule(listeningPort, new PeerClientServerActionImpl(peerClientConnectionManager.getPeerConnectionManager(), connectionEvents), PeerClientConnectionManager.generateConcurrentChannelSets());
             serverModule.startListeningConnections();
             controller.setState(State.LocalServerConnectionsState.OPEN);
-            connectionEvents.localServerOpen(getActualListeningPort(), State.LocalServerConnectionsState.OPEN);
+            connectionEvents.localServerOpen(getActualLocalPort(), State.LocalServerConnectionsState.OPEN);
             return false;
         } catch (IOException e) {
             // the server could not be opened
-            connectionEvents.couldNotOpenLocalServer(wishedConnectionInformation.getLocalPort(), State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY);
+            connectionEvents.couldNotOpenLocalServer(networkConfiguration.getLocalPort(), State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY);
             controller.setState(State.LocalServerConnectionsState.WAITING_FOR_OPENING_TRY);
             return true;
         }
@@ -282,33 +329,37 @@ public class LocalServerManager {
 
     private int createGatewayForwardingRule(int defaultExternalPort, EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
         try {
-            connectionEvents.tryingToCreateNATRule(defaultExternalPort, getActualListeningPort(), State.LocalServerConnectionsState.CREATING_NAT_RULE);
-            GatewayDevice gatewayDevice = UpnpAPI.fetchGatewayDevice(networkTopologyManager.getExternalAddress());
-            int externalPort = UpnpAPI.mapPortFrom(gatewayDevice, generateNATRuleDescription(), defaultExternalPort, getActualListeningPort(), true);
+            connectionEvents.tryingToCreateNATRule(defaultExternalPort, getActualLocalPort(), State.LocalServerConnectionsState.CREATING_NAT_RULE);
+            GatewayDevice gatewayDevice = UpnpAPI.fetchGatewayDevice(peerClientConnectionManager.getNetworkTopologyManager().getExternalAddress());
+            int externalPort = UpnpAPI.mapPortFrom(gatewayDevice, generateNATRuleDescription(), defaultExternalPort, getActualLocalPort(), true);
             controller.setState(State.LocalServerConnectionsState.LISTENING);
-            connectionEvents.NATRuleCreated(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.LISTENING);
+            connectionEvents.NATRuleCreated(externalPort, getActualLocalPort(), State.LocalServerConnectionsState.LISTENING);
+            gatewayRuleCreated = true;
             return externalPort;
         } catch (UpnpAPI.NoGatewayException e) {
             controller.setState(State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY);
-            connectionEvents.couldNotFetchUPNPGateway(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY);
+            connectionEvents.couldNotFetchUPNPGateway(actualExternalPort, getActualLocalPort(), State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY);
             return -1;
         } catch (UpnpAPI.UpnpException e) {
             controller.setState(State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY);
-            connectionEvents.errorCreatingNATRule(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY);
+            connectionEvents.errorCreatingNATRule(actualExternalPort, getActualLocalPort(), State.LocalServerConnectionsState.WAITING_FOR_NAT_RULE_TRY);
             return -1;
         }
     }
 
     private void destroyGatewayForwardingRule(int externalPort, EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
-        connectionEvents.tryingToDestroyNATRule(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.DESTROYING_NAT_RULE);
-        try {
-            // in both cases (success or error) the resulting state will be OPEN
-            controller.setState(State.LocalServerConnectionsState.OPEN);
-            GatewayDevice gatewayDevice = UpnpAPI.fetchGatewayDevice(networkTopologyManager.getExternalAddress());
-            UpnpAPI.unmapPort(gatewayDevice, externalPort);
-            connectionEvents.NATRuleDestroyed(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.OPEN);
-        } catch (UpnpAPI.NoGatewayException | UpnpAPI.UpnpException e) {
-            connectionEvents.couldNotDestroyNATRule(externalPort, getActualListeningPort(), State.LocalServerConnectionsState.OPEN);
+        if (gatewayRuleCreated) {
+            connectionEvents.tryingToDestroyNATRule(externalPort, getActualLocalPort(), State.LocalServerConnectionsState.DESTROYING_NAT_RULE);
+            try {
+                // in both cases (success or error) the resulting state will be OPEN
+                controller.setState(State.LocalServerConnectionsState.OPEN);
+                GatewayDevice gatewayDevice = UpnpAPI.fetchGatewayDevice(peerClientConnectionManager.getNetworkTopologyManager().getExternalAddress());
+                UpnpAPI.unmapPort(gatewayDevice, externalPort);
+                connectionEvents.NATRuleDestroyed(externalPort, getActualLocalPort(), State.LocalServerConnectionsState.OPEN);
+                gatewayRuleCreated = false;
+            } catch (UpnpAPI.NoGatewayException | UpnpAPI.UpnpException e) {
+                connectionEvents.couldNotDestroyNATRule(externalPort, getActualLocalPort(), State.LocalServerConnectionsState.OPEN);
+            }
         }
     }
 
@@ -319,7 +370,7 @@ public class LocalServerManager {
 
     private void closePeerConnectionsServer(EvolvingStateController<State.LocalServerConnectionsState, Boolean> controller) {
         if (serverModule != null) {
-            connectionEvents.tryingToCloseLocalServer(getActualListeningPort(), State.LocalServerConnectionsState.CLOSING);
+            connectionEvents.tryingToCloseLocalServer(getActualLocalPort(), State.LocalServerConnectionsState.CLOSING);
             serverModule.stopListeningConnections();
         }
         controller.setState(State.LocalServerConnectionsState.CLOSED);

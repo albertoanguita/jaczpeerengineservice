@@ -31,9 +31,9 @@ public class TestPersonalData_3 {
         client.startClient();
 
         ThreadUtil.safeSleep(11000);
-        client.getPeerClient().setNick("mik");
+        client.getPeerClient().setOwnNick("mik");
 
         ThreadUtil.safeSleep(4000);
-        client.getPeerClient().setNick("mik2");
+        client.getPeerClient().setOwnNick("mik2");
     }
 }

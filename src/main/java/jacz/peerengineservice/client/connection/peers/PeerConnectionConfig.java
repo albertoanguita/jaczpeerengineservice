@@ -1,7 +1,6 @@
 package jacz.peerengineservice.client.connection.peers;
 
 import com.neovisionaries.i18n.CountryCode;
-import com.neovisionaries.i18n.LanguageCode;
 import jacz.util.event.notification.NotificationEmitter;
 import jacz.util.event.notification.NotificationProcessor;
 import jacz.util.event.notification.NotificationReceiver;
@@ -48,7 +47,7 @@ public class PeerConnectionConfig implements NotificationEmitter {
     private final NotificationProcessor notificationProcessor;
 
 
-    public PeerConnectionConfig(LanguageCode mainLanguage, CountryCode mainCountry) {
+    public PeerConnectionConfig(CountryCode mainCountry) {
         this(DEFAULT_MAX_REGULAR_CONNECTIONS, DEFAULT_REGULAR_WISH, mainCountry, new ArrayList<>(), DEFAULT_MAX_REGULAR_CONNECTIONS_ADDITIONAL_COUNTRY);
     }
 

@@ -1,57 +1,52 @@
 package jacz.peerengineservice.client;
 
 import jacz.peerengineservice.PeerId;
+import jacz.util.io.serialization.localstorage.LocalStorage;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
 
 /**
  * This class stores our and others' nicks
  */
 public class PeersPersonalData {
 
-    private final String defaultNick;
+    private static final String DEFAULT_NICK = "defaultNick";
 
-    private String ownNick;
+    private static final String OWN_NICK = "ownNick";
 
-    private Map<PeerId, String> peersNicks;
+    private static final String PEER_NICKS = "peerNicks.";
 
-    public PeersPersonalData(String defaultNick, String ownNick) {
-        this(defaultNick, ownNick, new HashMap<PeerId, String>());
+    private final LocalStorage localStorage;
+
+    public PeersPersonalData(String localStoragePath, String defaultNick, String ownNick) throws IOException {
+        localStorage = LocalStorage.createNew(localStoragePath);
+        localStorage.setString(DEFAULT_NICK, defaultNick);
+        localStorage.setString(OWN_NICK, ownNick);
     }
 
-    public PeersPersonalData(String defaultNick, String ownNick, Map<PeerId, String> peersNicks) {
-        this.defaultNick = defaultNick != null ? defaultNick : "";
-        this.ownNick = checkNick(ownNick);
-        this.peersNicks = new HashMap<>();
-        for (Map.Entry<PeerId, String> peerAndNick : peersNicks.entrySet()) {
-            this.peersNicks.put(peerAndNick.getKey(), checkNick(peerAndNick.getValue()));
-        }
+    public PeersPersonalData(String localStoragePathk) throws IOException {
+        localStorage = new LocalStorage(localStoragePathk);
     }
 
     private String checkNick(String nick) {
-        return nick != null ? nick : defaultNick;
+        return nick != null ? nick : localStorage.getString(DEFAULT_NICK);
     }
 
     public synchronized String getOwnNick() {
-        return ownNick;
+        return localStorage.getString(OWN_NICK);
     }
 
     public synchronized boolean setOwnNick(String newNick) {
         newNick = checkNick(newNick);
-        boolean hasChanged = !ownNick.equals(newNick);
-        ownNick = newNick;
-        return hasChanged;
+        return localStorage.setString(OWN_NICK, newNick);
     }
 
     public synchronized String getPeerNick(PeerId peerId) {
-        return peersNicks.get(peerId);
+        return localStorage.getString(PEER_NICKS + peerId.toString());
     }
 
-    public synchronized boolean setPeersNicks(PeerId peerId, String newNick) {
+    public synchronized boolean setPeerNick(PeerId peerId, String newNick) {
         newNick = checkNick(newNick);
-        boolean hasChanged = !peersNicks.containsKey(peerId) || !peersNicks.get(peerId).equals(newNick);
-        peersNicks.put(peerId, newNick);
-        return hasChanged;
+        return localStorage.setString(PEER_NICKS + peerId.toString(), newNick);
     }
 }

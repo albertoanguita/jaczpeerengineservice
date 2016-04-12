@@ -21,6 +21,8 @@ import java.util.Set;
  * (only chat and personal info). These peers are referred to as "NonRegistered" peers
  * <p/>
  * The methods to modify the lists of peers (add, remove) will always ensure that a peer cannot be in both lists at the same time
+ *
+ * todo remove
  */
 public final class PeerRelations {
 

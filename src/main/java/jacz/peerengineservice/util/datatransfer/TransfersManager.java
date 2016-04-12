@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
+import jacz.util.concurrency.task_executor.ThreadExecutor;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.concurrency.timer.TimerAction;
 
@@ -27,6 +27,7 @@ public abstract class TransfersManager<T> implements TimerAction {
     public TransfersManager(String threadName) {
         activeTransfers = new HashMap<>();
         timer = new Timer(1, this, false, threadName);
+        ThreadExecutor.registerClient(this.getClass().getName());
     }
 
     /**
@@ -99,6 +100,7 @@ public abstract class TransfersManager<T> implements TimerAction {
      */
     synchronized void stop() {
         timer.kill();
+        ThreadExecutor.shutdownClient(this.getClass().getName());
     }
 
 
@@ -108,7 +110,7 @@ public abstract class TransfersManager<T> implements TimerAction {
      */
     public synchronized Long wakeUp(final Timer timer) {
         // notify the client. Currently we always send a false, maybe use the argument in the future
-        ParallelTaskExecutor.executeTask(new Runnable() {
+        ThreadExecutor.submit(new Runnable() {
             @Override
             public void run() {
                 notifyClient();

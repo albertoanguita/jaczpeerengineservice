@@ -14,8 +14,7 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWrite
 import jacz.peerengineservice.util.datatransfer.slave.SlaveResourceStreamer;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
 import jacz.util.concurrency.ManuallyRemovedElementBag;
-import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
-import jacz.util.concurrency.task_executor.TaskSemaphore;
+import jacz.util.concurrency.task_executor.ThreadExecutor;
 import jacz.util.concurrency.timer.Timer;
 import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.io.serialization.MutableOffset;
@@ -29,6 +28,7 @@ import jacz.util.sets.availableelements.AvailableElementsShort;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -181,6 +181,7 @@ public class ResourceStreamingManager {
             activeDownloads = new HashMap<>();
             this.resourceStreamingManager = resourceStreamingManager;
             generalProviderUpdateTimer = new Timer(ResourceStreamingManager.MILLIS_FOR_GENERAL_PROVIDER_UPDATE, this, "ActiveDownloadSet");
+            ThreadExecutor.registerClient(this.getClass().getName());
         }
 
         /**
@@ -248,7 +249,7 @@ public class ResourceStreamingManager {
             for (String storeName : activeDownloads.keySet()) {
                 activeDownloadsCopy.put(storeName, new HashMap<>(activeDownloads.get(storeName)));
             }
-            ParallelTaskExecutor.executeTask(new Runnable() {
+            ThreadExecutor.submit(new Runnable() {
                 @Override
                 public void run() {
                     for (String storeName : activeDownloadsCopy.keySet()) {
@@ -265,6 +266,7 @@ public class ResourceStreamingManager {
 
         public synchronized void stop() {
             generalProviderUpdateTimer.kill();
+            ThreadExecutor.shutdownClient(this.getClass().getName());
         }
     }
 
@@ -620,6 +622,7 @@ public class ResourceStreamingManager {
         writeDataLock = new ReentrantLock(true);
         alive = true;
         ManuallyRemovedElementBag.getInstance(PeerClient.MANUAL_REMOVE_BAG).createElement(this.getClass().getName());
+        ThreadExecutor.registerClient(this.getClass().getName());
     }
 
 
@@ -856,6 +859,7 @@ public class ResourceStreamingManager {
     }
 
     public synchronized Float getMaxDesiredDownloadSpeed() {
+        // todo add a localStorage for max download and upload speeds
         return downloadPriorityManager.getTotalMaxDesiredSpeed();
     }
 
@@ -898,26 +902,32 @@ public class ResourceStreamingManager {
      */
     public void stop() {
         resourceTransferEventsBridge.stop();
-        Collection<TaskSemaphore> tfiCollection;
+        Collection<Future> futureCollection;
         synchronized (this) {
             // subchannel assignments
             downloadsManager.stop();
-            tfiCollection = new HashSet<>();
+            futureCollection = new HashSet<>();
             for (final DownloadManager downloadManager : downloadsManager.getAllDownloads()) {
                 // this call is parallelized to avoid triple interlock between the ResourceStreamingManager, the MasterResourceStreamer and the
                 // DownloadManager
-                TaskSemaphore tfi = ParallelTaskExecutor.executeTask(new Runnable() {
+                Future future = ThreadExecutor.submit(new Runnable() {
                     @Override
                     public void run() {
                         downloadManager.stop();
                     }
                 });
-                tfiCollection.add(tfi);
+                futureCollection.add(future);
             }
         }
-        TaskSemaphore.waitForFinalization(tfiCollection);
+        for (Future future : futureCollection) {
+            try {
+                future.get();
+            } catch (Exception e) {
+                // ignore exceptions
+            }
+        }
         synchronized (this) {
-            tfiCollection.clear();
+            futureCollection.clear();
             uploadPriorityManager.stop();
             downloadPriorityManager.stop();
             foreignShareManager.stop();
@@ -925,20 +935,27 @@ public class ResourceStreamingManager {
             subchannelManager.stop();
             uploadsManager.stop();
             for (final UploadManager uploadManager : uploadsManager.getAllUploads()) {
-                TaskSemaphore tfi = ParallelTaskExecutor.executeTask(new Runnable() {
+                Future future = ThreadExecutor.submit(new Runnable() {
                     @Override
                     public void run() {
                         uploadManager.stop();
                     }
                 });
-                tfiCollection.add(tfi);
+                futureCollection.add(future);
             }
         }
-        TaskSemaphore.waitForFinalization(tfiCollection);
+        for (Future future : futureCollection) {
+            try {
+                future.get();
+            } catch (Exception e) {
+                // ignore exceptions
+            }
+        }
         synchronized (this) {
             alive = false;
         }
         ManuallyRemovedElementBag.getInstance(PeerClient.MANUAL_REMOVE_BAG).destroyElement(this.getClass().getName());
+        ThreadExecutor.shutdownClient(this.getClass().getName());
     }
 
     public synchronized void removeDownload(MasterResourceStreamer masterResourceStreamer) {

@@ -56,15 +56,12 @@ public class PeerServerManager {
      */
     private final ActualConnectionData actualConnectionData;
 
-    private final NetworkTopologyManager networkTopologyManager;
-
     private final EvolvingState<State.ConnectionToServerState, Boolean> dynamicState;
 
     public PeerServerManager(
             PeerId ownPeerId,
             String serverURL,
             PeerClientConnectionManager peerClientConnectionManager,
-            NetworkTopologyManager networkTopologyManager,
             ConnectionEventsBridge connectionEvents) {
         this.ownPeerId = ownPeerId;
         this.serverURL = serverURL;
@@ -74,7 +71,6 @@ public class PeerServerManager {
         peerServerSessionID = "";
 
         actualConnectionData = new ActualConnectionData();
-        this.networkTopologyManager = networkTopologyManager;
 
         dynamicState = new EvolvingState<>(State.ConnectionToServerState.DISCONNECTED, false, new EvolvingState.Transitions<State.ConnectionToServerState, Boolean>() {
             @Override
@@ -86,14 +82,12 @@ public class PeerServerManager {
                             // check that we are connected to the right peer server and that the local address is the correct one (in any case, disconnect)
                             if (!isCorrectConnectionInformation()) {
                                 disconnectFromPeerServer(controller);
-//                                controller.evolve();
                                 return false;
                             }
                             break;
 
                         case UNREGISTERED:
                             registerWithPeerServer(controller);
-//                            controller.evolve();
                             return false;
 
                         case DISCONNECTED:
@@ -105,12 +99,10 @@ public class PeerServerManager {
                     // disconnect from the peer server
                     if (state == State.ConnectionToServerState.CONNECTED) {
                         disconnectFromPeerServer(controller);
-//                        controller.evolve();
                         return false;
                     } else if (state == State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY) {
                         // we don't want to connect anymore, stop the RetryConnectionReminder
                         controller.setState(State.ConnectionToServerState.DISCONNECTED);
-//                        controller.evolve();
                         return false;
                     }
                 }
@@ -144,9 +136,9 @@ public class PeerServerManager {
     }
 
     private boolean isCorrectConnectionInformation() {
-        return actualConnectionData.localAddress.equals(networkTopologyManager.getLocalAddress()) &&
-                actualConnectionData.localPort == peerClientConnectionManager.getLocalServerManager().getActualListeningPort() &&
-                actualConnectionData.externalPort == peerClientConnectionManager.getLocalServerManager().getExternalListeningPort();
+        return actualConnectionData.localAddress.equals(peerClientConnectionManager.getNetworkTopologyManager().getLocalAddress()) &&
+                actualConnectionData.localPort == peerClientConnectionManager.getLocalServerManager().getActualLocalPort() &&
+                actualConnectionData.externalPort == peerClientConnectionManager.getLocalServerManager().getActualExternalPort();
     }
 
     void stop() {
@@ -189,9 +181,9 @@ public class PeerServerManager {
     }
 
     private boolean connectToPeerServer(State.ConnectionToServerState state, EvolvingStateController<State.ConnectionToServerState, Boolean> controller) {
-        actualConnectionData.localAddress = networkTopologyManager.getLocalAddress();
-        actualConnectionData.localPort = peerClientConnectionManager.getLocalServerManager().getActualListeningPort();
-        actualConnectionData.externalPort = peerClientConnectionManager.getLocalServerManager().getExternalListeningPort();
+        actualConnectionData.localAddress = peerClientConnectionManager.getNetworkTopologyManager().getLocalAddress();
+        actualConnectionData.localPort = peerClientConnectionManager.getLocalServerManager().getActualLocalPort();
+        actualConnectionData.externalPort = peerClientConnectionManager.getLocalServerManager().getActualExternalPort();
         connectionEvents.tryingToConnectToServer(State.ConnectionToServerState.CONNECTING);
         try {
             ServerAPI.ConnectionResponse connectionResponse =
@@ -293,10 +285,8 @@ public class PeerServerManager {
             } catch (ServerAccessException | IOException e) {
                 // refresh did not succeed, we are now disconnected
                 refreshFailed();
-//                return false;
             } catch (IllegalArgumentException e) {
                 unrecognizedServerMessage();
-//                return false;
             }
         }
     }

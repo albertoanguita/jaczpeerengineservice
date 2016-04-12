@@ -14,6 +14,7 @@ import java.io.Serializable;
  * <p/>
  * This FSM implements the client code. There is really no difference between client and server, just that the client
  * will initiate the conversation, and knows the PeerId of the server (supposedly)
+ * todo remove
  */
 public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<ConnectionEstablishmentClientFSM.State> {
 
@@ -134,11 +135,11 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         switch (state) {
 
             case SUCCESS_CORRECT_CONNECTION:
-                friendConnectionManager.connectionAsClientCompleted(serverPeerId, ccp, true);
+//                friendConnectionManager.connectionAsClientCompleted(serverPeerId, ccp, true);
                 return true;
 
             case SUCCESS_PENDING_VALIDATION:
-                friendConnectionManager.connectionAsClientCompleted(serverPeerId, ccp, false);
+//                friendConnectionManager.connectionAsClientCompleted(serverPeerId, ccp, false);
                 return true;
 
             case ERROR:
@@ -165,6 +166,6 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
      * Reports the PeerClientConnectionManager that this connection is no longer ongoing
      */
     private void error() {
-        friendConnectionManager.connectionAsClientFailed(serverPeerId, secondaryIP4Port, serverPeerId);
+//        friendConnectionManager.connectionAsClientFailed(serverPeerId, secondaryIP4Port, serverPeerId);
     }
 }

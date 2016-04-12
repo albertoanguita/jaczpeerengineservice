@@ -5,9 +5,6 @@ import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Handles the connection to favorite peers
  */

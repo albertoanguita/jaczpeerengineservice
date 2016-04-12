@@ -4,6 +4,7 @@ import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.RequestFromPeerToPeer;
+import jacz.peerengineservice.util.PeerRelationship;
 
 /**
  * This class handles the messages that the PeerClientConnectionManager send to its corresponding PeerClient. It is
@@ -20,22 +21,6 @@ public class PeerClientPrivateInterface {
      * PeerClient to which this class gives access
      */
     private final PeerClient peerClient;
-
-//    private State.NetworkTopologyState networkTopologyState;
-//
-//    private State.ConnectionToServerState connectionToServerState;
-//
-//    private State.LocalServerConnectionsState localServerConnectionsState;
-//
-//    /**
-//     * Port at which we listen to connections from other peers, if the local server is open (-1 otherwise)
-//     */
-//    private int localPort;
-//
-//    /**
-//     * Port at which we listen to connections from other peers, if the local server is open (-1 otherwise)
-//     */
-//    private int externalPort;
 
     /**
      * Class constructor. Non-public so this class cannot be used outside this package
@@ -245,8 +230,12 @@ public class PeerClientPrivateInterface {
 
     ////////////////////////////////// FRIEND CONNECTION MANAGER  //////////////////////////////////
 
-    public synchronized void newPeerConnected(PeerId peerId, ChannelConnectionPoint ccp) {
-        peerClient.newPeerConnected(peerId, ccp);
+    public synchronized void newPeerConnected(PeerId peerId, ChannelConnectionPoint ccp, PeerRelationship peerRelationship) {
+        peerClient.newPeerConnected(peerId, ccp, peerRelationship);
+    }
+
+    public synchronized void modifiedPeerRelationship(PeerId peerId, PeerRelationship peerRelationship, boolean connected) {
+        // todo invoke
     }
 
     /**

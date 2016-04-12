@@ -7,8 +7,10 @@ import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.connection.*;
+import jacz.peerengineservice.client.connection.peers.PeerConnectionConfig;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.ForeignStoreShare;
+import jacz.peerengineservice.util.PeerRelationship;
 import jacz.peerengineservice.util.data_synchronization.DataAccessorContainer;
 import jacz.peerengineservice.util.data_synchronization.DataSynchServerFSM;
 import jacz.peerengineservice.util.data_synchronization.DataSynchServerFSMFactory;
@@ -23,6 +25,7 @@ import jacz.util.log.ErrorFactory;
 import jacz.util.log.ErrorHandler;
 import jacz.util.log.ErrorLog;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -77,8 +80,6 @@ public class PeerClient {
      */
     private final ResourceStreamingManager resourceStreamingManager;
 
-    private final PeerRelations peerRelations;
-
     /**
      * The different factories of custom FSMs that our client wishes to use (custom FSM are defined by the client,
      * who simply provides a way to create and initialize those FSM upon their request, each with a different name)
@@ -99,44 +100,50 @@ public class PeerClient {
      *
      * @param connectionEvents      actions invoked upon some events, like the connection with a peer, or receiving a chat
      *                              message
-     * @param peerRelations         relations with other peers. This object will be updated during the execution, as we add or reject peers
      * @param customFSMs            list of factories for building custom FSMs, each with a different name
      * @param dataAccessorContainer container for sharing lists of data with peers using the provided list synchronization methods (optional, null if not used)
      */
     public PeerClient(
             PeerId ownPeerId,
             String serverURL,
+            PeerConnectionConfig peerConnectionConfig,
+            String peerKnowledgeBasePath,
             PeerEncryption peerEncryption,
-            NetworkConfiguration networkConfiguration,
+            String networkConfigurationPath,
             GeneralEvents generalEvents,
             ConnectionEvents connectionEvents,
             ResourceTransferEvents resourceTransferEvents,
-            PeersPersonalData peersPersonalData,
+            String peersPersonalDataPath,
             TransferStatistics transferStatistics,
-            PeerRelations peerRelations,
             Map<String, PeerFSMFactory> customFSMs,
             DataAccessorContainer dataAccessorContainer,
-            ErrorHandler errorHandler) {
+            ErrorHandler errorHandler) throws IOException {
         this.ownPeerId = ownPeerId;
         this.peerEncryption = peerEncryption;
+        this.peersPersonalData = new PeersPersonalData(peersPersonalDataPath);
         this.generalEvents = new GeneralEventsBridge(generalEvents);
-        this.peersPersonalData = peersPersonalData;
-        this.peerRelations = peerRelations;
         this.customFSMs = customFSMs;
 
         connectedPeers = new ConnectedPeers(ChannelConstants.REQUEST_DISPATCHER_CHANNEL, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL);
         connectedPeersMessenger = new ConnectedPeersMessenger(connectedPeers, ChannelConstants.REQUEST_DISPATCHER_CHANNEL);
 
         PeerClientPrivateInterface peerClientPrivateInterface = new PeerClientPrivateInterface(this);
-        peerClientConnectionManager = new PeerClientConnectionManager(
-                connectionEvents,
-                peerClientPrivateInterface,
-                connectedPeers,
-                ownPeerId,
-                peerEncryption,
-                serverURL,
-                networkConfiguration,
-                peerRelations);
+        try {
+            peerClientConnectionManager = new PeerClientConnectionManager(
+                    connectionEvents,
+                    peerClientPrivateInterface,
+                    connectedPeers,
+                    ownPeerId,
+                    peerEncryption,
+                    serverURL,
+                    peerConnectionConfig,
+                    peerKnowledgeBasePath,
+                    networkConfigurationPath,
+                    this.generalEvents);
+        } catch (IOException e) {
+            stop();
+            throw e;
+        }
         resourceStreamingManager = new ResourceStreamingManager(ownPeerId, resourceTransferEvents, connectedPeersMessenger, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
         dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer);
@@ -152,8 +159,12 @@ public class PeerClient {
      * The method is blocking, in the sense that when it concludes, all connections are closed, and there will be no further changes in the engine
      */
     public void stop() {
-        resourceStreamingManager.stop();
-        peerClientConnectionManager.stop();
+        if (resourceStreamingManager != null) {
+            resourceStreamingManager.stop();
+        }
+        if (peerClientConnectionManager != null) {
+            peerClientConnectionManager.stop();
+        }
         connectedPeers.stop();
         generalEvents.stop();
     }
@@ -202,71 +213,64 @@ public class PeerClient {
         return peerEncryption;
     }
 
-    public synchronized NetworkConfiguration getNetworkConfiguration() {
-        return peerClientConnectionManager.buildNetworkConfiguration();
-    }
-
     public synchronized PeersPersonalData getPeersPersonalData() {
         return peersPersonalData;
     }
 
-    public synchronized int getListeningPort() {
-        return peerClientConnectionManager.getListeningPort();
+    public synchronized int getLocalPort() {
+        return peerClientConnectionManager.getLocalPort();
     }
 
-    public synchronized void setListeningPort(int port) {
-        peerClientConnectionManager.setListeningPort(port);
+    public synchronized int getExternalPort() {
+        return peerClientConnectionManager.getExternalPort();
+    }
+
+    public synchronized void setLocalPort(int port) {
+        peerClientConnectionManager.setLocalPort(port);
+    }
+
+    public synchronized void setExternalPort(int port) {
+        peerClientConnectionManager.setExternalPort(port);
     }
 
     public synchronized State getConnectionState() {
         return peerClientConnectionManager.getConnectionState();
     }
 
-    public synchronized PeerRelations getPeerRelations() {
-        return peerRelations;
+    public synchronized PeerRelationship getPeerRelationship(PeerId peerId) {
+        return peerClientConnectionManager.getPeerRelationship(peerId);
     }
 
-    public synchronized boolean isFriendPeer(PeerId peerId) {
-        return peerRelations.isFriendPeer(peerId);
+    public synchronized boolean isFavoritePeer(PeerId peerId) {
+        return peerClientConnectionManager.isFavoritePeer(peerId);
     }
 
     public synchronized boolean isBlockedPeer(PeerId peerId) {
-        return peerRelations.isBlockedPeer(peerId);
+        return peerClientConnectionManager.isBlockedPeer(peerId);
     }
 
-    public synchronized boolean isNonRegisteredPeer(PeerId peerId) {
-        return peerRelations.isNonRegisteredPeer(peerId);
+    public synchronized Set<PeerId> getFavoritePeers() {
+        return peerClientConnectionManager.getFavoritePeers();
     }
 
-    public synchronized Set<PeerId> getFriendPeers() {
-        return peerRelations.getFriendPeers();
+    public synchronized void addFavoritePeer(final PeerId peerId) {
+        peerClientConnectionManager.addFavoritePeer(peerId);
     }
 
-    public synchronized void addFriendPeer(final PeerId peerId) {
-        peerRelations.addFriendPeer(peerId);
-        searchFriends();
-        generalEvents.peerAddedAsFriend(peerId, peerRelations);
-    }
-
-    public synchronized void removeFriendPeer(final PeerId peerId) {
-        peerRelations.removeFriendPeer(peerId);
-        searchFriends();
-        generalEvents.peerRemovedAsFriend(peerId, peerRelations);
+    public synchronized void removeFavoritePeer(final PeerId peerId) {
+        peerClientConnectionManager.removeFavoritePeer(peerId);
     }
 
     public synchronized Set<PeerId> getBlockedPeers() {
-        return peerRelations.getBlockedPeers();
+        return peerClientConnectionManager.getBlockedPeers();
     }
 
     public synchronized void addBlockedPeer(final PeerId peerId) {
-        peerRelations.addBlockedPeer(peerId);
-        searchFriends();
-        generalEvents.peerAddedAsBlocked(peerId, peerRelations);
+        peerClientConnectionManager.addBlockedPeer(peerId);
     }
 
     public synchronized void removeBlockedPeer(final PeerId peerId) {
-        peerRelations.removeBlockedPeer(peerId);
-        generalEvents.peerRemovedAsBlocked(peerId, peerRelations);
+        peerClientConnectionManager.removeBlockedPeer(peerId);
     }
 
     public PeerId getNextConnectedPeer(PeerId peerId) {
@@ -472,13 +476,18 @@ public class PeerClient {
         resourceStreamingManager.getUploadsManager().stopTimer();
     }
 
-    void newPeerConnected(final PeerId peerId, final ChannelConnectionPoint ccp) {
+    void newPeerConnected(final PeerId peerId, final ChannelConnectionPoint ccp, PeerRelationship peerRelationship) {
         // first notify the resource streaming manager, so it sets up the necessary FSMs for receiving resource data. Then, notify the client
         dataSynchronizer.getDataAccessorContainer().peerConnected(peerId);
         resourceStreamingManager.newPeerConnected(ccp);
-        generalEvents.newPeerConnected(peerId);
+        generalEvents.newPeerConnected(peerId, peerRelationship);
         // send the other peer own nick, to ensure he has our latest value
         sendObjectMessage(peerId, new NewNickMessage(peersPersonalData.getOwnNick()));
+    }
+
+    void modifiedPeerRelationship(final PeerId peerId, PeerRelationship peerRelationship, boolean connected) {
+        // first notify the resource streaming manager, so it sets up the necessary FSMs for receiving resource data. Then, notify the client
+        generalEvents.modifiedPeerRelationship(peerId, peerRelationship, connected);
     }
 
     /**
@@ -600,16 +609,24 @@ public class PeerClient {
         connectedPeersMessenger.broadcastObjectRequest(message);
     }
 
+    public synchronized String getOwnNick() {
+        return peersPersonalData.getOwnNick();
+    }
+
     /**
      * Changes our own nick and broadcasts it to the rest of peers
      *
      * @param newNick the new nick
      */
-    public void setNick(String newNick) {
+    public void setOwnNick(String newNick) {
         if (peersPersonalData.setOwnNick(newNick)) {
             // broadcast new nick to connected peers
             broadcastObjectMessage(new NewNickMessage(newNick));
         }
+    }
+
+    public synchronized String getPeerNick(PeerId peerId) {
+        return peersPersonalData.getPeerNick(peerId);
     }
 
     /**
@@ -624,7 +641,7 @@ public class PeerClient {
             if (message instanceof NewNickMessage) {
                 // new nick from other peer received
                 final NewNickMessage newNickMessage = (NewNickMessage) message;
-                if (peersPersonalData.setPeersNicks(peerId, newNickMessage.nick)) {
+                if (peersPersonalData.setPeerNick(peerId, newNickMessage.nick)) {
                     generalEvents.newPeerNick(peerId, newNickMessage.nick);
                 }
             } else {
@@ -637,14 +654,13 @@ public class PeerClient {
      * Retrieves the connection status from a connected peer. The connection status indicates if this peer is a friend of us and we are a friend
      * of him (CORRECT), he is not a friend of us but we are a friend of him (UNVALIDATED) or he is our friend but we are waiting for
      * him to make us his friend (WAITING_FOR_REMOTE_VALIDATION)
-     *
-//     * @param peerId peer whose connection status we want to retrieve
-//     * @return the connection status of the given peer, or null if we are not connected to this peer
+     * <p/>
+     * //     * @param peerId peer whose connection status we want to retrieve
+     * //     * @return the connection status of the given peer, or null if we are not connected to this peer
      */
 //    public synchronized ConnectionStatus getPeerConnectionStatus(PeerId peerId) {
 //        return connectedPeers.getPeerConnectionStatus(peerId);
 //    }
-
     public synchronized void subscribeToConnectedPeers(String receiverID, NotificationReceiver notificationReceiver) {
         connectedPeers.subscribe(receiverID, notificationReceiver);
     }

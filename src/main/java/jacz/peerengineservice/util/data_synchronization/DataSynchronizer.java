@@ -46,7 +46,6 @@ public class DataSynchronizer {
             DataAccessor dataAccessor,
             long timeout,
             final ProgressNotificationWithError<Integer, SynchError> progress) throws UnavailablePeerException {
-//        DataAccessor dataAccessor = dataAccessorContainer.getAccessorForReceiving(serverPeerId, dataAccessorName);
         // same for server FSM
         DataSynchClientFSM dataSynchClientFSM = new DataSynchClientFSM(dataAccessor, serverPeerId, progress);
         String fsmID = peerClient.registerTimedCustomFSM(

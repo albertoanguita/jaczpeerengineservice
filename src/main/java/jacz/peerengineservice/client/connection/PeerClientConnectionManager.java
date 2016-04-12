@@ -2,14 +2,17 @@ package jacz.peerengineservice.client.connection;
 
 import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
+import jacz.peerengineservice.client.GeneralEvents;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
-import jacz.peerengineservice.client.PeerRelations;
+import jacz.peerengineservice.client.connection.peers.PeerConnectionConfig;
 import jacz.peerengineservice.client.connection.peers.PeerConnectionManager;
 import jacz.peerengineservice.util.ChannelConstants;
+import jacz.peerengineservice.util.PeerRelationship;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
 import jacz.util.concurrency.ThreadUtil;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -47,9 +50,14 @@ public class PeerClientConnectionManager {
     private final ConnectionEventsBridge connectionEvents;
 
     /**
+     * Configuration for network setup (local and external ports) provided by the client
+     */
+    private final NetworkConfiguration networkConfiguration;
+
+    /**
      * Collection of all information related to connection to the server, as provided by the user
      */
-    private final ConnectionInformation wishedConnectionInformation;
+//    private final ConnectionInformation wishedConnectionInformation;
 
     /**
      * Handles detection of network properties
@@ -69,8 +77,10 @@ public class PeerClientConnectionManager {
     /**
      * Manages the connections with friend peers
      */
-    private final FriendConnectionManager friendConnectionManager; // todo remove
+//    private final FriendConnectionManager friendConnectionManager; // todo remove
     private final PeerConnectionManager peerConnectionManager;
+
+    private final ConnectedPeers connectedPeers;
 
     private final EvolvingState<ConnectionState, Boolean> dynamicState;
 
@@ -81,24 +91,36 @@ public class PeerClientConnectionManager {
             PeerId ownPeerId,
             PeerEncryption ownPeerEncryption,
             String serverURL,
-            NetworkConfiguration networkConfiguration,
-            PeerRelations peerRelations) {
+            PeerConnectionConfig peerConnectionConfig,
+            String peerKnowledgeBasePath,
+            String networkConfigurationPath,
+            GeneralEvents generalEvents) throws IOException {
         this.connectionEvents = new ConnectionEventsBridge(connectionEvents, this);
+        this.networkConfiguration = new NetworkConfiguration(networkConfigurationPath);
 
-        wishedConnectionInformation = new ConnectionInformation();
-        wishedConnectionInformation.setListeningPort(networkConfiguration.getLocalPort());
+//        wishedConnectionInformation = new ConnectionInformation();
+//        wishedConnectionInformation.setListeningPort(networkConfiguration.getLocalPort());
 
         networkTopologyManager = new NetworkTopologyManager(this, this.connectionEvents);
         localServerManager = new LocalServerManager(
                 ownPeerId,
-                networkConfiguration.getExternalPort(),
-                networkTopologyManager,
                 this,
-                wishedConnectionInformation,
+                networkConfiguration,
                 this.connectionEvents);
-        peerServerManager = new PeerServerManager(ownPeerId, serverURL, this, networkTopologyManager, this.connectionEvents);
-        friendConnectionManager = new FriendConnectionManager(ownPeerId, serverURL, connectedPeers, peerClientPrivateInterface, this, peerRelations);
-//        peerConnectionManager = new PeerConnectionManager(ownPeerId, ownPeerEncryption, , serverURL, , , connectedPeers, peerClientPrivateInterface);
+        peerServerManager = new PeerServerManager(ownPeerId, serverURL, this, this.connectionEvents);
+//        friendConnectionManager = new FriendConnectionManager(ownPeerId, serverURL, connectedPeers, peerClientPrivateInterface, this, peerRelations);
+        peerConnectionManager = new PeerConnectionManager(
+                ownPeerId,
+                ownPeerEncryption,
+                serverURL,
+                peerConnectionConfig,
+                peerKnowledgeBasePath,
+                connectedPeers,
+                peerClientPrivateInterface,
+                this,
+                generalEvents);
+
+        this.connectedPeers = connectedPeers;
 
         dynamicState = new EvolvingState<>(ConnectionState.DISCONNECTED, false, new EvolvingState.Transitions<ConnectionState, Boolean>() {
             @Override
@@ -117,7 +139,7 @@ public class PeerClientConnectionManager {
                                 // disconnect next services and wait
                                 localServerManager.setWishForConnect(false);
                                 peerServerManager.setWishForConnect(false);
-                                friendConnectionManager.setWishForFriendSearch(false);
+                                peerConnectionManager.setWishForConnect(false);
                                 delay();
                                 return false;
                             }
@@ -126,7 +148,7 @@ public class PeerClientConnectionManager {
                             localServerManager.setWishForConnect(true);
                             if (!localServerManager.isInWishedState()) {
                                 peerServerManager.setWishForConnect(false);
-                                friendConnectionManager.setWishForFriendSearch(false);
+                                peerConnectionManager.setWishForConnect(false);
                                 delay();
                                 return false;
                             }
@@ -134,13 +156,13 @@ public class PeerClientConnectionManager {
                             // third, connect to the peer server
                             peerServerManager.setWishForConnect(true);
                             if (!peerServerManager.isInWishedState()) {
-                                friendConnectionManager.setWishForFriendSearch(false);
+                                peerConnectionManager.setWishForConnect(false);
                                 delay();
                                 return false;
                             }
 
                             // fourth, activate the friend search
-                            friendConnectionManager.setWishForFriendSearch(true);
+                            peerConnectionManager.setWishForConnect(true);
 
                             // finally, set the state to connected
                             controller.setState(ConnectionState.CONNECTED);
@@ -188,9 +210,13 @@ public class PeerClientConnectionManager {
         );
     }
 
-    FriendConnectionManager getFriendConnectionManager() {
-        return friendConnectionManager;
+    public NetworkTopologyManager getNetworkTopologyManager() {
+        return networkTopologyManager;
     }
+
+//    FriendConnectionManager getFriendConnectionManager() {
+//        return friendConnectionManager;
+//    }
 
     PeerConnectionManager getPeerConnectionManager() {
         return peerConnectionManager;
@@ -200,13 +226,17 @@ public class PeerClientConnectionManager {
         return localServerManager;
     }
 
+    public synchronized PeerAddress getPeerAddress() {
+        return new PeerAddress(networkTopologyManager.getExternalAddress() + ":" + localServerManager.getActualExternalPort(), networkTopologyManager.getLocalAddress() + ":" + localServerManager.getActualLocalPort());
+    }
+
     public State getConnectionState() {
         return connectionEvents.getState();
     }
 
-    public NetworkConfiguration buildNetworkConfiguration() {
-        return new NetworkConfiguration(getListeningPort(), localServerManager.getDefaultExternalPort());
-    }
+//    public NetworkConfiguration buildNetworkConfiguration() {
+//        return new NetworkConfiguration(getListeningPort(), localServerManager.getDefaultExternalPort());
+//    }
 
     /**
      * This method sets the necessity of connecting to the stored peer server, or disconnecting from it. After this invocation, the peer client
@@ -227,27 +257,59 @@ public class PeerClientConnectionManager {
         networkTopologyManager.stop();
         peerServerManager.stop();
         localServerManager.stop();
-        friendConnectionManager.stop();
+        peerConnectionManager.stop();
         dynamicState.blockUntilGoalReached(500);
         dynamicState.stop();
+        connectionEvents.stop();
     }
 
-    public synchronized int getListeningPort() {
-        return wishedConnectionInformation.getLocalPort();
-    }
+//    public synchronized int getListeningPort() {
+//        return wishedConnectionInformation.getLocalPort();
+//    }
 
     /**
      * Sets the port at which we must listen to incoming friend connections. Can be set at any time
      *
-     * @param port port to listen to
+//     * @param port port to listen to
      */
-    public synchronized void setListeningPort(int port) {
-        if (wishedConnectionInformation.setListeningPort(port)) {
+//    public synchronized void setListeningPort(int port) {
+//        if (wishedConnectionInformation.setListeningPort(port)) {
+//            connectionEvents.listeningPortModified(port);
+//        }
+//        peerServerManager.updateState();
+//        localServerManager.updateState();
+//        dynamicState.evolve();
+//    }
+
+    public synchronized int getLocalPort() {
+        return networkConfiguration.getLocalPort();
+    }
+
+    public synchronized int getExternalPort() {
+        return networkConfiguration.getExternalPort();
+    }
+
+    public synchronized void setLocalPort(int port) {
+        if (networkConfiguration.setLocalPort(port)) {
+            reconnectDueToNetworkConfigurationChange();
             connectionEvents.listeningPortModified(port);
         }
-        peerServerManager.updateState();
-        localServerManager.updateState();
-        dynamicState.evolve();
+    }
+
+    public synchronized void setExternalPort(int port) {
+        if (networkConfiguration.setExternalPort(port)) {
+            reconnectDueToNetworkConfigurationChange();
+            connectionEvents.listeningPortModified(port); // todo a different call
+        }
+    }
+
+    private void reconnectDueToNetworkConfigurationChange() {
+        boolean mustReconnect = dynamicState.goal();
+        setWishForConnection(false);
+        dynamicState.blockUntilGoalReached(500);
+        if (mustReconnect) {
+            setWishForConnection(true);
+        }
     }
 
     void networkProblem() {
@@ -257,11 +319,51 @@ public class PeerClientConnectionManager {
     }
 
     private void disconnectServices() {
-        friendConnectionManager.setWishForFriendSearch(false);
+        peerConnectionManager.setWishForConnect(false);
         peerServerManager.setWishForConnect(false);
-        friendConnectionManager.disconnectAllPeers();
+        connectedPeers.disconnectAllPeers();
         localServerManager.setWishForConnect(false);
         networkTopologyManager.setWishForConnect(false);
+    }
+
+    public synchronized PeerRelationship getPeerRelationship(PeerId peerId) {
+        return peerConnectionManager.getPeerRelationship(peerId);
+    }
+
+    public synchronized boolean isFavoritePeer(PeerId peerId) {
+        return peerConnectionManager.isFavoritePeer(peerId);
+    }
+
+    public synchronized boolean isRegularPeer(PeerId peerId) {
+        return peerConnectionManager.isRegularPeer(peerId);
+    }
+
+    public synchronized boolean isBlockedPeer(PeerId peerId) {
+        return peerConnectionManager.isBlockedPeer(peerId);
+    }
+
+    public synchronized Set<PeerId> getFavoritePeers() {
+        return peerConnectionManager.getFavoritePeers();
+    }
+
+    public synchronized void addFavoritePeer(PeerId peerId) {
+        peerConnectionManager.addFavoritePeer(peerId);
+    }
+
+    public synchronized void removeFavoritePeer(PeerId peerId) {
+        peerConnectionManager.removeFavoritePeer(peerId);
+    }
+
+    public synchronized Set<PeerId> getBlockedPeers() {
+        return peerConnectionManager.getBlockedPeers();
+    }
+
+    public synchronized void addBlockedPeer(PeerId peerId) {
+        peerConnectionManager.addBlockedPeer(peerId);
+    }
+
+    public synchronized void removeBlockedPeer(PeerId peerId) {
+        peerConnectionManager.removeBlockedPeer(peerId);
     }
 
     /**
@@ -269,7 +371,7 @@ public class PeerClientConnectionManager {
      * connected to the server, this method will have no effect
      */
     public synchronized void searchFriends() {
-        friendConnectionManager.searchFriends();
+        peerConnectionManager.searchFriends();
     }
 
 

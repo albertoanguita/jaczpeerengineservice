@@ -1,6 +1,5 @@
 package jacz.peerengineservice.client;
 
-import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
 import jacz.util.log.ErrorHandler;
 
 /**
@@ -19,16 +18,13 @@ public class ErrorHandlerBridge implements ErrorHandler {
 
     @Override
     public void errorRaised(final String errorMessage) {
-        ParallelTaskExecutor.executeTask(new Runnable() {
-            @Override
-            public void run() {
-                peerClient.stop();
-                if (errorHandler != null) {
-                    errorHandler.errorRaised(errorMessage);
-                } else {
-                    System.err.println(errorMessage);
-                }
+        new Thread(() -> {
+            peerClient.stop();
+            if (errorHandler != null) {
+                errorHandler.errorRaised(errorMessage);
+            } else {
+                System.err.println(errorMessage);
             }
-        });
+        }).start();
     }
 }

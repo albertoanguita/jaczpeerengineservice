@@ -4,7 +4,6 @@ package jacz.peerengineservice.client.connection.peers;
 import jacz.commengine.channel.ChannelAction;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
-import jacz.peerengineservice.client.connection.FriendConnectionManager;
 
 /**
  * This class implements the actions used by the Client module when connecting to another peer. Direct messages are

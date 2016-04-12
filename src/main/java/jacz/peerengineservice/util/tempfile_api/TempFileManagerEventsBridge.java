@@ -1,8 +1,10 @@
 package jacz.peerengineservice.util.tempfile_api;
 
-import jacz.util.concurrency.task_executor.SequentialTaskExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 /**
@@ -14,17 +16,17 @@ public class TempFileManagerEventsBridge implements TempFileManagerEvents {
 
     private final TempFileManagerEvents tempFileManagerEvents;
 
-    private final SequentialTaskExecutor sequentialTaskExecutor;
+    private final ExecutorService sequentialTaskExecutor;
 
     public TempFileManagerEventsBridge(TempFileManagerEvents tempFileManagerEvents) {
         this.tempFileManagerEvents = tempFileManagerEvents;
-        sequentialTaskExecutor = new SequentialTaskExecutor();
+        sequentialTaskExecutor = Executors.newSingleThreadExecutor();
     }
 
     @Override
     public void indexFileGenerated(final String indexFilePath) {
         logger.info("INDEX FILE GENERATED. indexFilePath: " + indexFilePath);
-        sequentialTaskExecutor.executeTask(new Runnable() {
+        sequentialTaskExecutor.submit(new Runnable() {
             @Override
             public void run() {
                 tempFileManagerEvents.indexFileGenerated(indexFilePath);
@@ -35,7 +37,7 @@ public class TempFileManagerEventsBridge implements TempFileManagerEvents {
     @Override
     public void indexFileRecovered(final String indexFilePath) {
         logger.info("INDEX FILE RECOVERED. indexFilePath: " + indexFilePath);
-        sequentialTaskExecutor.executeTask(new Runnable() {
+        sequentialTaskExecutor.submit(new Runnable() {
             @Override
             public void run() {
                 tempFileManagerEvents.indexFileRecovered(indexFilePath);
@@ -46,7 +48,7 @@ public class TempFileManagerEventsBridge implements TempFileManagerEvents {
     @Override
     public void indexFileErrorRestoredWithBackup(final String indexFilePath) {
         logger.info("INDEX FILE ERROR RESTORED WITH BACKUP. indexFilePath: " + indexFilePath);
-        sequentialTaskExecutor.executeTask(new Runnable() {
+        sequentialTaskExecutor.submit(new Runnable() {
             @Override
             public void run() {
                 tempFileManagerEvents.indexFileErrorRestoredWithBackup(indexFilePath);
@@ -57,7 +59,7 @@ public class TempFileManagerEventsBridge implements TempFileManagerEvents {
     @Override
     public void indexFileError(final String indexFilePath) {
         logger.info("INDEX FILE ERROR. indexFilePath: " + indexFilePath);
-        sequentialTaskExecutor.executeTask(new Runnable() {
+        sequentialTaskExecutor.submit(new Runnable() {
             @Override
             public void run() {
                 tempFileManagerEvents.indexFileError(indexFilePath);
@@ -66,6 +68,6 @@ public class TempFileManagerEventsBridge implements TempFileManagerEvents {
     }
 
     public void stop() {
-        sequentialTaskExecutor.stopAndWaitForFinalization();
+        sequentialTaskExecutor.shutdown();
     }
 }

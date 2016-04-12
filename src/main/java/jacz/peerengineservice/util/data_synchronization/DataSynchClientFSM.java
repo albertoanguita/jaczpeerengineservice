@@ -5,7 +5,7 @@ import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
-import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
+import jacz.util.concurrency.task_executor.ThreadExecutor;
 import jacz.util.hash.CRC;
 import jacz.util.hash.InvalidCRCException;
 import jacz.util.io.serialization.MutableOffset;
@@ -69,8 +69,6 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
     private String dataAccessorDatabaseID;
 
-//    private final String dataAccessorName;
-
     private final PeerId serverPeerId;
 
     private final ProgressNotificationWithError<Integer, SynchError> progress;
@@ -80,7 +78,6 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
     public DataSynchClientFSM(DataAccessor dataAccessor, PeerId serverPeerId, ProgressNotificationWithError<Integer, SynchError> progress) {
         this.dataAccessor = dataAccessor;
-//        this.dataAccessorName = dataAccessorName;
         this.serverPeerId = serverPeerId;
         this.progress = progress;
         this.synchError = new SynchError(SynchError.Type.UNDEFINED, null);
@@ -283,7 +280,9 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
     @Override
     public void errorRequestingFSM(final PeerFSMServerResponse serverResponse) {
         DataSynchronizer.logger.info("CLIENT SYNCH ERROR. serverPeer: " + serverPeerId + ". dataAccessorName: " + dataAccessor.getName() + ". fsmID: " + fsmID + ". synchError: " + new SynchError(SynchError.Type.REQUEST_DENIED, serverResponse.toString()));
-        ParallelTaskExecutor.executeTask(new Runnable() {
+        // we register at the thread executor just for submitting this task. We unregister immediately after
+        ThreadExecutor.registerClient(this.getClass().getName());
+        ThreadExecutor.submit(new Runnable() {
             @Override
             public void run() {
                 if (progress != null) {
@@ -291,5 +290,6 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
                 }
             }
         });
+        ThreadExecutor.shutdownClient(this.getClass().getName());
     }
 }

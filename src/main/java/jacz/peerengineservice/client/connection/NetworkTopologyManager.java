@@ -11,7 +11,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 /**
- * Created by Alberto on 27/02/2016.
+ * Handles the detection of local and external ip addresses. It also performs regular checks to see if those values
+ * change
  */
 public class NetworkTopologyManager {
 
@@ -33,8 +34,6 @@ public class NetworkTopologyManager {
                 String localAddress = s.getLocalAddress().getHostAddress();
                 s.close();
                 return localAddress;
-//                InetAddress inetAddress = InetAddress.getLocalHost();
-//                return inetAddress != null ? inetAddress.getHostAddress() : null;
             } catch (UnknownHostException e) {
                 return null;
             }
@@ -161,7 +160,6 @@ public class NetworkTopologyManager {
                 // local address has changed
                 localAddress = newLocalAddress;
                 controller.setState(State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED);
-//                controller.evolve();
                 return false;
             }
         } catch (IOException e) {

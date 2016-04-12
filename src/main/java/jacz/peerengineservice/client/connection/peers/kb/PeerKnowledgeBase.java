@@ -86,6 +86,14 @@ public class PeerKnowledgeBase {
         return getPeersCount(Management.Relationship.REGULAR, connectedQuery, country.toString());
     }
 
+    public List<PeerEntryFacade> getBlockedPeers(ConnectedQuery connectedQuery) {
+        return getPeers(Management.Relationship.BLOCKED, connectedQuery, null);
+    }
+
+    public int getBlockedPeersCount(ConnectedQuery connectedQuery) {
+        return getPeersCount(Management.Relationship.BLOCKED, connectedQuery, null);
+    }
+
     private List<PeerEntryFacade> getPeers(Management.Relationship relationship, ConnectedQuery connectedQuery, String country) {
         // todo: upon same affinity, older connection attempts are favored.
         // todo: never connected peers are prioritized. Do I really want this??? We should first try peers that have been connected at least once, and then new peers

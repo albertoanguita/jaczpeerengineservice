@@ -2,6 +2,7 @@ package jacz.peerengineservice.client.connection.peers.kb;
 
 import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
+import jacz.peerengineservice.client.connection.PeerAddress;
 import jacz.storage.ActiveJDBCController;
 import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.Model;

@@ -11,6 +11,7 @@ import java.util.Set;
  * ignored, as all communications will be made through FSMs. As objects of this class will handle every event related to
  * ChannelConnectionPoints used with peers to which we are connected, the freeing of channels will come through this
  * class. This is notified to the PeerClient.
+ * todo remove
  */
 public class PeerClientConnectionToClientChannelActionImpl implements ChannelAction {
 
@@ -40,16 +41,16 @@ public class PeerClientConnectionToClientChannelActionImpl implements ChannelAct
 
     @Override
     public void channelFreed(ChannelConnectionPoint ccp, byte channel) {
-        friendConnectionManager.channelFreed(ccp, channel);
+//        friendConnectionManager.channelFreed(ccp, channel);
     }
 
     @Override
     public void disconnected(ChannelConnectionPoint ccp, boolean expected) {
-        friendConnectionManager.peerDisconnected(ccp);
+//        friendConnectionManager.peerDisconnected(ccp);
     }
 
     @Override
     public void error(ChannelConnectionPoint ccp, CommError e) {
-        friendConnectionManager.peerError(ccp, e);
+//        friendConnectionManager.peerError(ccp, e);
     }
 }

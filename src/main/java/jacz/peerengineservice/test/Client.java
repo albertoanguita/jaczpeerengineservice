@@ -1,9 +1,15 @@
 package jacz.peerengineservice.test;
 
+import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
-import jacz.peerengineservice.client.*;
+import jacz.peerengineservice.client.PeerClient;
+import jacz.peerengineservice.client.PeerFSMFactory;
+import jacz.peerengineservice.client.PeerRelations;
+import jacz.peerengineservice.client.PeersPersonalData;
 import jacz.peerengineservice.client.connection.NetworkConfiguration;
+import jacz.peerengineservice.client.connection.peers.PeerConnectionConfig;
+import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.datatransfer.ResourceTransferEvents;
 import jacz.peerengineservice.util.datatransfer.TransferStatistics;
@@ -12,6 +18,7 @@ import jacz.util.io.serialization.VersionedObjectSerializer;
 import jacz.util.io.serialization.VersionedSerializationException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -19,7 +26,13 @@ import java.util.Map;
  */
 public class Client {
 
+    public static final String NETWORK_CONFIGURATION_PATH = "networkConfig.dat";
+
+    public static final String PEERS_PERSONAL_DATA_PATH = "peersPersonalData.dat";
+
     private static final String STATISTICS_PATH = "./statistics.dat";
+
+    private static final String DB_PATH = "test_peerKB.db";
 
     private PeerClient peerClient;
 
@@ -65,7 +78,6 @@ public class Client {
         generalEvents.init(ownPeerId, this);
         connectionEvents.init(ownPeerId, this);
 
-//        String serverURL = "https://testserver01-1100.appspot.com/_ah/api/server/v1/";
         String serverURL = "https://jaczserver.appspot.com/_ah/api/server/v1/";
         TestListContainer testListContainer = new TestListContainer(readingLists, writingLists);
 //        if (FileUtil.isFile("globalDownloads.txt")) {
@@ -75,17 +87,35 @@ public class Client {
 //            globalDownloadStatistics = new GlobalDownloadStatistics();
 //        }
 
-//        transferStatistics = new TransferStatistics(FileReaderWriter.readBytes(STATISTICS_PATH));
         try {
-//            byte[] data = FileReaderWriter.readBytes(STATISTICS_PATH);
-//            VersionedObjectSerializer.deserialize(transferStatistics, data);
             transferStatistics = new TransferStatistics(STATISTICS_PATH);
         } catch (IOException | VersionedSerializationException e) {
             transferStatistics = new TransferStatistics();
         }
-        peerClient = new PeerClient(ownPeerId, serverURL, peerEncryption, networkConfiguration, generalEvents, connectionEvents, resourceTransferEvents, peersPersonalData, transferStatistics, peerRelations, customFSMs, testListContainer, null);
+        Management.dropAndCreateKBDatabase(DB_PATH);
+        peerClient = new PeerClient(
+                ownPeerId,
+                serverURL,
+                buildPeerConnectionConfig(),
+                DB_PATH,
+                peerEncryption,
+                NETWORK_CONFIGURATION_PATH,
+                generalEvents,
+                connectionEvents,
+                resourceTransferEvents,
+                PEERS_PERSONAL_DATA_PATH,
+                transferStatistics,
+                customFSMs,
+                testListContainer,
+                null);
 
         tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
+    }
+
+    private PeerConnectionConfig buildPeerConnectionConfig() {
+        return new PeerConnectionConfig(
+                100, false, CountryCode.ES, new ArrayList<>(), 10
+        );
     }
 
     public void startClient() throws IOException {

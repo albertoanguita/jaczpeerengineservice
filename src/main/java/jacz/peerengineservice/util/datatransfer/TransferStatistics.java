@@ -15,6 +15,7 @@ import java.util.Map;
 
 /**
  * Stores amount of data sent and received (both global and peer-wise)
+ * todo implement a local storage
  */
 public class TransferStatistics implements VersionedObject {
 

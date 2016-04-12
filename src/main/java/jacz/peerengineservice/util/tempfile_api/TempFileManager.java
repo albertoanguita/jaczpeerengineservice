@@ -2,8 +2,7 @@ package jacz.peerengineservice.util.tempfile_api;
 
 import jacz.util.concurrency.concurrency_controller.ConcurrencyController;
 import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWrite;
-import jacz.util.concurrency.task_executor.ParallelTaskExecutor;
-import jacz.util.concurrency.task_executor.TaskSemaphore;
+import jacz.util.concurrency.task_executor.ThreadExecutor;
 import jacz.util.files.FileGenerator;
 import jacz.util.io.serialization.VersionedObjectSerializer;
 import jacz.util.io.serialization.VersionedSerializationException;
@@ -16,6 +15,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.Future;
 
 /**
  * This class provides access to temporary files. This includes reading and writing access and controlling concurrency.
@@ -103,6 +103,7 @@ public class TempFileManager {
         this.baseDir = buildBaseDir(baseDir);
         this.tempFileManagerEventsBridge = new TempFileManagerEventsBridge(tempFileManagerEvents);
         concurrencyControllers = new HashMap<>();
+        ThreadExecutor.registerClient(this.getClass().getName());
     }
 
     /**
@@ -221,15 +222,19 @@ public class TempFileManager {
      * @throws IOException there were errors accessing the given temporary file
      */
     public Long getTemporaryResourceSize(String tempFileName) throws IOException {
-        TaskSemaphore tfi;
+        Future future;
         GetSizeTask getSizeTask = new GetSizeTask(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
-            tfi = ParallelTaskExecutor.executeTask(
+            future = ThreadExecutor.submit(
                     getSizeTask,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.READ_ACTIVITY);
         }
-        tfi.waitForFinalization();
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new IOException();
+        }
         return getSizeTask.getSize();
     }
 
@@ -241,15 +246,19 @@ public class TempFileManager {
      * @throws IOException there were errors accessing the given temporary file
      */
     public void setTemporaryResourceSize(String tempFileName, long size) throws IOException {
-        TaskSemaphore tfi;
+        Future future;
         SetSizeTask setSizeTask = new SetSizeTask(this, generateIndexFilePath(tempFileName), size);
         synchronized (this) {
-            tfi = ParallelTaskExecutor.executeTask(
+            future = ThreadExecutor.submit(
                     setSizeTask,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.WRITE_ACTIVITY);
         }
-        tfi.waitForFinalization();
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new IOException();
+        }
         setSizeTask.checkCorrectResult();
     }
 
@@ -261,15 +270,19 @@ public class TempFileManager {
      * @throws IOException there were errors accessing the given temporary file
      */
     public LongRangeList getTemporaryOwnedParts(String tempFileName) throws IOException {
-        TaskSemaphore tfi;
+        Future future;
         OwnedPartsTask ownedPartsTask = new OwnedPartsTask(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
-            tfi = ParallelTaskExecutor.executeTask(
+            future = ThreadExecutor.submit(
                     ownedPartsTask,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.READ_ACTIVITY);
         }
-        tfi.waitForFinalization();
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new IOException();
+        }
         return ownedPartsTask.getOwnedParts();
     }
 
@@ -287,15 +300,19 @@ public class TempFileManager {
      * @throws IOException problems accessing the index file
      */
     public String completeTempFile(String tempFileName) throws IOException {
-        TaskSemaphore tfi;
+        Future future;
         CompleterTask completerTask = new CompleterTask(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
-            tfi = ParallelTaskExecutor.executeTask(
+            future = ThreadExecutor.submit(
                     completerTask,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.WRITE_ACTIVITY);
         }
-        tfi.waitForFinalization();
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new IOException();
+        }
         // the concurrency controller is no longer needed, remove it
         synchronized (this) {
             concurrencyControllers.remove(tempFileName);
@@ -320,41 +337,53 @@ public class TempFileManager {
     }
 
     public HashMap<String, Serializable> getUserDictionary(String tempFileName) throws IOException {
-        TaskSemaphore tfi;
+        Future future;
         GetUserDictionary getUserDictionary = new GetUserDictionary(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
-            tfi = ParallelTaskExecutor.executeTask(
+            future = ThreadExecutor.submit(
                     getUserDictionary,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.READ_ACTIVITY);
         }
-        tfi.waitForFinalization();
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new IOException();
+        }
         return getUserDictionary.getUserDictionary();
     }
 
     public HashMap<String, Serializable> getSystemDictionary(String tempFileName) throws IOException {
-        TaskSemaphore tfi;
+        Future future;
         GetSystemDictionary getSystemDictionary = new GetSystemDictionary(this, generateIndexFilePath(tempFileName));
         synchronized (this) {
-            tfi = ParallelTaskExecutor.executeTask(
+            future = ThreadExecutor.submit(
                     getSystemDictionary,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.READ_ACTIVITY);
         }
-        tfi.waitForFinalization();
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new IOException();
+        }
         return getSystemDictionary.getSystemDictionary();
     }
 
     public void setSystemField(String tempFileName, String key, Serializable value) throws IOException {
-        TaskSemaphore tfi;
+        Future future;
         SetSystemField setSystemField = new SetSystemField(this, generateIndexFilePath(tempFileName), key, value);
         synchronized (this) {
-            tfi = ParallelTaskExecutor.executeTask(
+            future = ThreadExecutor.submit(
                     setSystemField,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.WRITE_ACTIVITY);
         }
-        tfi.waitForFinalization();
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new IOException();
+        }
         setSystemField.checkCorrectResult();
     }
 
@@ -369,15 +398,19 @@ public class TempFileManager {
      * @throws IndexOutOfBoundsException tried to read data outside the bounds of the temporary file
      */
     public byte[] read(String tempFileName, long offset, int length) throws IOException, IndexOutOfBoundsException {
-        TaskSemaphore tfi;
+        Future future;
         ReaderTask readerTask = new ReaderTask(this, generateIndexFilePath(tempFileName), offset, length);
         synchronized (this) {
-            tfi = ParallelTaskExecutor.executeTask(
+            future = ThreadExecutor.submit(
                     readerTask,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.READ_ACTIVITY);
         }
-        tfi.waitForFinalization();
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new IOException();
+        }
         return readerTask.getData();
     }
 
@@ -391,16 +424,20 @@ public class TempFileManager {
      * @throws IndexOutOfBoundsException tried to write data outside the bounds of the temporary file
      */
     public void write(String tempFileName, long offset, byte[] data) throws IOException, IndexOutOfBoundsException {
-        TaskSemaphore tfi;
+        Future future;
         WriterTask writerTask = new WriterTask(this, generateIndexFilePath(tempFileName), offset, data);
         synchronized (this) {
-            tfi = ParallelTaskExecutor.executeTask(
+            future = ThreadExecutor.submit(
                     writerTask,
                     accessTempFileConcurrencyController(tempFileName),
                     ConcurrencyControllerReadWrite.WRITE_ACTIVITY);
 
         }
-        tfi.waitForFinalization();
+        try {
+            future.get();
+        } catch (Exception e) {
+            throw new IOException();
+        }
         writerTask.checkCorrectResult();
     }
 
@@ -439,5 +476,6 @@ public class TempFileManager {
 
     public synchronized void stop() {
         tempFileManagerEventsBridge.stop();
+        ThreadExecutor.shutdownClient(this.getClass().getName());
     }
 }
