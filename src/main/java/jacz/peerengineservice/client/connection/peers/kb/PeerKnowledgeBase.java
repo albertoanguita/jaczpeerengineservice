@@ -35,11 +35,18 @@ public class PeerKnowledgeBase {
         }
     }
 
+    static final String DATABASE = "peerKnowledgeBase";
+
     private final String dbPath;
 
     public PeerKnowledgeBase(String dbPath) {
         this.dbPath = dbPath;
         newSession();
+    }
+
+    public static PeerKnowledgeBase createNew(String dbPath) {
+        Management.dropAndCreateKBDatabase(dbPath);
+        return new PeerKnowledgeBase(dbPath);
     }
 
     private void newSession() {
@@ -50,7 +57,7 @@ public class PeerKnowledgeBase {
     }
 
     public int getPeerCount(ConnectedQuery connectedQuery) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(DATABASE, dbPath);
         int count;
         if (connectedQuery.producesQuery()) {
             Duple<String, Object> buildQuery = connectedQuery.buildQuery();
@@ -58,7 +65,7 @@ public class PeerKnowledgeBase {
         } else {
             count = PeerEntry.count().intValue();
         }
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return count;
     }
 
@@ -98,7 +105,7 @@ public class PeerKnowledgeBase {
         // todo: upon same affinity, older connection attempts are favored.
         // todo: never connected peers are prioritized. Do I really want this??? We should first try peers that have been connected at least once, and then new peers
         // todo but that will make it very difficult for new peers to have a chance. Think about this...
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(DATABASE, dbPath);
         try {
             Duple<String, Object[]> queryAndParams = buildQuery(relationship, connectedQuery, country);
             return PeerEntryFacade.buildList(
@@ -107,17 +114,17 @@ public class PeerKnowledgeBase {
                             .orderBy(Management.AFFINITY.name + " desc, " + Management.LAST_CONNECTION_ATTEMPT.name),
                             dbPath);
         } finally {
-            ActiveJDBCController.disconnect(dbPath);
+            ActiveJDBCController.disconnect();
         }
     }
 
     private int getPeersCount(Management.Relationship relationship, ConnectedQuery connectedQuery, String country) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(DATABASE, dbPath);
         try {
             Duple<String, Object[]> queryAndParams = buildQuery(relationship, connectedQuery, country);
             return PeerEntry.count(queryAndParams.element1, queryAndParams.element2).intValue();
         } finally {
-            ActiveJDBCController.disconnect(dbPath);
+            ActiveJDBCController.disconnect();
         }
     }
 
@@ -140,19 +147,19 @@ public class PeerKnowledgeBase {
     }
 
     public PeerEntryFacade getPeerEntryFacade(PeerId peerId) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(DATABASE, dbPath);
         PeerEntry peerEntry = getPeerEntry(peerId);
         PeerEntryFacade peerEntryFacade = peerEntry != null ? new PeerEntryFacade(peerEntry, dbPath) : new PeerEntryFacade(peerId, dbPath);
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return peerEntryFacade;
     }
 
     private PeerEntry getPeerEntry(PeerId peerId) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(DATABASE, dbPath);
         try {
             return PeerEntry.findFirst(Management.PEER_ID.name + " = ?", peerId.toString());
         } finally {
-            ActiveJDBCController.disconnect(dbPath);
+            ActiveJDBCController.disconnect();
         }
     }
 

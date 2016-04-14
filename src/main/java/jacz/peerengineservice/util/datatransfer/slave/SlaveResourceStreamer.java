@@ -2,6 +2,7 @@ package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.GenericPriorityManagerRegulatedResource;
+import jacz.peerengineservice.util.datatransfer.ResourceRequest;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.master.MasterMessage;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
@@ -19,6 +20,7 @@ import java.util.List;
 
 /**
  * This class handles a slave that serves a resource to a master
+ * todo add statistics for speed... like in downloads. Make it reachable from UploadManager
  */
 public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResource implements ResourceStreamingManager.SubchannelOwner, TimerAction {
 
@@ -54,6 +56,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
 
         private final LongRangeQueue queue;
 
+        // todo hash is used?????????? remove!!!
         private long currentHashSize;
 
         private long amountOfCurrentHashSent;
@@ -67,7 +70,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         RemovedRange remove(long preferredBlockSize) {
             if (!queue.isEmpty() && queue.getRanges().get(0) == stopMessage) {
                 // issue stop order
-                return new RemovedRange((LongRange) queue.remove(stopMessage.size()));
+                return new RemovedRange(queue.remove(stopMessage.size()));
             }
             long maxChunkSize;
             if (currentHashSize > 0) {
@@ -76,7 +79,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
             } else {
                 maxChunkSize = preferredBlockSize;
             }
-            LongRange removedRange = (LongRange) queue.remove(maxChunkSize);
+            LongRange removedRange = queue.remove(maxChunkSize);
             amountOfCurrentHashSent += removedRange.size();
             if (amountOfCurrentHashSent == currentHashSize) {
                 // the segment for the current hash has been fully sent -> reset
@@ -140,9 +143,9 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
     /**
      * This fields provides data about the peer to which we serve and about the resource that we serve
      */
-    private final jacz.peerengineservice.util.datatransfer.ResourceRequest resourceRequest;
+    private final ResourceRequest resourceRequest;
 
-    public SlaveResourceStreamer(jacz.peerengineservice.util.datatransfer.ResourceStreamingManager resourceStreamingManager, jacz.peerengineservice.util.datatransfer.ResourceRequest request) {
+    public SlaveResourceStreamer(ResourceStreamingManager resourceStreamingManager, ResourceRequest request) {
         id = AlphaNumFactory.getStaticId();
         this.resourceStreamingManager = resourceStreamingManager;
         this.resourceRequest = request;
@@ -270,7 +273,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         return incomingChannel;
     }
 
-    public jacz.peerengineservice.util.datatransfer.ResourceRequest getResourceRequest() {
+    public ResourceRequest getResourceRequest() {
         return resourceRequest;
     }
 

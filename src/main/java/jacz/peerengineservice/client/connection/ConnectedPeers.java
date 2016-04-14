@@ -11,10 +11,7 @@ import jacz.util.maps.DoubleKeyMap;
 import jacz.util.maps.ObjectCount;
 import jacz.util.sets.availableelements.AvailableElementsByte;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This class stores the relation of connected peers. Information can be modified and retrieved in a thread-safe manner
@@ -28,7 +25,7 @@ public class ConnectedPeers implements NotificationEmitter {
      * Available channels should be initialized with all available except one, which is reserved for handling new requests
      * (usually channel 0)
      */
-    private static class PeerConnectionData {
+    public static class PeerConnectionData {
 
 //        /**
 //         * The connection status of this peer with respect to us (for internal authorization purposes)
@@ -40,14 +37,17 @@ public class ConnectedPeers implements NotificationEmitter {
 //         */
 //        private final ChannelConnectionPoint ccp;
 
-        private CountryCode peerMainCountry;
+        public final PeerId peerId;
+
+        public CountryCode peerMainCountry;
 
         /**
          * Available channels of this client
          */
         private final AvailableElementsByte availableChannels;
 
-        public PeerConnectionData(CountryCode peerMainCountry, Byte... occupiedChannels) {
+        public PeerConnectionData(PeerId peerId, CountryCode peerMainCountry, Byte... occupiedChannels) {
+            this.peerId = peerId;
             this.peerMainCountry = peerMainCountry;
 //            this.status = status;
 //            this.ccp = ccp;
@@ -97,7 +97,7 @@ public class ConnectedPeers implements NotificationEmitter {
     public synchronized void setConnectedPeer(PeerId peerId, ChannelConnectionPoint ccp, CountryCode peerMainCountry) {
         // the initially occupied channels are the channel for the RequestDispatcher and the channel for the connection
         // process (the latter will be released shortly)
-        connectedPeers.put(peerId, ccp, new PeerConnectionData(peerMainCountry, occupiedChannels));
+        connectedPeers.put(peerId, ccp, new PeerConnectionData(peerId, peerMainCountry, occupiedChannels));
         contriesCount.addObject(peerMainCountry);
         notificationProcessor.newEvent(peerId);
     }
@@ -128,6 +128,10 @@ public class ConnectedPeers implements NotificationEmitter {
      */
     public synchronized Set<PeerId> getConnectedPeers() {
         return new HashSet<>(connectedPeers.keySet());
+    }
+
+    public synchronized ArrayList<PeerConnectionData> getConnectedPeersData() {
+        return new ArrayList<>(connectedPeers.values());
     }
 
     public int getConnectedPeersCountryCount(CountryCode mainCountry) {

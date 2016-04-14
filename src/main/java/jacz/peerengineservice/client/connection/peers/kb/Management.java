@@ -2,6 +2,7 @@ package jacz.peerengineservice.client.connection.peers.kb;
 
 import jacz.storage.ActiveJDBCController;
 import org.javalite.activejdbc.Base;
+import org.javalite.activejdbc.DB;
 
 /**
  * Created by Alberto on 02/03/2016.
@@ -59,19 +60,19 @@ public class Management {
         }
     }
 
-    public static void dropAndCreateKBDatabase(String path) {
+    static void dropAndCreateKBDatabase(String path) {
         dropKBDatabase(path);
         createKBDatabase(path);
     }
 
     private static void dropKBDatabase(String path) {
-        ActiveJDBCController.connect(path);
-        Base.exec("DROP TABLE IF EXISTS " + TABLE_NAME);
-        ActiveJDBCController.disconnect(path);
+        DB db = ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, path);
+        db.exec("DROP TABLE IF EXISTS " + TABLE_NAME);
+        ActiveJDBCController.disconnect();
     }
 
     public synchronized static void createKBDatabase(String dbPath) {
-        ActiveJDBCController.connect(dbPath);
+        DB db = ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
 
         StringBuilder create = new StringBuilder("CREATE TABLE ").append(TABLE_NAME).append("(");
         appendField(create, PEER_ID, false);
@@ -84,9 +85,9 @@ public class Management {
         appendField(create, LAST_CONNECTION_ATTEMPT, false);
         appendField(create, AFFINITY, false);
         appendField(create, ADDRESS, true);
-        Base.exec(create.toString());
+        db.exec(create.toString());
 
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
     }
 
     private static void appendField(StringBuilder create, TableField field, boolean isFinal) {

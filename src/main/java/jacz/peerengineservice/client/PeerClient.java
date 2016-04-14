@@ -27,6 +27,7 @@ import jacz.util.log.ErrorLog;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -237,6 +238,18 @@ public class PeerClient {
         return peerClientConnectionManager.getConnectionState();
     }
 
+    public synchronized boolean isConnectedPeer(PeerId peerId) {
+        return connectedPeers.isConnectedPeer(peerId);
+    }
+
+    public synchronized Set<PeerId> getConnectedPeers() {
+        return connectedPeers.getConnectedPeers();
+    }
+
+    public synchronized ArrayList<ConnectedPeers.PeerConnectionData> getConnectedPeersData() {
+        return connectedPeers.getConnectedPeersData();
+    }
+
     public synchronized PeerRelationship getPeerRelationship(PeerId peerId) {
         return peerClientConnectionManager.getPeerRelationship(peerId);
     }
@@ -255,6 +268,7 @@ public class PeerClient {
 
     public synchronized void addFavoritePeer(final PeerId peerId) {
         peerClientConnectionManager.addFavoritePeer(peerId);
+        peerClientConnectionManager.searchFavorites();
     }
 
     public synchronized void removeFavoritePeer(final PeerId peerId) {
@@ -283,8 +297,8 @@ public class PeerClient {
      * there might be cases in which it is recommendable (to search for a friend peer who has not listed us as friend,
      * since he will not try to connect to us, etc)
      */
-    public void searchFriends() {
-        peerClientConnectionManager.searchFriends();
+    public void searchFavorites() {
+        peerClientConnectionManager.searchFavorites();
     }
 
     /**

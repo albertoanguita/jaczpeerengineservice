@@ -1,12 +1,8 @@
-package jacz.peerengineservice.test.customfsm;
+package jacz.peerengineservice.client.customfsm;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
-import jacz.util.io.serialization.ObjectListWrapper;
-import jacz.util.io.serialization.Serializer;
-
-import java.io.NotSerializableException;
 
 /**
  * Simple peer timed action example
@@ -23,7 +19,14 @@ public class ProvideFilesFSM implements PeerTimedFSMAction<ProvideFilesFSM.State
 
     private byte outgoingChannel;
 
+    private boolean success;
+
     public ProvideFilesFSM() {
+        success = false;
+    }
+
+    public boolean isSuccess() {
+        return success;
     }
 
     @Override
@@ -34,24 +37,11 @@ public class ProvideFilesFSM implements PeerTimedFSMAction<ProvideFilesFSM.State
                 // provide file hashes
                 System.out.println("ProvideFilesFSM -> received request: " + o.toString());
 
-                ccp.write(outgoingChannel, new Boolean(true));
-//                ccp.write(outgoingChannel, new Boolean(false));
+                ccp.write(outgoingChannel, true);
 
-                ObjectListWrapper objectListWrapper = new ObjectListWrapper();
-                objectListWrapper.getObjects().add("aaa");
-//                objectListWrapper.getObjects().add("bbb");
-//                objectListWrapper.getObjects().add("ccc");
-//                objectListWrapper.getObjects().add("ddd");
-                byte[] data = new byte[0];
-                try {
-                    data = Serializer.serializeObject(objectListWrapper);
-                } catch (NotSerializableException e) {
-                    e.printStackTrace();
-                }
-                data = new byte[1];
+                byte[] data = new byte[1];
                 data[0] = 5;
                 System.out.println("sending data of length: " + data.length);
-//                ccp.write(outgoingChannel, objectListWrapper);
                 ccp.write(outgoingChannel, data);
                 return State.SUCCESS;
         }
@@ -73,6 +63,7 @@ public class ProvideFilesFSM implements PeerTimedFSMAction<ProvideFilesFSM.State
         switch (state) {
             case SUCCESS:
                 System.out.println("ProvideFiles: success");
+                success = true;
                 return true;
             case ERROR:
                 System.out.println("ProvideFiles: error");

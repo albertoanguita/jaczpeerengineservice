@@ -53,7 +53,7 @@ public class UploadsManager extends TransfersManager<UploadManager> {
      *
      * @return a shallow copy of the active downloads
      */
-    synchronized List<UploadManager> getAllUploads() {
+    public synchronized List<UploadManager> getAllUploads() {
         return getAllTransfers();
     }
 

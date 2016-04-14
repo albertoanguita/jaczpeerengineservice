@@ -11,8 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * todo: better do not issue disconnections. Just let them die. Give a method for disconnecting for exceeding connections, pick random ones
- * invoke this method when the user reduces the amount of connections
+ * Handles connections to regular peers
  */
 public class RegularsConnectionManager {
 
@@ -153,7 +152,7 @@ public class RegularsConnectionManager {
             public boolean hasReachedGoal(State state, Boolean goal) {
                 return true;
             }
-        });
+        }, "RegularsConnectionManager");
         dynamicState.setEvolveStateTimer(state -> state.stateCase == StateCase.ATTEMPTING_CONNECTIONS, CONNECTIONS_DELAY);
         dynamicState.setEvolveStateTimer(state -> true, GENERAL_DELAY);
         dynamicState.evolve();

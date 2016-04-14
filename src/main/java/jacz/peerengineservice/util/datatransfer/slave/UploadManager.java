@@ -4,6 +4,7 @@ import jacz.peerengineservice.PeerId;
 
 /**
  * This class provides information about an active upload (but no control over it)
+ * todo add method to retrieve future UploadStatistics object from slaveResourceStreamer
  */
 public class UploadManager {
 
@@ -37,6 +38,11 @@ public class UploadManager {
     public PeerId getRequestingPeer() {
         return requestingPeer;
     }
+
+    // todo
+//    public ResourceUploadStatistics getStatistics() {
+//        return slaveResourceStreamer.getStatistics();
+//    }
 
     /**
      * Not to invoke from outside the peer engine!!!

@@ -1,14 +1,10 @@
-package jacz.peerengineservice.test;
+package jacz.peerengineservice.client;
 
 import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
-import jacz.peerengineservice.client.PeerClient;
-import jacz.peerengineservice.client.PeerFSMFactory;
-import jacz.peerengineservice.client.PeerRelations;
-import jacz.peerengineservice.client.PeersPersonalData;
-import jacz.peerengineservice.client.connection.NetworkConfiguration;
 import jacz.peerengineservice.client.connection.peers.PeerConnectionConfig;
+import jacz.peerengineservice.test.TestListContainer;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.datatransfer.ResourceTransferEvents;
 import jacz.peerengineservice.util.datatransfer.TransferStatistics;
@@ -21,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * Generic test client
+ * Created by Alberto on 12/04/2016.
  */
 public class Client {
 
@@ -41,41 +37,39 @@ public class Client {
 
     public Client(
             PeerId ownPeerId,
-            NetworkConfiguration networkConfiguration,
-            PeersPersonalData peersPersonalData,
-            PeerRelations peerRelations,
+            String networkConfigurationPath,
+            String peersPersonalDataPath,
+            String peerKnowledgeBasePath,
             GeneralEventsImpl generalEvents,
             ConnectionEventsImpl connectionEvents,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, generalEvents, connectionEvents, new ResourceTransferEventsImpl(), customFSMs);
+        this(ownPeerId, networkConfigurationPath, peersPersonalDataPath, peerKnowledgeBasePath, generalEvents, connectionEvents, new ResourceTransferEventsImpl(), customFSMs);
     }
 
     public Client(
             PeerId ownPeerId,
-            NetworkConfiguration networkConfiguration,
-            PeersPersonalData peersPersonalData,
-            PeerRelations peerRelations,
+            String networkConfigurationPath,
+            String peersPersonalDataPath,
+            String peerKnowledgeBasePath,
             GeneralEventsImpl generalEvents,
             ConnectionEventsImpl connectionEvents,
             ResourceTransferEvents resourceTransferEvents,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(ownPeerId, new PeerEncryption(new byte[0]), networkConfiguration, peersPersonalData, peerRelations, generalEvents, connectionEvents, resourceTransferEvents, customFSMs, null, null);
+        this(ownPeerId, new PeerEncryption(new byte[0]), networkConfigurationPath, peersPersonalDataPath, peerKnowledgeBasePath, generalEvents, connectionEvents, resourceTransferEvents, customFSMs, null, null);
     }
 
     public Client(
             PeerId ownPeerId,
             PeerEncryption peerEncryption,
-            NetworkConfiguration networkConfiguration,
-            PeersPersonalData peersPersonalData,
-            PeerRelations peerRelations,
+            String networkConfigurationPath,
+            String peersPersonalDataPath,
+            String peerKnowledgeBasePath,
             GeneralEventsImpl generalEvents,
             ConnectionEventsImpl connectionEvents,
             ResourceTransferEvents resourceTransferEvents,
             Map<String, PeerFSMFactory> customFSMs,
             Map<String, DataAccessor> readingLists,
             Map<String, DataAccessor> writingLists) throws IOException {
-        generalEvents.init(ownPeerId, this);
-        connectionEvents.init(ownPeerId, this);
 
         String serverURL = "https://jaczserver.appspot.com/_ah/api/server/v1/";
         TestListContainer testListContainer = new TestListContainer(readingLists, writingLists);
@@ -91,18 +85,17 @@ public class Client {
         } catch (IOException | VersionedSerializationException e) {
             transferStatistics = new TransferStatistics();
         }
-        //Management.dropAndCreateKBDatabase(DB_PATH);
         peerClient = new PeerClient(
                 ownPeerId,
                 serverURL,
                 buildPeerConnectionConfig(),
-                DB_PATH,
+                peerKnowledgeBasePath,
                 peerEncryption,
-                NETWORK_CONFIGURATION_PATH,
+                networkConfigurationPath,
                 generalEvents,
                 connectionEvents,
                 resourceTransferEvents,
-                PEERS_PERSONAL_DATA_PATH,
+                peersPersonalDataPath,
                 transferStatistics,
                 customFSMs,
                 testListContainer,
@@ -147,6 +140,11 @@ public class Client {
     public TempFileManager getTempFileManager() {
         return tempFileManager;
     }
+
+    private String formatPeer(PeerId peerId) {
+        return "{" + peerId.toString().substring(40) + "}";
+    }
+
 
     @Override
     protected void finalize() throws Throwable {

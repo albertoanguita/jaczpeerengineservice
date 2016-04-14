@@ -65,6 +65,10 @@ public class State {
         this.externalPort = externalPort;
     }
 
+    public NetworkTopologyState getNetworkTopologyState() {
+        return networkTopologyState;
+    }
+
     public ConnectionToServerState getConnectionToServerState() {
         return connectionToServerState;
     }

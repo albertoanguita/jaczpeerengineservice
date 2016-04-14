@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 
 /**
  * This class handles events happened during a download and transmits them to the user
+ * todo move statistics object to MasterResourceStreamer, it does not belong here
  */
 class DownloadReports {
 

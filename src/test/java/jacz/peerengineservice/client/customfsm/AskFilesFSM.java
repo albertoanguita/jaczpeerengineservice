@@ -1,4 +1,4 @@
-package jacz.peerengineservice.test.customfsm;
+package jacz.peerengineservice.client.customfsm;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
@@ -20,7 +20,14 @@ public class AskFilesFSM implements PeerTimedFSMAction<AskFilesFSM.State> {
 
     private byte outgoingChannel;
 
+    private boolean success;
+
     public AskFilesFSM() {
+        success = false;
+    }
+
+    public boolean isSuccess() {
+        return success;
     }
 
     @Override
@@ -28,20 +35,7 @@ public class AskFilesFSM implements PeerTimedFSMAction<AskFilesFSM.State> {
         switch (state) {
 
             case REQUEST_SENT:
-//            case REQUEST_SENT_2:
-                // files received
                 System.out.println(message);
-//                if (message instanceof ObjectListWrapper) {
-//                    ObjectListWrapper objectListWrapper = (ObjectListWrapper) message;
-//                    Set<String> fileHashes = new HashSet<String>(objectListWrapper.getObjects().size());
-//                    for (Object o : objectListWrapper.getObjects()) {
-//                        fileHashes.add((String) o);
-//                    }
-//                    System.out.println("AskFilesFSM -> Received file hashes: " + fileHashes);
-//                    return State.SUCCESS;
-//                } else {
-//                    return State.ERROR;
-//                }
                 return State.REQUEST_SENT_2;
         }
         return State.ERROR;
@@ -54,24 +48,6 @@ public class AskFilesFSM implements PeerTimedFSMAction<AskFilesFSM.State> {
             case REQUEST_SENT_2:
                 System.out.println(Arrays.toString(data));
                 return State.SUCCESS;
-                // files received
-//                Object message;
-//                try {
-//                    message = Serializer.deserializeObject(data, new MutableOffset());
-//                } catch (ClassNotFoundException e) {
-//                    throw new IllegalArgumentException();
-//                }
-//                if (message instanceof ObjectListWrapper) {
-//                    ObjectListWrapper objectListWrapper = (ObjectListWrapper) message;
-//                    Set<String> fileHashes = new HashSet<String>(objectListWrapper.getObjects().size());
-//                    for (Object o : objectListWrapper.getObjects()) {
-//                        fileHashes.add((String) o);
-//                    }
-//                    System.out.println("AskFilesFSM -> Received file hashes: " + fileHashes);
-//                    return State.SUCCESS;
-//                } else {
-//                    return State.ERROR;
-//                }
         }
         return State.ERROR;
     }
@@ -88,6 +64,7 @@ public class AskFilesFSM implements PeerTimedFSMAction<AskFilesFSM.State> {
 
             case SUCCESS:
                 System.out.println("AskFiles: success");
+                success = true;
                 return true;
             case ERROR:
                 System.out.println("AskFiles: error");

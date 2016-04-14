@@ -28,12 +28,12 @@ public class PeerEntryFacade {
     }
 
     PeerEntryFacade(PeerId peerId, String dbPath) {
-        Base.openTransaction();
+        ActiveJDBCController.getDB().openTransaction();
         peerEntry = new PeerEntry();
         peerEntry.setString(Management.PEER_ID.name, peerId.toString());
         init();
         peerEntry.insert();
-        Base.commitTransaction();
+        ActiveJDBCController.getDB().commitTransaction();
         this.dbPath = dbPath;
     }
 
@@ -57,61 +57,61 @@ public class PeerEntryFacade {
     }
 
     public PeerId getPeerId() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         PeerId peerId = new PeerId(peerEntry.getString(Management.PEER_ID.name));
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return peerId;
     }
 
     public CountryCode getMainCountry() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         String mainCountry = peerEntry.getString(Management.MAIN_COUNTRY.name);
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return mainCountry != null ? CountryCode.valueOf(mainCountry) : null;
     }
 
     public void setMainCountry(CountryCode mainCountry) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setString(Management.MAIN_COUNTRY.name, mainCountry.toString());
         peerEntry.saveIt();
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
     }
 
     public Management.Relationship getRelationship() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         String relationshipValue = peerEntry.getString(Management.RELATIONSHIP.name);
         Management.Relationship relationship = relationshipValue != null ? Management.Relationship.valueOf(relationshipValue) : null;
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return relationship;
     }
 
     public void setRelationship(Management.Relationship relationship) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setString(Management.RELATIONSHIP.name, relationship.name());
         peerEntry.saveIt();
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
     }
 
     public Management.Relationship getRelationshipToUs() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         String relationshipValue = peerEntry.getString(Management.RELATIONSHIP_TO_US.name);
         Management.Relationship relationship = relationshipValue != null ? Management.Relationship.valueOf(relationshipValue) : null;
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return relationship;
     }
 
     public void setRelationshipToUs(Management.Relationship relationship) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setString(Management.RELATIONSHIP_TO_US.name, relationship.name());
         peerEntry.saveIt();
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
     }
 
     public Management.ConnectionWish getWishForRegularConnections() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         String wishValue = peerEntry.getString(Management.WISH_REGULAR_CONNECTIONS.name);
         Management.ConnectionWish wish = wishValue != null ? Management.ConnectionWish.valueOf(wishValue) : null;
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return wish;
     }
 
@@ -121,83 +121,84 @@ public class PeerEntryFacade {
     }
 
     public void setWishForRegularConnections(Management.ConnectionWish wish) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setString(Management.WISH_REGULAR_CONNECTIONS.name, wish.name());
         peerEntry.saveIt();
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
     }
 
+    // todo I am not using the connection info ever. I probably do not need it at this level, only at the pkb. Just remove these 2 methods
     public boolean isConnected() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         boolean connected = peerEntry.getBoolean(Management.IS_CONNECTED.name);
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return connected;
     }
 
     public void setConnected(boolean connected) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setBoolean(Management.IS_CONNECTED.name, connected);
         if (!connected) {
             // also update last session
             peerEntry.setLong(Management.LAST_SESSION.name, new Date().getTime());
         }
         peerEntry.saveIt();
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
     }
 
     public Date getLastSession() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         Long date = peerEntry.getLong(Management.LAST_SESSION.name);
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return date != null ? new Date(date) : null;
     }
 
     public Date getLastConnectionAttempt() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         Long date = peerEntry.getLong(Management.LAST_CONNECTION_ATTEMPT.name);
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return date != null ? new Date(date) : null;
     }
 
     public void updateConnectionAttempt() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setLong(Management.LAST_CONNECTION_ATTEMPT.name, new Date().getTime());
         peerEntry.saveIt();
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
     }
 
     public int getAffinity() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         int affinity = peerEntry.getInteger(Management.AFFINITY.name);
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
         return affinity;
     }
 
     public void setAffinity(int affinity) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setInteger(Management.AFFINITY.name, affinity);
         peerEntry.saveIt();
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
     }
 
     public PeerAddress getPeerAddress() {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         try {
             String peerAddressString = peerEntry.getString(Management.ADDRESS.name);
-            return peerAddressString != null ? new PeerAddress(peerAddressString) : new PeerAddress();
+            return peerAddressString != null ? new PeerAddress(peerAddressString) : PeerAddress.nullPeerAddress();
         } catch (IOException e) {
             // delete stored peer address and return unknown address;
             peerEntry.setString(Management.ADDRESS.name, null);
             return null;
         } finally {
-            ActiveJDBCController.disconnect(dbPath);
+            ActiveJDBCController.disconnect();
         }
     }
 
     public void setPeerAddress(PeerAddress peerAddress) {
-        ActiveJDBCController.connect(dbPath);
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setString(Management.ADDRESS.name, peerAddress.serialize());
         peerEntry.saveIt();
-        ActiveJDBCController.disconnect(dbPath);
+        ActiveJDBCController.disconnect();
     }
 }

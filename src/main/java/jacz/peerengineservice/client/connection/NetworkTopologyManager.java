@@ -121,7 +121,7 @@ public class NetworkTopologyManager {
             public boolean hasReachedGoal(State.NetworkTopologyState state, Boolean goal) {
                 return goal && state == State.NetworkTopologyState.ALL_FETCHED || !goal;
             }
-        });
+        }, "NetworkTopologyManager");
         dynamicState.setEnterStateHook(State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED, new Runnable() {
             @Override
             public void run() {

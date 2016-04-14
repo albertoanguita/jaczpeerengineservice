@@ -1,9 +1,13 @@
 package jacz.peerengineservice.client.connection.peers;
 
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Handles the connection to favorite peers
@@ -30,6 +34,7 @@ public class FavoritesConnectionManager {
             public boolean runTransition(State state, Boolean goal, EvolvingStateController<State, Boolean> controller) {
                 if (goal) {
                     // trying to connect to favorite peers
+                    searchFriends();
                     connectToFavoritePeers();
                 }
                 return true;
@@ -39,8 +44,28 @@ public class FavoritesConnectionManager {
             public boolean hasReachedGoal(State state, Boolean goal) {
                 return true;
             }
-        });
+        }, "FavoritesConnectionManager");
         dynamicState.setEvolveStateTimer(state -> true, RETRY);
+    }
+
+    /**
+     * Performs a connected friend search. Searches are performed periodically, but the user can force a search using this method. If we are not
+     * connected to the server, this method will have no effect
+     */
+    private void searchFriends() {
+        // check if there are disconnected favorite peers of which we do not have address info
+        peerConnectionManager.askForFavoritePeersInfo(buildNeedInfoFavoriteList());
+    }
+
+    private List<PeerId> buildNeedInfoFavoriteList() {
+        List<PeerId> needInfoFavorites = new ArrayList<>();
+        for (PeerEntryFacade peerEntryFacade : peerKnowledgeBase.getFavoritePeers(PeerKnowledgeBase.ConnectedQuery.DISCONNECTED)) {
+            if (peerEntryFacade.getPeerAddress().isNull()) {
+                // add this peer to the list of favorite peers for which we need to query their address
+                needInfoFavorites.add(peerEntryFacade.getPeerId());
+            }
+        }
+        return needInfoFavorites;
     }
 
     private void connectToFavoritePeers() {
@@ -54,6 +79,10 @@ public class FavoritesConnectionManager {
 
     public void setConnectionGoal(boolean connect) {
         dynamicState.setGoal(connect);
+    }
+
+    public void searchFavoritesNow() {
+        dynamicState.evolve();
     }
 
     public void stop() {

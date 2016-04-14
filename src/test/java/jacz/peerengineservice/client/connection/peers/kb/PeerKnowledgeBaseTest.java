@@ -17,12 +17,6 @@ public class PeerKnowledgeBaseTest {
     private static final String dbPath = "peerKB.db";
 
     @org.junit.Test
-    public void createDatabase() {
-
-        Management.dropAndCreateKBDatabase(dbPath);
-    }
-
-    @org.junit.Test
     public void testDatabase() {
 
         Management.dropAndCreateKBDatabase(dbPath);
@@ -58,7 +52,7 @@ public class PeerKnowledgeBaseTest {
         Assert.assertEquals(null, peerEntryFacade.getLastConnectionAttempt());
         Assert.assertEquals(Management.ConnectionWish.YES, peerEntryFacade.getWishForRegularConnections());
         Assert.assertEquals(0, peerEntryFacade.getAffinity());
-        Assert.assertEquals(null, peerEntryFacade.getPeerAddress());
+        Assert.assertEquals(PeerAddress.nullPeerAddress(), peerEntryFacade.getPeerAddress());
 
 //        peerEntryFacade.setMainLanguage(LanguageCode.es);
         peerEntryFacade.setMainCountry(CountryCode.ES);

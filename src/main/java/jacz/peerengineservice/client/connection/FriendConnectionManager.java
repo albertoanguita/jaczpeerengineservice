@@ -37,7 +37,7 @@ public class FriendConnectionManager {
 //        }
 //
 //        synchronized void start() {
-//            friendConnectionManager.searchFriends();
+//            friendConnectionManager.searchFavorites();
 //            timer.reset(FRIEND_SEARCH_DELAY_NORMAL);
 //        }
 //
@@ -51,7 +51,7 @@ public class FriendConnectionManager {
 //
 //        @Override
 //        public Long wakeUp(Timer timer) {
-//            friendConnectionManager.searchFriends();
+//            friendConnectionManager.searchFavorites();
 //            return FRIEND_SEARCH_DELAY_NORMAL;
 //        }
 //    }
@@ -163,7 +163,7 @@ public class FriendConnectionManager {
 //     * Performs a connected friend search. Searches are performed periodically, but the user can force a search using this method. If we are not
 //     * connected to the server, this method will have no effect
 //     */
-//    void searchFriends() {
+//    void searchFavorites() {
 //        // check if there are friends to which we are not connected yet
 //        // we can assume that we are connected to the server
 //        if (isWishForFriendSearch()) {

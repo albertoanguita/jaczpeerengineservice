@@ -19,6 +19,7 @@ import jacz.util.network.IP4Port;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -27,11 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * base and checking authentication. Changes in connection config are done through here.
  * <p/>
  * todo add connection attempts info
- * <p/>
- * todo disconnect from blocked peers. Make another evolving state class that, when we add a blocked peer, starts
- * checking regularly (starts every 5 seconds). Each check we double the check time. Finally, when we reach 5 minutes,
- * we stop checking
- * It might not be possible to modify timers while running transitions... check timer implementation
  * <p/>
  * todo synch
  */
@@ -93,6 +89,8 @@ public class PeerConnectionManager {
 
     private final PeerClientConnectionManager peerClientConnectionManager;
 
+    private final DisconnectionsManager disconnectionsManager;
+
     private final GeneralEvents generalEvents;
 
 
@@ -119,6 +117,7 @@ public class PeerConnectionManager {
         this.wishForConnection = new AtomicBoolean(false);
         this.peerClientPrivateInterface = peerClientPrivateInterface;
         this.peerClientConnectionManager = peerClientConnectionManager;
+        this.disconnectionsManager = new DisconnectionsManager(this, connectedPeers, peerKnowledgeBase);
         this.generalEvents = generalEvents;
     }
 
@@ -128,7 +127,7 @@ public class PeerConnectionManager {
             // gather our own peer address
             ownPeerAddress = peerClientConnectionManager.getPeerAddress();
         }
-//        favoritesConnectionManager.setConnectionGoal(enabled);
+        favoritesConnectionManager.setConnectionGoal(enabled);
 //        regularsConnectionManager.setConnectionGoal(enabled);
     }
 
@@ -152,26 +151,41 @@ public class PeerConnectionManager {
         return false;
     }
 
+    synchronized void askForFavoritePeersInfo(List<PeerId> needInfoFavorites) {
+        if (!needInfoFavorites.isEmpty()) {
+            // request peers data to the server
+            try {
+                ServerAPI.InfoResponse infoResponse = ServerAPI.info(serverURL, new ServerAPI.InfoRequest(needInfoFavorites));
+                digestServerInfoResponse(infoResponse);
+            } catch (IOException | ServerAccessException e) {
+                // error connecting with the server -> will retry later
+            }
+        }
+    }
+
     synchronized void askForMoreRegularPeers(CountryCode country) {
         try {
             ServerAPI.InfoResponse infoResponse = ServerAPI.regularPeersRequest(serverURL, new ServerAPI.RegularPeersRequest(country));
-            for (ServerAPI.PeerIdInfo peerIdInfo : infoResponse.getPeerIdInfoList()) {
-                // update info for each peer
-                // todo use a transaction
-                PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerIdInfo.getPeerId());
-                peerEntryFacade.setMainCountry(peerIdInfo.getMainCountry());
-                if (peerIdInfo.isWishRegularConnections()) {
-                    peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.YES);
-                } else {
-                    peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.NO);
-                }
-                peerEntryFacade.setConnected(true);
-                IP4Port externalAddress = new IP4Port(peerIdInfo.getExternalIPAddress(), peerIdInfo.getExternalMainServerPort());
-                IP4Port localAddress = new IP4Port(peerIdInfo.getLocalIPAddress(), peerIdInfo.getLocalMainServerPort());
-                peerEntryFacade.setPeerAddress(new PeerAddress(externalAddress, localAddress));
-            }
+            digestServerInfoResponse(infoResponse);
         } catch (IOException | ServerAccessException e) {
             // error connecting with the server -> will retry later
+        }
+    }
+
+    private void digestServerInfoResponse(ServerAPI.InfoResponse infoResponse) {
+        for (ServerAPI.PeerIdInfo peerIdInfo : infoResponse.getPeerIdInfoList()) {
+            // update info for each peer
+            // todo use a transaction
+            PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerIdInfo.getPeerId());
+            peerEntryFacade.setMainCountry(peerIdInfo.getMainCountry());
+            if (peerIdInfo.isWishRegularConnections()) {
+                peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.YES);
+            } else {
+                peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.NO);
+            }
+            IP4Port externalAddress = new IP4Port(peerIdInfo.getExternalIPAddress(), peerIdInfo.getExternalMainServerPort());
+            IP4Port localAddress = new IP4Port(peerIdInfo.getLocalIPAddress(), peerIdInfo.getLocalMainServerPort());
+            peerEntryFacade.setPeerAddress(new PeerAddress(externalAddress, localAddress));
         }
     }
 
@@ -198,9 +212,15 @@ public class PeerConnectionManager {
                 return true;
             } catch (IOException e2) {
                 // peer not available or wrong/outdated peer data
+                invalidatePeerAddressInfo(peerEntryFacade.getPeerId());
                 return false;
             }
         }
+    }
+
+    private void invalidatePeerAddressInfo(PeerId peerId) {
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
+        peerEntryFacade.setPeerAddress(PeerAddress.nullPeerAddress());
     }
 
     private void tryConnection(IP4Port ip4Port, PeerId serverPeerId, IP4Port secondaryIP4Port) throws IOException {
@@ -319,10 +339,11 @@ public class PeerConnectionManager {
 
         // check client authentication
         // first, check that the public key corresponds to the client id
-        if (!connectionRequest.clientPeerId.equals(new PeerId(connectionRequest.clientPublicKey.getEncoded()))) {
-            // provided key does not correspond to provided client peer id
-            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.WRONG_AUTHENTICATION_ID_KEY_NOT_MATCHING);
-        }
+        // todo activate
+//        if (!connectionRequest.clientPeerId.equals(new PeerId(connectionRequest.clientPublicKey.getEncoded()))) {
+//            // provided key does not correspond to provided client peer id
+//            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.WRONG_AUTHENTICATION_ID_KEY_NOT_MATCHING);
+//        }
         // second, check that the provided central server secret is good
         // todo
         // third, check that the central server secret is truly encoded by this peer
@@ -490,6 +511,7 @@ public class PeerConnectionManager {
                 tryConnection(secondaryIP4Port, serverPeerId, null);
             } catch (IOException e) {
                 // peer not available or wrong peer data received
+                invalidatePeerAddressInfo(serverPeerId);
             }
         }
     }
@@ -566,6 +588,7 @@ public class PeerConnectionManager {
         setWishForConnect(false);
         favoritesConnectionManager.stop();
         regularsConnectionManager.stop();
+        disconnectionsManager.stop();
     }
 
     public static byte[] getConcurrentChannelsExceptConnection() {
@@ -619,7 +642,7 @@ public class PeerConnectionManager {
         PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
         if (peerEntryFacade.getRelationship() != Management.Relationship.FAVORITE) {
             peerEntryFacade.setRelationship(Management.Relationship.FAVORITE);
-            searchFriends();
+            searchFavorites();
             generalEvents.peerAddedAsFriend(peerId);
         }
     }
@@ -628,7 +651,7 @@ public class PeerConnectionManager {
         PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
         if (peerEntryFacade.getRelationship() == Management.Relationship.FAVORITE) {
             peerEntryFacade.setRelationship(Management.Relationship.REGULAR);
-            searchFriends();
+            disconnectionsManager.checkDisconnections();
             generalEvents.peerRemovedAsFriend(peerId);
         }
     }
@@ -645,7 +668,7 @@ public class PeerConnectionManager {
         PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
         if (peerEntryFacade.getRelationship() != Management.Relationship.BLOCKED) {
             peerEntryFacade.setRelationship(Management.Relationship.BLOCKED);
-            searchFriends();
+            disconnectionsManager.checkDisconnections();
             generalEvents.peerAddedAsBlocked(peerId);
         }
     }
@@ -654,15 +677,19 @@ public class PeerConnectionManager {
         PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
         if (peerEntryFacade.getRelationship() == Management.Relationship.BLOCKED) {
             peerEntryFacade.setRelationship(Management.Relationship.REGULAR);
-            searchFriends();
             generalEvents.peerRemovedAsBlocked(peerId);
         }
     }
 
-    public synchronized void searchFriends() {
-        // todo currently unavailable
-
+    public synchronized void searchFavorites() {
+        favoritesConnectionManager.searchFavoritesNow();
     }
 
+    public CountryCode getOwnMainCountry() {
+        return peerConnectionConfig.getMainCountry();
+    }
 
+    public boolean isOwnWishForRegularConnections() {
+        return peerConnectionConfig.isWishRegularConnections();
+    }
 }

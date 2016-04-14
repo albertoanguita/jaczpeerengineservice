@@ -206,8 +206,7 @@ public class PeerClientConnectionManager {
             public boolean hasReachedGoal(ConnectionState state, Boolean goal) {
                 return goal && state == ConnectionState.CONNECTED || !goal && state == ConnectionState.DISCONNECTED;
             }
-        }
-        );
+        }, "PeerClientConnectionManager");
     }
 
     public NetworkTopologyManager getNetworkTopologyManager() {
@@ -370,8 +369,8 @@ public class PeerClientConnectionManager {
      * Performs a connected friend search. Searches are performed periodically, but the user can force a search using this method. If we are not
      * connected to the server, this method will have no effect
      */
-    public synchronized void searchFriends() {
-        peerConnectionManager.searchFriends();
+    public synchronized void searchFavorites() {
+        peerConnectionManager.searchFavorites();
     }
 
 
@@ -383,7 +382,7 @@ public class PeerClientConnectionManager {
      * The peer server manager reports that he received an unrecognized server message. Stop trying to connect and
      * notify client
      */
-    void unrecognizedServerMessage() {
+    public void unrecognizedServerMessage() {
         connectionEvents.unrecognizedMessageFromServer(peerServerManager.getConnectionToServerStatus());
         setWishForConnection(false);
         dynamicState.evolve();

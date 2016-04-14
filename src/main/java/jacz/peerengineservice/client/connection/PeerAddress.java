@@ -38,9 +38,10 @@ public class PeerAddress {
         localAddress = deserializeAddress(strTok);
     }
 
-    public PeerAddress() {
-        externalAddress = null;
-        localAddress = null;
+    public static PeerAddress nullPeerAddress() {
+        String nullAddress = null;
+        //noinspection ConstantConditions
+        return new PeerAddress(nullAddress, nullAddress);
     }
 
     private IP4Port deserializeAddress(StringTokenizer strTok) throws IOException {
@@ -73,11 +74,31 @@ public class PeerAddress {
         }
     }
 
+    public boolean isNull() {
+        return externalAddress == null && localAddress == null;
+    }
+
     public IP4Port getExternalAddress() {
         return externalAddress;
     }
 
     public IP4Port getLocalAddress() {
         return localAddress;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PeerAddress that = (PeerAddress) o;
+        return !(externalAddress != null ? !externalAddress.equals(that.externalAddress) : that.externalAddress != null) && !(localAddress != null ? !localAddress.equals(that.localAddress) : that.localAddress != null);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = externalAddress != null ? externalAddress.hashCode() : 0;
+        result = 31 * result + (localAddress != null ? localAddress.hashCode() : 0);
+        return result;
     }
 }

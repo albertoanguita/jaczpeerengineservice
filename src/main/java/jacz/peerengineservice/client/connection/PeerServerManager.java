@@ -115,7 +115,7 @@ public class PeerServerManager {
                 return goal && state == State.ConnectionToServerState.CONNECTED && isCorrectConnectionInformation()
                         || !goal && (state == State.ConnectionToServerState.DISCONNECTED || state == State.ConnectionToServerState.UNREGISTERED);
             }
-        });
+        }, "PeerServerManager");
         dynamicState.setEvolveStateTimer(State.ConnectionToServerState.UNREGISTERED, RETRY_CONNECTION_DELAY);
         dynamicState.setEvolveStateTimer(State.ConnectionToServerState.DISCONNECTED, RETRY_CONNECTION_DELAY);
         dynamicState.setEvolveStateTimer(State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY, RETRY_CONNECTION_DELAY);
@@ -194,8 +194,8 @@ public class PeerServerManager {
                                     actualConnectionData.localAddress,
                                     actualConnectionData.localPort,
                                     actualConnectionData.externalPort,
-                                    CountryCode.AC, // todo
-                                    true
+                                    peerClientConnectionManager.getPeerConnectionManager().getOwnMainCountry(),
+                                    peerClientConnectionManager.getPeerConnectionManager().isOwnWishForRegularConnections()
                             )
                     );
             switch (connectionResponse.getResponse()) {
