@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Class that handles active transfers (used for downloads and uploads)
@@ -17,16 +18,19 @@ public abstract class TransfersManager<T> implements TimerAction {
     /**
      * Active uploads, indexed by store name and resource streamer id (slave id or master id)
      */
-    private Map<String, Map<String, T>> activeTransfers;
+    private final Map<String, Map<String, T>> activeTransfers;
 
     /**
      * Timer for periodic reports
      */
     private final Timer timer;
 
+    private final AtomicBoolean alive;
+
     public TransfersManager(String threadName) {
         activeTransfers = new HashMap<>();
         timer = new Timer(1, this, false, threadName);
+        alive = new AtomicBoolean(true);
         ThreadExecutor.registerClient(this.getClass().getName());
     }
 
@@ -99,8 +103,11 @@ public abstract class TransfersManager<T> implements TimerAction {
      * Stops this class threads, so it will not be usable anymore
      */
     synchronized void stop() {
-        timer.kill();
-        ThreadExecutor.shutdownClient(this.getClass().getName());
+        if (alive.get()) {
+            alive.set(false);
+            timer.kill();
+            ThreadExecutor.shutdownClient(this.getClass().getName());
+        }
     }
 
 

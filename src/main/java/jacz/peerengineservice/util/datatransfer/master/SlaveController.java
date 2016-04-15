@@ -13,6 +13,8 @@ import jacz.util.id.AlphaNumFactory;
 import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.numeric.range.LongRange;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * This private class stores information about one active slave, and handles some messages from such slave.
  * <p/>
@@ -138,12 +140,12 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     /**
      * Whether this slave is active (true) or paused (false)
      */
-    private boolean active;
+    private final AtomicBoolean active;
 
     /**
      * Whether this resource is alive (it is not alive when the master tells him to stop, and it cannot be revived)
      */
-    private boolean alive;
+    private final AtomicBoolean alive;
 
     SlaveController(MasterResourceStreamer masterResourceStreamer, boolean sizeIsKnown, ResourceLink resourceLink, ResourceProvider resourceProvider, short subchannel, long requestLifeMillis, ResourcePartScheduler resourcePartScheduler, boolean active) {
         id = AlphaNumFactory.getStaticId();
@@ -161,8 +163,8 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         resourceSegmentQueueWithMonitoring = new ResourceSegmentQueueWithMonitoring(MILLIS_TO_MEASURE_SPEED, this, new LongRange(null, null), MILLIS_ALLOWED_OUT_OF_SPEED_RANGE, MILLIS_REMAINING_FOR_REPORT);
         this.resourcePartScheduler = resourcePartScheduler;
         this.resourcePartScheduler.addSlave(this);
-        this.active = active;
-        alive = true;
+        this.active = new AtomicBoolean(active);
+        alive = new AtomicBoolean(true);
         ThreadExecutor.registerClient(this.getClass().getName());
     }
 
@@ -266,7 +268,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     synchronized void processMessage(Object message) {
         // it we are still waiting for an initialization message, initialize, as it is presumably such message.
         // if not, die as every message must be received as byte[]
-        if (alive) {
+        if (alive.get()) {
             resetTimeoutTimer();
             if (isWaitingForRequestResponse()) {
                 initialize(message);
@@ -279,7 +281,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
 
     synchronized void processMessage(byte[] data) {
         // if we are still waiting for initialization data, die as we did not expect bytes. Otherwise, process it properly
-        if (alive) {
+        if (alive.get()) {
             resetTimeoutTimer();
             if (isWaitingForRequestResponse()) {
                 // byte array was not expected here
@@ -297,7 +299,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
                                     masterResourceStreamer.writeData(slaveMessage.resourceChunk);
                                     resourcePartScheduler.reportDownloadedSegment(this, slaveMessage.resourceChunk);
                                     // if we run out of assignment, ask for more
-                                    if (alive && resourceSegmentQueueWithMonitoring.isEmpty()) {
+                                    if (alive.get() && resourceSegmentQueueWithMonitoring.isEmpty()) {
                                         requestAssignment();
                                     }
                                 } catch (IllegalArgumentException e) {
@@ -318,7 +320,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
                         case SEGMENT_AVAILABILITY_REPORT:
                             resourcePartScheduler.setSlaveShare(this, slaveMessage.resourcePart);
                             // if nothing is currently assigned to this slave, request an assignment
-                            if (alive && resourceSegmentQueueWithMonitoring.isEmpty()) {
+                            if (alive.get() && resourceSegmentQueueWithMonitoring.isEmpty()) {
                                 requestAssignment();
                             }
                             break;
@@ -343,7 +345,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     }
 
     synchronized void reportSizeIsKnown() {
-        if (alive) {
+        if (alive.get()) {
             if (!sizeIsKnown) {
                 sizeIsKnown = true;
                 resourceLink.requestAvailableSegments();
@@ -352,32 +354,34 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     }
 
     synchronized void pause() {
-        if (alive) {
-            if (active) {
-                active = false;
+        if (alive.get()) {
+            if (active.get()) {
+                active.set(false);
                 eraseCurrentAssignment();
             }
         }
     }
 
     synchronized void resume() {
-        if (alive) {
-            if (!active) {
-                active = true;
+        if (alive.get()) {
+            if (!active.get()) {
+                active.set(true);
                 requestAssignment();
             }
         }
     }
 
     private synchronized void stop() {
-        stopTimeoutTimer();
-        stopResourceLinkTimeoutTimer();
-        stopRequestAssignationTimer();
-        stopRequestAvailableSegmentsTimer();
-        stopResourceSegmentQueueWithMonitoring();
-        resourcePartScheduler.removeSlave(this);
-        alive = false;
-        ThreadExecutor.shutdownClient(this.getClass().getName());
+        if (alive.get()) {
+            alive.set(false);
+            stopTimeoutTimer();
+            stopResourceLinkTimeoutTimer();
+            stopRequestAssignationTimer();
+            stopRequestAvailableSegmentsTimer();
+            stopResourceSegmentQueueWithMonitoring();
+            resourcePartScheduler.removeSlave(this);
+            ThreadExecutor.shutdownClient(this.getClass().getName());
+        }
     }
 
     private synchronized void stopTimeoutTimer() {
@@ -407,7 +411,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
 
     @Override
     public synchronized Long wakeUp(Timer timer) {
-        if (alive) {
+        if (alive.get()) {
             if (timer == timeoutTimer) {
                 // this slave died, either from too much time to answer the initial requests, or from too much time without
                 // any activity (the reason does not matter at this point). The timer is killed afterwards
@@ -435,7 +439,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     @Override
     public synchronized void remainingTime(long millis) {
         // time remaining is low
-        if (alive) {
+        if (alive.get()) {
             requestAssignment();
         }
     }
@@ -447,7 +451,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
 
     @Override
     public synchronized void speedBelowRange(double speed) {
-        if (alive) {
+        if (alive.get()) {
             eraseCurrentAssignment();
             requestAssignment();
         }
@@ -460,7 +464,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     }
 
     private void requestAssignment() {
-        if (alive && active) {
+        if (alive.get() && active.get()) {
             ObjectListWrapper assignment = resourcePartScheduler.requestAssignation(this, resourceSegmentQueueWithMonitoring.getAverageSpeed());
             if (assignment.getObjects().size() == 2) {
                 // we got something assigned

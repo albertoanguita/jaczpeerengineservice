@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class provides access to temporary files. This includes reading and writing access and controlling concurrency.
@@ -66,11 +67,11 @@ public class TempFileManager {
      */
     private static final String TEMP_FILE_NAME_INIT = "temp";
 
-    private static final String TEMP_FILE_INDEX_NAME_END = ".ndx";
+    private static final String TEMP_FILE_INDEX_NAME_END = "ndx";
 
-    private static final String TEMP_FILE_INDEX_BACKUP_NAME_END = ".bak";
+    private static final String TEMP_FILE_INDEX_BACKUP_NAME_END = "bak";
 
-    private static final String TEMP_FILE_DATA_NAME_END = ".dat";
+    private static final String TEMP_FILE_DATA_NAME_END = "dat";
 
     private static final int TEMP_FILE_INDEX_CRC_BYTES = 4;
 
@@ -93,6 +94,8 @@ public class TempFileManager {
      */
     private final Map<String, ConcurrencyController> concurrencyControllers;
 
+    private final AtomicBoolean alive;
+
     /**
      * Constructor of the temporary file manager. A path to an existing directory is received. All files will be
      * created inside that directory. External changes on that dir should be avoided while on use
@@ -103,6 +106,7 @@ public class TempFileManager {
         this.baseDir = buildBaseDir(baseDir);
         this.tempFileManagerEventsBridge = new TempFileManagerEventsBridge(tempFileManagerEvents);
         concurrencyControllers = new HashMap<>();
+        alive = new AtomicBoolean(true);
         ThreadExecutor.registerClient(this.getClass().getName());
     }
 
@@ -475,7 +479,10 @@ public class TempFileManager {
     }
 
     public synchronized void stop() {
-        tempFileManagerEventsBridge.stop();
-        ThreadExecutor.shutdownClient(this.getClass().getName());
+        if (alive.get()) {
+            alive.set(false);
+            tempFileManagerEventsBridge.stop();
+            ThreadExecutor.shutdownClient(this.getClass().getName());
+        }
     }
 }

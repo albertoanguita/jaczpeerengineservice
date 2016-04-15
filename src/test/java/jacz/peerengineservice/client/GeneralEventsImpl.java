@@ -9,7 +9,10 @@ import jacz.peerengineservice.util.PeerRelationship;
  */
 public class GeneralEventsImpl implements GeneralEvents {
 
-    public void init() {
+    protected Client client;
+
+    public void init(Client client) {
+        this.client = client;
     }
 
     @Override

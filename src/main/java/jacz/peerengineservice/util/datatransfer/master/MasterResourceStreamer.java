@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class handles one resource download process. It communicates with all slaves offering the resource to
@@ -142,13 +143,13 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     /**
      * Whether this resource download is active or paused (by the user)
      */
-    private boolean active;
+    private final AtomicBoolean active;
 
     /**
      * Whether this download is alive (is running or paused). A download stops being alive when it is stopped, cancelled or completed.
      * A dead download cannot be set alive again
      */
-    private boolean alive;
+    private final AtomicBoolean alive;
 
     /**
      * The state of the download
@@ -211,8 +212,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         resourcePartScheduler = new ResourcePartScheduler(this, resourceStreamingManager, resourceSize, availableSegments, streamingNeed);
         this.totalHash = totalHash;
         this.totalHashAlgorithm = totalHashAlgorithm;
-        active = true;
-        alive = true;
+        active = new AtomicBoolean(true);
+        alive = new AtomicBoolean(true);
         state = DownloadState.RUNNING;
         ThreadExecutor.registerClient(this.getClass().getName());
         if (error) {
@@ -284,7 +285,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @param resourceProviders collection of resource providers offering the desired resource
      */
     private synchronized void reportAvailableResourceProvidersSynch(Collection<? extends ResourceProvider> resourceProviders) {
-        if (alive) {
+        if (alive.get()) {
             // add the resource providers which are not active providers or active requests
             Set<PeerId> activeResourceProviders = getActiveResourceProviders();
             for (ResourceProvider resourceProvider : resourceProviders) {
@@ -326,7 +327,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     }
 
     private synchronized void addSlave(ResourceLink resourceLink, ResourceProvider resourceProvider, short subchannel) {
-        final SlaveController slaveController = new SlaveController(this, resourceSize != null, resourceLink, resourceProvider, subchannel, resourceLink.recommendedMillisForRequest(), resourcePartScheduler, active);
+        final SlaveController slaveController = new SlaveController(this, resourceSize != null, resourceLink, resourceProvider, subchannel, resourceLink.recommendedMillisForRequest(), resourcePartScheduler, active.get());
         activeSlaves.put(subchannel, slaveController);
         ThreadExecutor.submit(new Runnable() {
             @Override
@@ -372,7 +373,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @param message    actual message
      */
     public synchronized void processMessage(short subchannel, Object message) {
-        if (alive) {
+        if (alive.get()) {
             // it this slave is still waiting for an initialization message, give it to him, as it presumably such message.
             // if not, give it to the slave as well for proper processing
             if (activeSlaves.containsKey(subchannel)) {
@@ -388,7 +389,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @param data       actual message
      */
     public synchronized void processMessage(short subchannel, byte[] data) {
-        if (alive) {
+        if (alive.get()) {
             // if this slave is still waiting for initialization data, kill it as we did not expect bytes. Otherwise,
             // give it to the slave so he processes it
             if (activeSlaves.containsKey(subchannel)) {
@@ -476,7 +477,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * thread
      */
     synchronized void reportDownloadComplete() {
-        if (alive) {
+        if (alive.get()) {
             try {
                 flushWriteData();
                 resourceWriter.complete();
@@ -540,7 +541,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * There was an error writing the resource
      */
     private synchronized void reportErrorWriting() {
-        if (alive) {
+        if (alive.get()) {
             cancel(DownloadProgressNotificationHandler.CancellationReason.IO_FAILURE);
         }
     }
@@ -549,8 +550,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * The user pauses the download
      */
     synchronized void pause() {
-        if (alive && active) {
-            active = false;
+        if (alive.get() && active.get()) {
+            active.set(false);
             downloadReports.reportPaused();
             state = DownloadState.PAUSED;
             for (SlaveController slaveController : activeSlaves.values()) {
@@ -563,8 +564,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * The user resumes the download
      */
     synchronized void resume() {
-        if (alive && !active) {
-            active = true;
+        if (alive.get() && !active.get()) {
+            active.set(true);
             downloadReports.reportResumed();
             state = DownloadState.RUNNING;
             for (SlaveController slaveController : activeSlaves.values()) {
@@ -577,13 +578,15 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * The user cancels the download
      */
     synchronized void cancel(DownloadProgressNotificationHandler.CancellationReason cancellationReason) {
-        if (alive) {
-            freeAssignedResources();
-            flushWriteData();
-            resourceWriter.cancel();
-            alive = false;
-            downloadReports.reportCancelled(cancellationReason);
-            state = DownloadState.CANCELLED;
+        if (alive.get()) {
+            try {
+                flushWriteData();
+                resourceWriter.cancel();
+                downloadReports.reportCancelled(cancellationReason);
+                state = DownloadState.CANCELLED;
+            } finally {
+                freeAssignedResources();
+            }
         }
     }
 
@@ -591,17 +594,17 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * The user stops the download
      */
     synchronized void stop() {
-        if (alive) {
-            freeAssignedResources();
-            flushWriteData();
-            resourceWriter.stop();
-            alive = false;
+        if (alive.get()) {
             try {
+                flushWriteData();
+                resourceWriter.stop();
                 downloadReports.reportStopped();
                 state = DownloadState.STOPPED;
             } catch (IOException e) {
                 // error saving the download session -> cancel the download
                 cancel(DownloadProgressNotificationHandler.CancellationReason.IO_FAILURE);
+            } finally {
+                freeAssignedResources();
             }
         }
     }
@@ -630,10 +633,9 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @param priority the new priority, between 0 and 10000
      */
     synchronized void setPriority(float priority) {
-        if (alive) {
+        if (alive.get()) {
             this.priority = priority;
             try {
-//                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_PRIORITY_FIELD, priority);
                 resourceWriter.setSystemField(RESOURCE_WRITER_PRIORITY_FIELD, priority);
             } catch (IOException e) {
                 // error writing the streaming need in the resource writer -> cancel download and report error
@@ -657,10 +659,9 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @param streamingNeed the new streaming need, between 0 and 1
      */
     synchronized void setStreamingNeed(double streamingNeed) {
-        if (alive) {
+        if (alive.get()) {
             resourcePartScheduler.setStreamingNeed(streamingNeed);
             try {
-//                resourceWriter.setCustomGroupField(RESOURCE_WRITER_MASTER_GROUP, RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
                 resourceWriter.setSystemField(RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
             } catch (IOException e) {
                 // error writing the streaming need in the resource writer -> cancel download and report error
@@ -673,22 +674,24 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * Remove all slaves and free all resources (subchannels). The download dies
      */
     private synchronized void freeAssignedResources() {
-        // free all subchannels and report the ResourceStreamingManager that this download must be removed. We parallelize this call to avoid
-        // locks
-        ThreadExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceStreamingManager.freeAllSubchannels(MasterResourceStreamer.this);
-                resourceStreamingManager.removeDownload(MasterResourceStreamer.this);
+        if (alive.get()) {
+            // free all subchannels and report the ResourceStreamingManager that this download must be removed. We parallelize this call to avoid
+            // locks
+            ThreadExecutor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    resourceStreamingManager.freeAllSubchannels(MasterResourceStreamer.this);
+                    resourceStreamingManager.removeDownload(MasterResourceStreamer.this);
+                }
+            });
+            Collection<SlaveController> slavesToRemove = new HashSet<>(activeSlaves.values());
+            for (SlaveController slaveController : slavesToRemove) {
+                removeSlave(slaveController.getSubchannel(), true);
             }
-        });
-        Collection<SlaveController> slavesToRemove = new HashSet<>(activeSlaves.values());
-        for (SlaveController slaveController : slavesToRemove) {
-            removeSlave(slaveController.getSubchannel(), true);
+            downloadReports.stop();
+            ThreadExecutor.shutdownClient(this.getClass().getName());
+            alive.set(false);
         }
-        downloadReports.stop();
-        ThreadExecutor.shutdownClient(this.getClass().getName());
-        alive = false;
     }
 
     @Override
@@ -706,11 +709,11 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         return id != null ? id.hashCode() : 0;
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        freeAssignedResources();
-    }
+//    @Override
+//    protected void finalize() throws Throwable {
+//        super.finalize();
+//        freeAssignedResources();
+//    }
 
     @Override
     public float getPriority() {

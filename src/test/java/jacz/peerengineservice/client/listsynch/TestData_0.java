@@ -1,4 +1,4 @@
-package jacz.peerengineservice.test.list_synch;
+package jacz.peerengineservice.client.listsynch;
 
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.data_synchronization.DataAccessException;
@@ -59,9 +59,15 @@ public class TestData_0 implements DataAccessor {
 
     private Set<Movie> movies;
 
+    private ListSynchProgress serverProgress;
+
     public TestData_0(String databaseID, Set<Movie> movies) {
         this.databaseID = databaseID;
         this.movies = movies;
+    }
+
+    public ListSynchProgress getServerProgress() {
+        return serverProgress;
     }
 
     private List<Movie> getOrderedMovies() {
@@ -143,6 +149,7 @@ public class TestData_0 implements DataAccessor {
 
     @Override
     public ProgressNotificationWithError<Integer, SynchError> getServerSynchProgress(PeerId clientPeerId) {
-        return new ListSynchProgress(clientPeerId, "TestList_0", false);
+        serverProgress = new ListSynchProgress(clientPeerId, "TestList_0", false);
+        return serverProgress;
     }
 }

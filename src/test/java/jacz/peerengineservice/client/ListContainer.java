@@ -1,4 +1,4 @@
-package jacz.peerengineservice.test;
+package jacz.peerengineservice.client;
 
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.data_synchronization.AccessorNotFoundException;
@@ -8,15 +8,15 @@ import jacz.peerengineservice.util.data_synchronization.DataAccessorContainer;
 import java.util.Map;
 
 /**
- * Created by Alberto on 18/09/2015.
+ * Created by Alberto on 15/04/2016.
  */
-public class TestListContainer implements DataAccessorContainer {
+public class ListContainer implements DataAccessorContainer {
 
     private final Map<String, DataAccessor> transmittingAccessors;
 
     private final Map<String, DataAccessor> receivingAccessors;
 
-    public TestListContainer(Map<String, DataAccessor> transmittingAccessors, Map<String, DataAccessor> receivingAccessors) {
+    public ListContainer(Map<String, DataAccessor> transmittingAccessors, Map<String, DataAccessor> receivingAccessors) {
         this.transmittingAccessors = transmittingAccessors;
         this.receivingAccessors = receivingAccessors;
     }

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class handles all resources shared to us by other peers. Shared resources are grouped in resource
@@ -87,7 +88,7 @@ class ForeignShareManager implements NotificationReceiver {
     /**
      * Indicates if we are still alive. We can only register stores if we are alive. Otherwise all requests are rejected
      */
-    private boolean alive;
+    private final AtomicBoolean alive;
 
     /**
      * Class constructor
@@ -99,7 +100,7 @@ class ForeignShareManager implements NotificationReceiver {
         globalEmitterIDs = new HashMap<>();
         receiverID = AlphaNumFactory.getStaticId();
         this.resourceStreamingManager = resourceStreamingManager;
-        alive = true;
+        alive = new AtomicBoolean(true);
         ThreadExecutor.registerClient(this.getClass().getName());
     }
 
@@ -111,7 +112,7 @@ class ForeignShareManager implements NotificationReceiver {
      */
     synchronized void addStore(String store, ForeignStoreShare foreignStoreShare) {
         // the subscribe call can be synched because it can cause no clash
-        if (alive) {
+        if (alive.get()) {
             String shareEmitterID = foreignStoreShare.subscribe(receiverID, this, RECEIVER_MILLIS, RECEIVER_TIME_FACTOR, RECEIVER_LIMIT);
             storeShares.put(store, new ForeignPeerShareWithEmitterID(foreignStoreShare, shareEmitterID));
             globalEmitterIDs.put(shareEmitterID, store);
@@ -153,13 +154,13 @@ class ForeignShareManager implements NotificationReceiver {
      * Removes all registered resource stores and stops all subscriptions. No further store registrations can be made after this call
      */
     void stop() {
-        synchronized (this) {
-            alive = false;
+        if (alive.get()) {
+            alive.set(false);
+            for (String store : new ArrayList<>(storeShares.keySet())) {
+                removeStore(store);
+            }
+            ThreadExecutor.shutdownClient(this.getClass().getName());
         }
-        for (String store : new ArrayList<>(storeShares.keySet())) {
-            removeStore(store);
-        }
-        ThreadExecutor.shutdownClient(this.getClass().getName());
     }
 
     @Override

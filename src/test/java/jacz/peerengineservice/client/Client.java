@@ -4,14 +4,15 @@ import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.PeerConnectionConfig;
-import jacz.peerengineservice.test.TestListContainer;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.datatransfer.ResourceTransferEvents;
 import jacz.peerengineservice.util.datatransfer.TransferStatistics;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 import jacz.util.io.serialization.VersionedObjectSerializer;
 import jacz.util.io.serialization.VersionedSerializationException;
+import org.apache.commons.io.FileUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
@@ -70,9 +71,10 @@ public class Client {
             Map<String, PeerFSMFactory> customFSMs,
             Map<String, DataAccessor> readingLists,
             Map<String, DataAccessor> writingLists) throws IOException {
+        generalEvents.init(this);
 
         String serverURL = "https://jaczserver.appspot.com/_ah/api/server/v1/";
-        TestListContainer testListContainer = new TestListContainer(readingLists, writingLists);
+        ListContainer listContainer = new ListContainer(readingLists, writingLists);
 //        if (FileUtil.isFile("globalDownloads.txt")) {
 //            VersionedObjectSerializer.deserializeVersionedObject(globalDownloadStatistics);
 //            globalDownloadStatistics = new GlobalDownloadStatistics();
@@ -98,10 +100,10 @@ public class Client {
                 peersPersonalDataPath,
                 transferStatistics,
                 customFSMs,
-                testListContainer,
+                listContainer,
                 null);
 
-        tempFileManager = new TempFileManager("./etc/temp", new TempFileManagerEventsImpl());
+        tempFileManager = null;
     }
 
     private PeerConnectionConfig buildPeerConnectionConfig() {
@@ -116,7 +118,9 @@ public class Client {
 
     public void stopClient() {
         peerClient.stop();
-        tempFileManager.stop();
+        if (tempFileManager != null) {
+            tempFileManager.stop();
+        }
         transferStatistics.stop();
         try {
             VersionedObjectSerializer.serialize(transferStatistics, 4, STATISTICS_PATH);
@@ -137,7 +141,8 @@ public class Client {
         peerClient.disconnect();
     }
 
-    public TempFileManager getTempFileManager() {
+    public TempFileManager getTempFileManager(String path) throws IOException {
+        tempFileManager = new TempFileManager(path, new TempFileManagerEventsImpl());
         return tempFileManager;
     }
 

@@ -39,7 +39,7 @@ public class PeerAddress {
     }
 
     public static PeerAddress nullPeerAddress() {
-        String nullAddress = null;
+        IP4Port nullAddress = null;
         //noinspection ConstantConditions
         return new PeerAddress(nullAddress, nullAddress);
     }

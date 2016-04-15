@@ -48,7 +48,6 @@ public class ConfigReader {
         String peerKnowledgeBasePath = FileUtils.getFile(userDir, PEER_KNOWLEDGE_BASE + ".db").getPath();
         PeerKnowledgeBase peerKnowledgeBase = PeerKnowledgeBase.createNew(peerKnowledgeBasePath);
 
-//        PeerRelations peerRelations = new PeerRelations();
         xmlReader.getStruct("friend-peers");
         while (xmlReader.hasMoreChildren()) {
             xmlReader.getNextStruct();

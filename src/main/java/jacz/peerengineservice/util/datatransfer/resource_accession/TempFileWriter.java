@@ -26,6 +26,16 @@ public class TempFileWriter implements ResourceWriter {
      * New temporary download
      *
      * @param tempFileManager temp file manager to handle this temp download
+     * @throws IOException
+     */
+    public TempFileWriter(TempFileManager tempFileManager) throws IOException {
+        this(tempFileManager, new HashMap<String, Serializable>());
+    }
+
+    /**
+     * New temporary download
+     *
+     * @param tempFileManager temp file manager to handle this temp download
      * @param userDictionary  user terms to store in the dictionary
      * @throws IOException
      */

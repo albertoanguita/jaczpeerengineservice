@@ -29,6 +29,7 @@ import jacz.util.sets.availableelements.AvailableElementsShort;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -177,10 +178,13 @@ public class ResourceStreamingManager {
          */
         private final Timer generalProviderUpdateTimer;
 
+        private final AtomicBoolean alive;
+
         private ActiveDownloadSet(ResourceStreamingManager resourceStreamingManager) {
             activeDownloads = new HashMap<>();
             this.resourceStreamingManager = resourceStreamingManager;
             generalProviderUpdateTimer = new Timer(ResourceStreamingManager.MILLIS_FOR_GENERAL_PROVIDER_UPDATE, this, "ActiveDownloadSet");
+            alive = new AtomicBoolean(true);
             ThreadExecutor.registerClient(this.getClass().getName());
         }
 
@@ -265,8 +269,11 @@ public class ResourceStreamingManager {
         }
 
         public synchronized void stop() {
-            generalProviderUpdateTimer.kill();
-            ThreadExecutor.shutdownClient(this.getClass().getName());
+            if (alive.get()) {
+                alive.set(false);
+                generalProviderUpdateTimer.kill();
+                ThreadExecutor.shutdownClient(this.getClass().getName());
+            }
         }
     }
 
@@ -596,7 +603,7 @@ public class ResourceStreamingManager {
      * <p/>
      * Once it becomes inactive, it cannot be activated anymore
      */
-    private boolean alive;
+    private final AtomicBoolean alive;
 
     public ResourceStreamingManager(
             PeerId ownPeerId,
@@ -620,7 +627,7 @@ public class ResourceStreamingManager {
         this.transferStatistics = transferStatistics;
         this.accuracy = new ContinuousDegree(accuracy);
         writeDataLock = new ReentrantLock(true);
-        alive = true;
+        alive = new AtomicBoolean(true);
         ManuallyRemovedElementBag.getInstance(PeerClient.MANUAL_REMOVE_BAG).createElement(this.getClass().getName());
         ThreadExecutor.registerClient(this.getClass().getName());
     }
@@ -633,7 +640,7 @@ public class ResourceStreamingManager {
      * @return the assigned subchannel, or null of no subchannel was assigned
      */
     public synchronized Short requestIncomingSubchannel(SubchannelOwner owner) {
-        if (alive) {
+        if (alive.get()) {
             return subchannelManager.requestSubchannel(owner);
         } else {
             return null;
@@ -786,7 +793,7 @@ public class ResourceStreamingManager {
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm) throws NotAliveException {
-        if (alive) {
+        if (alive.get()) {
             // the download is created even if there is no matching global resource store
             resourceTransferEventsBridge.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
             MasterResourceStreamer masterResourceStreamer =
@@ -836,7 +843,7 @@ public class ResourceStreamingManager {
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm) throws NotAliveException {
-        if (alive) {
+        if (alive.get()) {
             resourceTransferEventsBridge.peerDownloadInitiated(serverPeerId, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
             MasterResourceStreamer masterResourceStreamer =
                     new MasterResourceStreamer(
@@ -901,61 +908,61 @@ public class ResourceStreamingManager {
      * The method blocks until all resources are properly stopped. Downloads and uploads are stopped.
      */
     public void stop() {
-        resourceTransferEventsBridge.stop();
-        Collection<Future> futureCollection;
-        synchronized (this) {
-            // subchannel assignments
-            downloadsManager.stop();
-            futureCollection = new HashSet<>();
-            for (final DownloadManager downloadManager : downloadsManager.getAllDownloads()) {
-                // this call is parallelized to avoid triple interlock between the ResourceStreamingManager, the MasterResourceStreamer and the
-                // DownloadManager
-                Future future = ThreadExecutor.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        downloadManager.stop();
-                    }
-                });
-                futureCollection.add(future);
+        if (alive.get()) {
+            alive.set(false);
+            resourceTransferEventsBridge.stop();
+            Collection<Future> futureCollection;
+            synchronized (this) {
+                // subchannel assignments
+                downloadsManager.stop();
+                futureCollection = new HashSet<>();
+                for (final DownloadManager downloadManager : downloadsManager.getAllDownloads()) {
+                    // this call is parallelized to avoid triple interlock between the ResourceStreamingManager, the MasterResourceStreamer and the
+                    // DownloadManager
+                    Future future = ThreadExecutor.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            downloadManager.stop();
+                        }
+                    });
+                    futureCollection.add(future);
+                }
             }
-        }
-        for (Future future : futureCollection) {
-            try {
-                future.get();
-            } catch (Exception e) {
-                // ignore exceptions
+            for (Future future : futureCollection) {
+                try {
+                    future.get();
+                } catch (Exception e) {
+                    // ignore exceptions
+                }
             }
-        }
-        synchronized (this) {
-            futureCollection.clear();
-            uploadPriorityManager.stop();
-            downloadPriorityManager.stop();
-            foreignShareManager.stop();
-            activeDownloadSet.stop();
-            subchannelManager.stop();
-            uploadsManager.stop();
-            for (final UploadManager uploadManager : uploadsManager.getAllUploads()) {
-                Future future = ThreadExecutor.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        uploadManager.stop();
-                    }
-                });
-                futureCollection.add(future);
+            synchronized (this) {
+                futureCollection.clear();
+                uploadPriorityManager.stop();
+                downloadPriorityManager.stop();
+                foreignShareManager.stop();
+                activeDownloadSet.stop();
+                subchannelManager.stop();
+                uploadsManager.stop();
+                for (final UploadManager uploadManager : uploadsManager.getAllUploads()) {
+                    Future future = ThreadExecutor.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            uploadManager.stop();
+                        }
+                    });
+                    futureCollection.add(future);
+                }
             }
-        }
-        for (Future future : futureCollection) {
-            try {
-                future.get();
-            } catch (Exception e) {
-                // ignore exceptions
+            for (Future future : futureCollection) {
+                try {
+                    future.get();
+                } catch (Exception e) {
+                    // ignore exceptions
+                }
             }
+            ManuallyRemovedElementBag.getInstance(PeerClient.MANUAL_REMOVE_BAG).destroyElement(this.getClass().getName());
+            ThreadExecutor.shutdownClient(this.getClass().getName());
         }
-        synchronized (this) {
-            alive = false;
-        }
-        ManuallyRemovedElementBag.getInstance(PeerClient.MANUAL_REMOVE_BAG).destroyElement(this.getClass().getName());
-        ThreadExecutor.shutdownClient(this.getClass().getName());
     }
 
     public synchronized void removeDownload(MasterResourceStreamer masterResourceStreamer) {

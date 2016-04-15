@@ -1,4 +1,4 @@
-package jacz.peerengineservice.test.list_synch;
+package jacz.peerengineservice.client.listsynch;
 
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.data_synchronization.SynchError;
@@ -15,18 +15,17 @@ public class ListSynchProgress implements ProgressNotificationWithError<Integer,
 
     private boolean client;
 
-    private Object customObject;
+    private boolean success = false;
 
     public ListSynchProgress(PeerId otherPeerId, String listName, boolean client) {
-        this(otherPeerId, listName, client, null);
-    }
-
-    public ListSynchProgress(PeerId otherPeerId, String listName, boolean client, Object customObject) {
         this.otherPeerId = otherPeerId;
         this.listName = listName;
         this.client = client;
-        this.customObject = customObject;
         printInitMessage();
+    }
+
+    public boolean isSuccess() {
+        return success;
     }
 
     private void printInitMessage() {
@@ -62,8 +61,6 @@ public class ListSynchProgress implements ProgressNotificationWithError<Integer,
     @Override
     public void completeTask() {
         System.out.println("Synchronization of " + listName + " complete!!!");
-        if (customObject != null) {
-            System.out.println("custom!!");
-        }
+        success = true;
     }
 }
