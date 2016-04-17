@@ -98,7 +98,7 @@ public class ResourceDownloadStatistics {
     }
 
     synchronized ProviderStatistics reportSharedPart(ResourceProvider resourceProvider, ResourcePart resourcePart) {
-        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerID());
+        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerId());
         if (providerStatistics != null) {
             providerStatistics.reportSharedPart(resourcePart);
         }
@@ -107,7 +107,7 @@ public class ResourceDownloadStatistics {
 
     synchronized ProviderStatistics reportAssignedPart(ResourceProvider resourceProvider, LongRange segment) {
         assignedPart.add(segment);
-        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerID());
+        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerId());
         if (providerStatistics != null) {
             providerStatistics.reportAssignedSegment(segment);
         }
@@ -115,8 +115,9 @@ public class ResourceDownloadStatistics {
     }
 
     synchronized ProviderStatistics reportClearedAssignation(ResourceProvider resourceProvider) {
-        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerID());
+        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerId());
         if (providerStatistics != null) {
+            assignedPart.remove(providerStatistics.getAssignedPart());
             providerStatistics.reportClearedAssignation();
         }
         return providerStatistics;
@@ -127,7 +128,7 @@ public class ResourceDownloadStatistics {
         assignedPart.remove(segment);
         downloadedPart.add(segment);
         downloadedSizeThisResource += segment.size();
-        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerID());
+        ProviderStatistics providerStatistics = providers.get(resourceProvider.getPeerId());
         if (providerStatistics != null) {
             providerStatistics.reportDownloadedSegment(segment);
         }
@@ -159,7 +160,7 @@ public class ResourceDownloadStatistics {
     }
 
     synchronized ProviderStatistics addProvider(ResourceProvider resourceProvider) {
-        providers.put(resourceProvider.getPeerID(), new ProviderStatistics(resourceProvider.getPeerID()));
+        providers.put(resourceProvider.getPeerId(), new ProviderStatistics(resourceProvider.getPeerId()));
 //        ProviderStatistics providerStatistics = providers.get(resourceProvider.getID());
 //        if (providerStatistics != null) {
 //            providerStatistics.resume();
@@ -171,7 +172,7 @@ public class ResourceDownloadStatistics {
 //        if (resourceProvider.getType() == ResourceProvider.Type.PEER && peerBasedStatistics != null) {
 //            peerBasedStatistics.startDownloadSession(((PeerResourceProvider) resourceProvider).getPeerId());
 //        }
-        return providers.get(resourceProvider.getPeerID());
+        return providers.get(resourceProvider.getPeerId());
     }
 
     synchronized ProviderStatistics removeProvider(ResourceProvider resourceProvider) {
@@ -180,7 +181,7 @@ public class ResourceDownloadStatistics {
 //            long sessionMillis = providerStatistics.stopSession();
 //        }
 //        return providerStatistics;
-        ProviderStatistics providerStatistics = providers.remove(resourceProvider.getPeerID());
+        ProviderStatistics providerStatistics = providers.remove(resourceProvider.getPeerId());
         if (providerStatistics != null) {
             providerStatistics.stop();
         }

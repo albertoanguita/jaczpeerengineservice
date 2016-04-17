@@ -15,6 +15,8 @@ import java.security.PublicKey;
  * This FSM allows negotiating with other peers who want to connect to our PeerClient. This FSM implements the server
  * part of that connection. First it receives the data of a new peer trying to connect to us, and then it answers to
  * that peer if it accepts the connection or not.
+ *
+ * todo add info about other peers when rejecting regulars
  */
 public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<ConnectionEstablishmentServerFSM.State> {
 

@@ -13,6 +13,7 @@ import jacz.peerengineservice.util.PeerRelationship;
  * This class contains the code that handles new connections with other clients, as well as disconnections or errors.
  * The freeing of channels also goes through this class, since that event is captured by the
  * PeerClientConnectionManager.
+ * todo remove
  */
 public class PeerClientPrivateInterface {
 

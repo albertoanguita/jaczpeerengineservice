@@ -77,7 +77,6 @@ public class PeerClientConnectionManager {
     /**
      * Manages the connections with friend peers
      */
-//    private final FriendConnectionManager friendConnectionManager; // todo remove
     private final PeerConnectionManager peerConnectionManager;
 
     private final ConnectedPeers connectedPeers;

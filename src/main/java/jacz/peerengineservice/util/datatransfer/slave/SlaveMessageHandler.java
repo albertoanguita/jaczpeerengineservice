@@ -52,7 +52,6 @@ public class SlaveMessageHandler implements MessageHandler {
         } else {
             byte[] dataToSend = SlaveMessage.generateResourceChunkMessage(messageForHandler.resourceChunk);
             sendPacketSpeedLimiter.addProgress(1L);
-            // todo add to upload statistics for this single upload. This method should go to slaveResourceStreamer, and then be redirected to resourceStreamingManager
             long time = resourceStreamingManager.write(otherPeer, outgoingChannel, dataToSend, true, false);
             if (flushDataRegularAction.mustPerformAction()) {
                 resourceStreamingManager.flush(otherPeer);

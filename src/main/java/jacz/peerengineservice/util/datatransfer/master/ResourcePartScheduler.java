@@ -179,7 +179,7 @@ class ResourcePartScheduler {
      * Average time in seconds that we want a slave transferring its assignation. Used to calculate the size
      * of assignations.
      */
-    private static final long ESTIMATED_ASSIGNATION_TIME = 100;
+    private static final long ESTIMATED_ASSIGNATION_TIME = 30;
 
     /**
      * slaves under this speed will be disregarded -> no assignation is given to slaves under this value

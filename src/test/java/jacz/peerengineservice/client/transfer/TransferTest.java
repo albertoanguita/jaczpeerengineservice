@@ -23,16 +23,15 @@ import java.util.HashMap;
 
 /**
  * Transfer tests
- * todo monitor upload speeds. See why download speed is same with 1 providers and with 2
  */
 @Category(IntegrationTest.class)
 public class TransferTest {
 
-    private static final long WARM_UP = 15000;
+    private static final long WARM_UP = 25000;
 
-    private static final long CYCLE_LENGTH = 5000;
+    private static final long CYCLE_LENGTH = 10000;
 
-    private static final long DOWNLOAD_LENGTH = 25000;
+    private static final long DOWNLOAD_LENGTH = 75000;
 
     private static final String filesPath = "./etc/files";
     private static final String tempPath = "./etc/files/temp";
@@ -69,7 +68,7 @@ public class TransferTest {
 
         client.getPeerClient().setVisibleDownloadsTimer(1000);
         DownloadManager downloadManager = client.getPeerClient().downloadResource("files", hash, new BasicFileWriter(down1File, customInfo), new DownloadProgressNotificationHandlerImpl(), 0.1f, hash, "MD5");
-        client.getPeerClient().setMaxDesiredDownloadSpeed(150000f);
+        client.getPeerClient().setMaxDesiredDownloadSpeed(250000f);
 
         ThreadUtil.safeSleep(DOWNLOAD_LENGTH);
         Assert.assertTrue(new File(down1File).isFile());
@@ -103,6 +102,8 @@ public class TransferTest {
 
         Assert.assertEquals(DownloadState.COMPLETED, downloadManager.getState());
 
+        FileUtils.cleanDirectory(new File(filesPath));
+
         client.stopClient();
     }
 
@@ -125,6 +126,8 @@ public class TransferTest {
         client.getPeerClient().addLocalResourceStore("files", new ResourceStoreImpl(hash, path));
         client.startClient();
 
+
+        client.getPeerClient().setVisibleUploadsTimer(1000);
         ThreadUtil.safeSleep(WARM_UP);
         ThreadUtil.safeSleep(2 * DOWNLOAD_LENGTH);
         ThreadUtil.safeSleep(2 * CYCLE_LENGTH);
@@ -146,6 +149,7 @@ public class TransferTest {
         client.getPeerClient().addLocalResourceStore("files", new ResourceStoreImpl(hash, path));
         client.startClient();
 
+        client.getPeerClient().setVisibleUploadsTimer(1000);
         ThreadUtil.safeSleep(WARM_UP);
         ThreadUtil.safeSleep(2 * DOWNLOAD_LENGTH);
         ThreadUtil.safeSleep(2 * CYCLE_LENGTH);
@@ -155,7 +159,7 @@ public class TransferTest {
 
     private static String buildFile(String path) throws IOException {
         // build a 1MB size file at the given path, return its hash
-        byte[] data = new byte[1000000];
+        byte[] data = new byte[10000000];
         for (int i = 0; i < data.length; i++) {
             data[i] = (byte) i;
         }
@@ -164,6 +168,6 @@ public class TransferTest {
     }
 
     private static String getFileHash() {
-        return "5c725cbc2dbbe1148159e9d9cf90648f";
+        return "5363a72ab6c10777d8d62ff07b44592a";
     }
 }

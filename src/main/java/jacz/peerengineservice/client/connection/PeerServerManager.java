@@ -1,6 +1,5 @@
 package jacz.peerengineservice.client.connection;
 
-import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;

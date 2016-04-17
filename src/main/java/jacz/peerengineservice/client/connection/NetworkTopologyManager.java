@@ -121,6 +121,7 @@ public class NetworkTopologyManager {
             public boolean hasReachedGoal(State.NetworkTopologyState state, Boolean goal) {
                 return goal && state == State.NetworkTopologyState.ALL_FETCHED || !goal;
             }
+
         }, "NetworkTopologyManager");
         dynamicState.setEnterStateHook(State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED, new Runnable() {
             @Override
@@ -152,15 +153,12 @@ public class NetworkTopologyManager {
             connectionEvents.initializingConnection();
         }
         try {
-            String newLocalAddress = AddressChecker.detectLocalAddress();
-            if (newLocalAddress == null) {
-                throw new IOException("Could not fetch local address");
-            }
-            if (!newLocalAddress.equals(localAddress)) {
-                // local address has changed
-                localAddress = newLocalAddress;
+            boolean fetched = tryToFetchLocalAddress();
+            if (fetched) {
                 controller.setState(State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED);
                 return false;
+            } else {
+                return true;
             }
         } catch (IOException e) {
             // error fetching local address
@@ -169,6 +167,21 @@ public class NetworkTopologyManager {
         }
         // else -> local address has not changed, all ok
         return true;
+    }
+
+    private boolean tryToFetchLocalAddress() throws IOException {
+        String newLocalAddress = AddressChecker.detectLocalAddress();
+        if (newLocalAddress == null) {
+            throw new IOException("Could not fetch local address");
+        }
+        if (!newLocalAddress.equals(localAddress)) {
+            // local address has changed
+            localAddress = newLocalAddress;
+            return true;
+        } else {
+            // local address has not changed, all ok
+            return false;
+        }
     }
 
     private boolean fetchExternalAddress(State.NetworkTopologyState state, EvolvingStateController<State.NetworkTopologyState, Boolean> controller) {

@@ -141,6 +141,11 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private float priority;
 
     /**
+     * Statistics of this download
+     */
+    private ResourceDownloadStatistics resourceDownloadStatistics;
+
+    /**
      * Whether this resource download is active or paused (by the user)
      */
     private final AtomicBoolean active;
@@ -205,6 +210,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         downloadManager = new DownloadManager(this);
         downloadReports = new DownloadReports(downloadManager, resourceID, storeName, downloadProgressNotificationHandler);
         try {
+            resourceDownloadStatistics = new ResourceDownloadStatistics(resourceWriter);
             downloadReports.initializeWriting(resourceWriter);
         } catch (IOException e) {
             error = true;
@@ -261,7 +267,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     }
 
     public ResourceDownloadStatistics getStatistics() {
-        return downloadReports.getResourceDownloadStatistics();
+        return resourceDownloadStatistics;
     }
 
     /**
@@ -291,7 +297,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             for (ResourceProvider resourceProvider : resourceProviders) {
                 // check that the given resource provider is not null, as the resource streaming manager might include null providers due to those
                 // not being available
-                if (resourceProvider != null && !activeResourceProviders.contains(resourceProvider.getPeerID())) {
+                if (resourceProvider != null && !activeResourceProviders.contains(resourceProvider.getPeerId())) {
                     newResourceProvider(resourceProvider);
                 }
             }
@@ -399,23 +405,28 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     }
 
     void reportAddedProvider(ResourceProvider resourceProvider) {
-        downloadReports.addProvider(resourceProvider);
+        ProviderStatistics providerStatistics = resourceDownloadStatistics.addProvider(resourceProvider);
+        downloadReports.addProvider(providerStatistics, resourceProvider.getPeerId());
     }
 
     void reportSetProviderShare(ResourceProvider resourceProvider, ResourcePart sharedPart) {
-        downloadReports.reportSharedPart(resourceProvider, sharedPart);
+        ProviderStatistics providerStatistics = resourceDownloadStatistics.reportSharedPart(resourceProvider, sharedPart);
+        downloadReports.reportSharedPart(providerStatistics, sharedPart);
     }
 
     void reportRemovedProvider(ResourceProvider resourceProvider) {
-        downloadReports.removeProvider(resourceProvider);
+        ProviderStatistics providerStatistics = resourceDownloadStatistics.removeProvider(resourceProvider);
+        downloadReports.removeProvider(providerStatistics, resourceProvider.getPeerId());
     }
 
     void reportAssignedProviderSegment(ResourceProvider resourceProvider, LongRange assignedSegment) {
-        downloadReports.reportAssignedSegment(resourceProvider, assignedSegment);
+        ProviderStatistics providerStatistics = resourceDownloadStatistics.reportAssignedPart(resourceProvider, assignedSegment);
+        downloadReports.reportAssignedSegment(providerStatistics, assignedSegment);
     }
 
     void reportClearedProviderAssignation(ResourceProvider resourceProvider) {
-        downloadReports.reportClearedAssignation(resourceProvider);
+        ProviderStatistics providerStatistics = resourceDownloadStatistics.reportClearedAssignation(resourceProvider);
+        downloadReports.reportClearedAssignation(providerStatistics);
     }
 
     /**
@@ -468,8 +479,9 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     }
 
     synchronized void reportDownloadedSegment(ResourceProvider resourceProvider, LongRange downloadedSegment) {
-        resourceStreamingManager.reportDownloadedSize(resourceProvider.getPeerID(), downloadedSegment.size());
-        downloadReports.reportDownloadedSegment(resourceProvider, downloadedSegment);
+        resourceStreamingManager.reportDownloadedSize(resourceProvider.getPeerId(), downloadedSegment.size());
+        resourceDownloadStatistics.reportDownloadedPart(resourceProvider, downloadedSegment);
+        downloadReports.reportDownloadedSegment(downloadedSegment);
     }
 
     /**
@@ -482,7 +494,9 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 flushWriteData();
                 resourceWriter.complete();
                 checkTotalHash();
-                downloadReports.reportCompleted(resourceWriter, getResourceSize());
+                resourceDownloadStatistics.downloadComplete(resourceSize);
+                resourceDownloadStatistics.stop();
+                downloadReports.reportCompleted(resourceWriter);
                 state = DownloadState.COMPLETED;
             } catch (IOException e) {
                 reportErrorWriting();
@@ -598,6 +612,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             try {
                 flushWriteData();
                 resourceWriter.stop();
+                resourceDownloadStatistics.stopSession();
                 downloadReports.reportStopped();
                 state = DownloadState.STOPPED;
             } catch (IOException e) {
@@ -619,7 +634,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     }
 
     synchronized float getSlaveControllerAchievedSpeed(SlaveController slaveController) {
-        ProviderStatistics providerStatistics = downloadReports.getResourceDownloadStatistics().getProviders().get(slaveController.getResourceProvider().getPeerID());
+        ProviderStatistics providerStatistics = resourceDownloadStatistics.getProviders().get(slaveController.getResourceProvider().getPeerId());
         if (providerStatistics != null) {
             return (float) providerStatistics.getSpeed();
         } else {

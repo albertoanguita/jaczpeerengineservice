@@ -15,7 +15,6 @@ public class ProviderStatistics {
     /**
      * The resource provider that generates this statistics
      */
-//    private final ResourceProvider resourceProvider;
     private final PeerId resourceProviderID;
 
     /**

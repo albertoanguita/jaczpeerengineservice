@@ -143,11 +143,6 @@ public class LocalServerManager {
     private ServerModule serverModule;
 
     /**
-     * Collection of all information related to connection to the server, as provided by the user
-     */
-//    private ConnectionInformation wishedConnectionInformation;
-
-    /**
      * Collection of all information related to connection to the server (what we are currently using)
      */
     private int listeningPort;
@@ -160,14 +155,12 @@ public class LocalServerManager {
             NetworkConfiguration networkConfiguration,
             final ConnectionEventsBridge connectionEvents) {
         this.ownPeerId = ownPeerId;
-//        this.defaultExternalPort = defaultExternalPort;
         actualExternalPort = -1;
         gatewayRuleCreated = false;
         this.peerClientConnectionManager = peerClientConnectionManager;
         this.networkConfiguration = networkConfiguration;
         this.connectionEvents = connectionEvents;
         serverModule = null;
-//        this.wishedConnectionInformation = wishedConnectionInformation;
         listeningPort = -1;
         dynamicState = new EvolvingState<>(State.LocalServerConnectionsState.CLOSED, false, new EvolvingState.Transitions<State.LocalServerConnectionsState, Boolean>() {
             @Override

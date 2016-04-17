@@ -153,7 +153,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         this.sizeIsKnown = sizeIsKnown;
         this.resourceLink = resourceLink;
         this.resourceProvider = resourceProvider;
-        this.resourceProviderId = resourceProvider.getPeerID();
+        this.resourceProviderId = resourceProvider.getPeerId();
         this.subchannel = subchannel;
         state = State.AWAITING_REQUEST_RESPONSE;
         timeoutTimer = new Timer(requestLifeMillis, this, true, "MasterResourceStreamer/timeoutTimer");

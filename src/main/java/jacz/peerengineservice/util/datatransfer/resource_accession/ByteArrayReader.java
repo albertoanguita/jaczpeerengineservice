@@ -7,7 +7,6 @@ import jacz.util.io.buffer.ReadBuffer;
 import jacz.util.notification.ProgressNotificationWithError;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
 
 import java.io.IOException;
 import java.util.List;

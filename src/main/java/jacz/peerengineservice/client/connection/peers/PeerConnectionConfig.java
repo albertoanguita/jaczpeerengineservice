@@ -10,6 +10,7 @@ import java.util.List;
 
 /**
  * todo synchronize, remove public from set methods
+ * todo use local storage
  */
 public class PeerConnectionConfig implements NotificationEmitter {
 

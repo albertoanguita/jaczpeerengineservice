@@ -98,16 +98,10 @@ public class ResourceTransferEventsImpl implements ResourceTransferEvents {
     @Override
     public void periodicUploadsNotification(UploadsManager uploadsManager) {
         for (UploadManager uploadManager : uploadsManager.getAllUploads()) {
-            // todo
-//            Double speed = uploadManager.getStatistics().getSpeed();
-//            speed /= 1024d;
-//            long size = downloadManager.getStatistics().getDownloadedSizeThisResource();
-//            Long length = downloadManager.getLength();
-//            Double part = null;
-//            if (length != null) {
-//                part = (double) size / (double) length * 100d;
-//            }
-//            System.out.println("Speed for " + downloadManager.getResourceID() + ": " + speed + "KB, downloaded part: " + part);
+            Double speed = uploadManager.getStatistics().getSpeed();
+            speed /= 1024d;
+            long size = uploadManager.getStatistics().getUploadedSizeThisResource();
+            System.out.println("Speed for " + uploadManager.getResourceID() + ": " + speed + "KB, downloaded size: " + size);
         }
     }
 }

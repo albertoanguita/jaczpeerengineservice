@@ -59,7 +59,7 @@ public class ResourceProvider {
         return new PeerResourceLink(resourceStreamingManager, otherPeerId);
     }
 
-    public PeerId getPeerID() {
+    public PeerId getPeerId() {
         return otherPeerId;
     }
 
@@ -70,11 +70,11 @@ public class ResourceProvider {
 
         ResourceProvider that = (ResourceProvider) o;
 
-        return getPeerID().equals(that.getPeerID());
+        return getPeerId().equals(that.getPeerId());
     }
 
     @Override
     public int hashCode() {
-        return getPeerID().hashCode();
+        return getPeerId().hashCode();
     }
 }

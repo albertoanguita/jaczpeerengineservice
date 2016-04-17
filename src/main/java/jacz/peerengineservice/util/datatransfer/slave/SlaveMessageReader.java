@@ -2,7 +2,6 @@ package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
 import jacz.util.date_time.PerformRegularAction;
-import jacz.util.date_time.SpeedMonitor;
 import jacz.util.numeric.range.LongRange;
 import jacz.util.queues.event_processing.MessageReader;
 import jacz.util.queues.event_processing.StopReadingMessages;
@@ -39,11 +38,6 @@ class SlaveMessageReader implements MessageReader {
             isFlush = flush;
         }
     }
-
-    /**
-     * Speed is measured over this amount of milliseconds
-     */
-    private static final int MILLIS_SPEED_MEASURE = 3000;
 
     private static final double INITIAL_BLOCK_SIZE = 1024d;
 
@@ -85,18 +79,12 @@ class SlaveMessageReader implements MessageReader {
 
     private final Object blockSizeLock = new Object();
 
-    /**
-     * For measuring and controlling the writing speed
-     */
-    private SpeedMonitor speedMonitor;
-
     public SlaveMessageReader(SlaveResourceStreamer slaveResourceStreamer, SlaveResourceStreamer.ResourceSegmentQueue resourceSegmentQueue, ResourceReader resourceReader, SlaveMessageHandler messageHandler) {
         this.slaveResourceStreamer = slaveResourceStreamer;
         this.resourceSegmentQueue = resourceSegmentQueue;
         this.resourceReader = resourceReader;
         this.messageHandler = messageHandler;
         mustFlush = false;
-        speedMonitor = new SpeedMonitor(MILLIS_SPEED_MEASURE);
         preferredBlockSize = INITIAL_BLOCK_SIZE;
         increasePacketSizeAction = PerformRegularAction.timeElapsePerformRegularAction(MILLIS_PACKET_SIZE_RECALCULATION);
         numberOfBlockSizeGrows = 0;
@@ -117,10 +105,6 @@ class SlaveMessageReader implements MessageReader {
             preferredBlockSize *= SOFT_THROTTLE_FACTOR;
             preferredBlockSize = Math.max(preferredBlockSize, MINIMUM_BLOCK_SIZE);
         }
-    }
-
-    public float getAchievedSpeed() {
-        return (float) speedMonitor.getAverageSpeed();
     }
 
     @Override
@@ -166,7 +150,7 @@ class SlaveMessageReader implements MessageReader {
                 mustFlush = true;
             }
             LongRange rangeToSend = removedRange.range;
-            speedMonitor.addProgress(rangeToSend.size());
+            slaveResourceStreamer.reportResourceSegmentSent(rangeToSend);
             byte[] data;
             try {
                 data = resourceReader.read(rangeToSend.getMin(), rangeToSend.size().intValue());
@@ -180,6 +164,6 @@ class SlaveMessageReader implements MessageReader {
 
     @Override
     public void stopped() {
-        speedMonitor.stop();
+//        speedMonitor.stop();
     }
 }

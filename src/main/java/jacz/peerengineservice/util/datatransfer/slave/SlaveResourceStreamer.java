@@ -20,7 +20,6 @@ import java.util.List;
 
 /**
  * This class handles a slave that serves a resource to a master
- * todo add statistics for speed... like in downloads. Make it reachable from UploadManager
  */
 public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResource implements ResourceStreamingManager.SubchannelOwner, TimerAction {
 
@@ -38,10 +37,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
             if (o == null || getClass() != o.getClass()) return false;
 
             RemovedRange that = (RemovedRange) o;
-
-            if (!range.equals(that.range)) return false;
-
-            return true;
+            return range.equals(that.range);
         }
 
         @Override
@@ -121,8 +117,6 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
 
     private short incomingChannel;
 
-    private boolean initialized;
-
     private ResourceReader resourceReader;
 
     private PeerId otherPeer;
@@ -132,6 +126,10 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
     private SlaveMessageReader messageReader;
 
     private ResourceSegmentQueue resourceSegmentQueue;
+
+    private final ResourceUploadStatistics resourceUploadStatistics;
+
+    private boolean initialized;
 
     private boolean alive;
 
@@ -150,6 +148,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         this.resourceStreamingManager = resourceStreamingManager;
         this.resourceRequest = request;
         timeoutTimer = new Timer(SURVIVE_TIME_MILLIS, this);
+        resourceUploadStatistics = new ResourceUploadStatistics();
         initialized = false;
         alive = true;
     }
@@ -218,6 +217,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
 
                     case ERASE_SEGMENTS:
                         resourceSegmentQueue.clear();
+                        resourceUploadStatistics.reportClearedAssignation();
                         break;
 
                     case ADD_NEW_SEGMENT:
@@ -226,6 +226,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
                             if (resourceReader.availableSegments().contains(masterMessage.segment)) {
                                 // the reader does have this segment
                                 resourceSegmentQueue.add(masterMessage.segment);
+                                resourceUploadStatistics.reportAssignedPart(masterMessage.segment);
                             } else {
                                 // the reader does not have this segment -> report master
                                 resourceStreamingManager.write(otherPeer, outgoingChannel, SlaveMessage.generateUnavailableSegmentsMessage(), false);
@@ -256,9 +257,18 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
         }
     }
 
+    void reportResourceSegmentSent(LongRange segment) {
+        resourceUploadStatistics.reportUploadedPart(segment);
+    }
+
+    public ResourceUploadStatistics getResourceUploadStatistics() {
+        return resourceUploadStatistics;
+    }
+
     @Override
     public float getAchievedSpeed() {
-        return messageReader.getAchievedSpeed();
+//        return messageReader.getAchievedSpeed();
+        return (float) resourceUploadStatistics.getSpeed();
     }
 
     public void hardThrottle(float variation) {
@@ -288,6 +298,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
             stopProcessor();
             timeoutTimer.kill();
             resourceStreamingManager.reportDeadSlaveResourceStreamer(this);
+            resourceUploadStatistics.stop();
             alive = false;
         }
     }
