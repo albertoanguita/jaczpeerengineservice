@@ -6,11 +6,13 @@ import jacz.storage.ActiveJDBCController;
 import jacz.util.lists.tuple.Duple;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
- * todo cache written data, like in datastore
-*/
+ * This class gives access to the peer knowledge base. We can retrieve specific peers fulfilling certain conditions,
+ * or count peers.
+ */
 public class PeerKnowledgeBase {
 
     public enum ConnectedQuery {
@@ -35,6 +37,11 @@ public class PeerKnowledgeBase {
         }
     }
 
+    /**
+     * 2-week threshold, in milliseconds
+     */
+    private static final long ELDERLY_THRESHOLD = 1000L * 60L * 60L * 24L * 14L;
+
     static final String DATABASE = "peerKnowledgeBase";
 
     private final String dbPath;
@@ -50,10 +57,16 @@ public class PeerKnowledgeBase {
     }
 
     private void newSession() {
-        // todo clear connection attempts
-        // todo change wish_connection from not_now to yes
-        // todo change is_connected to false
-        cleanOldEntries();
+        try {
+            ActiveJDBCController.connect(DATABASE, dbPath);
+            Long nullLong = null;
+            PeerEntry.updateAll(Management.LAST_CONNECTION_ATTEMPT.name + " = ?", nullLong);
+            PeerEntry.update(Management.WISH_REGULAR_CONNECTIONS.name + " = ?", Management.WISH_REGULAR_CONNECTIONS.name + " = ?", Management.ConnectionWish.YES, Management.ConnectionWish.NOT_NOW);
+            PeerEntry.updateAll(Management.IS_CONNECTED.name + " = ?", false);
+            cleanOldEntries();
+        } finally {
+            ActiveJDBCController.disconnect();
+        }
     }
 
     public int getPeerCount(ConnectedQuery connectedQuery) {
@@ -102,17 +115,22 @@ public class PeerKnowledgeBase {
     }
 
     private List<PeerEntryFacade> getPeers(Management.Relationship relationship, ConnectedQuery connectedQuery, String country) {
-        // todo: upon same affinity, older connection attempts are favored.
-        // todo: never connected peers are prioritized. Do I really want this??? We should first try peers that have been connected at least once, and then new peers
-        // todo but that will make it very difficult for new peers to have a chance. Think about this...
+        // first, order by affinity (descending, higher affinity comes first)
+        // upon same affinity, order by last connection attempt (ascending). Older last connection attempts come first,
+        // with null values (no connection attempt this session) first of all
+        // upon same last connection attempt (mainly, upon those with null last connection attempt), order by
+        // last session, descending (newer last sessions come first, with null values (those we have never connected)
+        // at the end of all. This way we favor those peers who we have contacted at least once in our lives
         ActiveJDBCController.connect(DATABASE, dbPath);
         try {
             Duple<String, Object[]> queryAndParams = buildQuery(relationship, connectedQuery, country);
             return PeerEntryFacade.buildList(
                     PeerEntry.where(
                             queryAndParams.element1, queryAndParams.element2)
-                            .orderBy(Management.AFFINITY.name + " desc, " + Management.LAST_CONNECTION_ATTEMPT.name),
-                            dbPath);
+                            .orderBy(Management.AFFINITY.name + " DESC")
+                            .orderBy(Management.LAST_CONNECTION_ATTEMPT.name)
+                            .orderBy(Management.LAST_SESSION.name + " DESC"),
+                    dbPath);
         } finally {
             ActiveJDBCController.disconnect();
         }
@@ -164,6 +182,10 @@ public class PeerKnowledgeBase {
     }
 
     public static void cleanOldEntries() {
-        // todo
+        // delete those peers to which we have never had a connection
+        // then delete those peers whose last session is older than a given threshold
+        String nullString = null;
+        PeerEntry.delete(Management.LAST_SESSION.name + " = ?", nullString);
+        PeerEntry.delete(Management.LAST_SESSION.name + " < ?", new Date().getTime() - ELDERLY_THRESHOLD);
     }
 }

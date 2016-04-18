@@ -3,6 +3,7 @@ package jacz.peerengineservice.client.connection.peers.kb;
 import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.PeerAddress;
+import jacz.util.concurrency.ThreadUtil;
 import jacz.util.network.IP4Port;
 import org.junit.Assert;
 
@@ -10,7 +11,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Created by Alberto on 08/03/2016.
+ * pkb tests
  */
 public class PeerKnowledgeBaseTest {
 
@@ -43,7 +44,6 @@ public class PeerKnowledgeBaseTest {
         // retrieve just built entry
         PeerEntryFacade peerEntryFacade = pkb.getPeerEntryFacade(peerId01);
         Assert.assertEquals(peerId01, peerEntryFacade.getPeerId());
-//        Assert.assertEquals(null, peerEntryFacade.getMainLanguage());
         Assert.assertEquals(null, peerEntryFacade.getMainCountry());
         Assert.assertEquals(Management.Relationship.REGULAR, peerEntryFacade.getRelationship());
         Assert.assertEquals(Management.Relationship.REGULAR, peerEntryFacade.getRelationshipToUs());
@@ -54,7 +54,6 @@ public class PeerKnowledgeBaseTest {
         Assert.assertEquals(0, peerEntryFacade.getAffinity());
         Assert.assertEquals(PeerAddress.nullPeerAddress(), peerEntryFacade.getPeerAddress());
 
-//        peerEntryFacade.setMainLanguage(LanguageCode.es);
         peerEntryFacade.setMainCountry(CountryCode.ES);
         peerEntryFacade.setRelationship(Management.Relationship.FAVORITE);
         peerEntryFacade.setRelationshipToUs(Management.Relationship.BLOCKED);
@@ -66,7 +65,6 @@ public class PeerKnowledgeBaseTest {
         peerEntryFacade.setPeerAddress(new PeerAddress(new IP4Port("205.103.101.94", 32000), new IP4Port("192.168.1.27", 50000)));
 
         Assert.assertEquals(peerId01, peerEntryFacade.getPeerId());
-//        Assert.assertEquals(LanguageCode.es, peerEntryFacade.getMainLanguage());
         Assert.assertEquals(CountryCode.ES, peerEntryFacade.getMainCountry());
         Assert.assertEquals(Management.Relationship.FAVORITE, peerEntryFacade.getRelationship());
         Assert.assertEquals(Management.Relationship.BLOCKED, peerEntryFacade.getRelationshipToUs());
@@ -110,7 +108,6 @@ public class PeerKnowledgeBaseTest {
         peerEntryFacade.setRelationship(Management.Relationship.REGULAR);
         peerEntryFacade.setConnected(true);
         peerEntryFacade.setAffinity(20);
-//        peerEntryFacade.setMainLanguage(LanguageCode.es);
         peerEntryFacade.setMainCountry(CountryCode.ES);
 
         assessFavoritePeers(pkb, PeerKnowledgeBase.ConnectedQuery.DISCONNECTED, 4, 2, 5);
@@ -161,5 +158,141 @@ public class PeerKnowledgeBaseTest {
             peerList[i] = PeerId.buildTestPeerId("" + ids[i]);
         }
         return peerList;
+    }
+
+
+    @org.junit.Test
+    public void testNewSession() {
+
+        Management.dropAndCreateKBDatabase(dbPath);
+
+        PeerKnowledgeBase pkb = new PeerKnowledgeBase(dbPath);
+        PeerId peerId01 = PeerId.buildTestPeerId("01");
+        PeerId peerId02 = PeerId.buildTestPeerId("02");
+        PeerId peerId03 = PeerId.buildTestPeerId("03");
+        PeerId peerId04 = PeerId.buildTestPeerId("04");
+        PeerId peerId05 = PeerId.buildTestPeerId("05");
+        PeerId peerId06 = PeerId.buildTestPeerId("06");
+        PeerId peerId07 = PeerId.buildTestPeerId("07");
+        PeerId peerId08 = PeerId.buildTestPeerId("08");
+        PeerId peerId09 = PeerId.buildTestPeerId("09");
+        PeerId peerId10 = PeerId.buildTestPeerId("10");
+
+        pkb.getPeerEntryFacade(peerId01).setConnected(true);
+        pkb.getPeerEntryFacade(peerId02).setConnected(true);
+        pkb.getPeerEntryFacade(peerId03).setConnected(true);
+        pkb.getPeerEntryFacade(peerId04).setConnected(true);
+        pkb.getPeerEntryFacade(peerId05).setConnected(true);
+        pkb.getPeerEntryFacade(peerId06).setConnected(true);
+        pkb.getPeerEntryFacade(peerId01).setWishForRegularConnections(Management.ConnectionWish.NO);
+        pkb.getPeerEntryFacade(peerId02).setWishForRegularConnections(Management.ConnectionWish.NO);
+        pkb.getPeerEntryFacade(peerId03).setWishForRegularConnections(Management.ConnectionWish.NO);
+        pkb.getPeerEntryFacade(peerId04).setWishForRegularConnections(Management.ConnectionWish.NOT_NOW);
+        pkb.getPeerEntryFacade(peerId05).setWishForRegularConnections(Management.ConnectionWish.NOT_NOW);
+        pkb.getPeerEntryFacade(peerId06).setWishForRegularConnections(Management.ConnectionWish.NOT_NOW);
+        pkb.getPeerEntryFacade(peerId07).setWishForRegularConnections(Management.ConnectionWish.NOT_NOW);
+        pkb.getPeerEntryFacade(peerId06).updateConnectionAttempt();
+        pkb.getPeerEntryFacade(peerId07).updateConnectionAttempt();
+        pkb.getPeerEntryFacade(peerId08).updateConnectionAttempt();
+        pkb.getPeerEntryFacade(peerId09).updateConnectionAttempt();
+        pkb.getPeerEntryFacade(peerId10).updateConnectionAttempt();
+
+        // force new session
+        pkb = new PeerKnowledgeBase(dbPath);
+
+        checkNewSessionPeer(pkb, peerId01, Management.ConnectionWish.NO);
+        checkNewSessionPeer(pkb, peerId02, Management.ConnectionWish.NO);
+        checkNewSessionPeer(pkb, peerId03, Management.ConnectionWish.NO);
+        checkNewSessionPeer(pkb, peerId04, Management.ConnectionWish.YES);
+        checkNewSessionPeer(pkb, peerId05, Management.ConnectionWish.YES);
+        checkNewSessionPeer(pkb, peerId06, Management.ConnectionWish.YES);
+        checkNewSessionPeer(pkb, peerId07, Management.ConnectionWish.YES);
+        checkNewSessionPeer(pkb, peerId08, Management.ConnectionWish.YES);
+        checkNewSessionPeer(pkb, peerId09, Management.ConnectionWish.YES);
+        checkNewSessionPeer(pkb, peerId10, Management.ConnectionWish.YES);
+    }
+
+    private void checkNewSessionPeer(PeerKnowledgeBase pkb, PeerId peerId, Management.ConnectionWish connectionWish) {
+        PeerEntryFacade peerEntryFacade = pkb.getPeerEntryFacade(peerId);
+        Assert.assertEquals(null, peerEntryFacade.getLastConnectionAttempt());
+        Assert.assertEquals(connectionWish, peerEntryFacade.getWishForRegularConnections());
+        Assert.assertFalse(peerEntryFacade.isConnected());
+    }
+
+    @org.junit.Test
+    public void testOrderPeers() {
+
+        Management.dropAndCreateKBDatabase(dbPath);
+
+        PeerKnowledgeBase pkb = new PeerKnowledgeBase(dbPath);
+        // result should be 8, 5, 1, 3, 10, 7, 2, 9, 4, 6
+        // give descending affinity to 1-8
+        // give ascending last connection attempt to 1-6
+        // give descending last session to 1-4
+        // order should be natural 1-10
+        PeerId peerId01 = PeerId.buildTestPeerId("01");
+        PeerId peerId02 = PeerId.buildTestPeerId("02");
+        PeerId peerId03 = PeerId.buildTestPeerId("03");
+        PeerId peerId04 = PeerId.buildTestPeerId("04");
+        PeerId peerId05 = PeerId.buildTestPeerId("05");
+        PeerId peerId06 = PeerId.buildTestPeerId("06");
+        PeerId peerId07 = PeerId.buildTestPeerId("07");
+        PeerId peerId08 = PeerId.buildTestPeerId("08");
+        PeerId peerId09 = PeerId.buildTestPeerId("09");
+        PeerId peerId10 = PeerId.buildTestPeerId("10");
+
+        pkb.getPeerEntryFacade(peerId08).setAffinity(25);
+        pkb.getPeerEntryFacade(peerId05).setAffinity(25);
+        pkb.getPeerEntryFacade(peerId01).setAffinity(25);
+        pkb.getPeerEntryFacade(peerId03).setAffinity(25);
+        pkb.getPeerEntryFacade(peerId10).setAffinity(25);
+        pkb.getPeerEntryFacade(peerId07).setAffinity(25);
+        pkb.getPeerEntryFacade(peerId02).setAffinity(19);
+        pkb.getPeerEntryFacade(peerId09).setAffinity(18);
+
+        pkb.getPeerEntryFacade(peerId08).updateConnectionAttempt();
+        ThreadUtil.safeSleep(50);
+        pkb.getPeerEntryFacade(peerId05).updateConnectionAttempt();
+        ThreadUtil.safeSleep(50);
+        pkb.getPeerEntryFacade(peerId01).updateConnectionAttempt();
+        ThreadUtil.safeSleep(50);
+        pkb.getPeerEntryFacade(peerId03).updateConnectionAttempt();
+        ThreadUtil.safeSleep(50);
+        pkb.getPeerEntryFacade(peerId10).updateConnectionAttempt();
+        ThreadUtil.safeSleep(50);
+        pkb.getPeerEntryFacade(peerId07).updateConnectionAttempt();
+        ThreadUtil.safeSleep(50);
+
+        pkb.getPeerEntryFacade(peerId03).setConnected(false);
+        ThreadUtil.safeSleep(50);
+        pkb.getPeerEntryFacade(peerId01).setConnected(false);
+        ThreadUtil.safeSleep(50);
+        pkb.getPeerEntryFacade(peerId05).setConnected(false);
+        ThreadUtil.safeSleep(50);
+        pkb.getPeerEntryFacade(peerId08).setConnected(false);
+
+        // add two additional peers with no affinity, no connection attempt and no session
+        pkb.getPeerEntryFacade(peerId04);
+        pkb.getPeerEntryFacade(peerId06);
+
+        // retrieve peers
+        List<PeerEntryFacade> peers = pkb.getRegularPeers(PeerKnowledgeBase.ConnectedQuery.ALL);
+
+        System.out.println("ordered peers:");
+        for (PeerEntryFacade peer : peers) {
+            System.out.println(peer.getPeerId());
+        }
+
+        Assert.assertEquals(10, peers.size());
+        Assert.assertEquals(peerId08, peers.get(0).getPeerId());
+        Assert.assertEquals(peerId05, peers.get(1).getPeerId());
+        Assert.assertEquals(peerId01, peers.get(2).getPeerId());
+        Assert.assertEquals(peerId03, peers.get(3).getPeerId());
+        Assert.assertEquals(peerId10, peers.get(4).getPeerId());
+        Assert.assertEquals(peerId07, peers.get(5).getPeerId());
+        Assert.assertEquals(peerId02, peers.get(6).getPeerId());
+        Assert.assertEquals(peerId09, peers.get(7).getPeerId());
+        Assert.assertEquals(peerId04, peers.get(8).getPeerId());
+        Assert.assertEquals(peerId06, peers.get(9).getPeerId());
     }
 }

@@ -221,9 +221,10 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
                 case WRONG_AUTHENTICATION_FALSE_PEER:
                     return State.CONNECTION_DENIED;
                 case REGULAR_SPOTS_TEMPORARILY_FULL:
-                    // todo transaction
+                    peerEntryFacade.openTransaction();
                     peerEntryFacade.setRelationshipToUs(Management.Relationship.REGULAR);
                     peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.NOT_NOW);
+                    peerEntryFacade.commitTransaction();
                     return State.CONNECTION_DENIED;
                 case BLOCKED:
                     peerEntryFacade.setRelationshipToUs(Management.Relationship.BLOCKED);

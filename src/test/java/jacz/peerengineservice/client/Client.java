@@ -10,9 +10,7 @@ import jacz.peerengineservice.util.datatransfer.TransferStatistics;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 import jacz.util.io.serialization.VersionedObjectSerializer;
 import jacz.util.io.serialization.VersionedSerializationException;
-import org.apache.commons.io.FileUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
@@ -22,13 +20,7 @@ import java.util.Map;
  */
 public class Client {
 
-    public static final String NETWORK_CONFIGURATION_PATH = "networkConfig.dat";
-
-    public static final String PEERS_PERSONAL_DATA_PATH = "peersPersonalData.dat";
-
     private static final String STATISTICS_PATH = "./statistics.dat";
-
-    private static final String DB_PATH = "test_peerKB.db";
 
     private PeerClient peerClient;
 

@@ -550,6 +550,7 @@ public class PeerConnectionManager {
         // finally, the blocked channels of this connection are resumed, so data transfer can begin
         ccp.registerGenericFSM(new PeerRequestDispatcherFSM(peerClientPrivateInterface, peerId), "PeerRequestDispatcherFSM", ChannelConstants.REQUEST_DISPATCHER_CHANNEL);
         connectedPeers.setConnectedPeer(peerId, ccp, clientCountryCode);
+        peerKnowledgeBase.getPeerEntryFacade(peerId).setConnected(true);
         peerClientPrivateInterface.newPeerConnected(peerId, ccp, getPeerRelationship(peerId));
         resumeChannels(ccp);
     }
@@ -570,19 +571,24 @@ public class PeerConnectionManager {
     }
 
     public void peerDisconnected(ChannelConnectionPoint ccp) {
-        PeerId peerId = connectedPeers.peerDisconnected(ccp);
+        PeerId peerId = disconnectPeer(ccp);
         if (peerId != null) {
             peerClientPrivateInterface.peerDisconnected(peerId);
         }
     }
 
     public void peerError(ChannelConnectionPoint ccp, CommError error) {
-        PeerId peerId = connectedPeers.peerDisconnected(ccp);
+        PeerId peerId = disconnectPeer(ccp);
         if (peerId != null) {
             peerClientPrivateInterface.peerError(peerId, error);
         }
     }
 
+    private PeerId disconnectPeer(ChannelConnectionPoint ccp) {
+        PeerId peerId = connectedPeers.peerDisconnected(ccp);
+        peerKnowledgeBase.getPeerEntryFacade(peerId).setConnected(false);
+        return peerId;
+    }
 
     public void stop() {
         setWishForConnect(false);

@@ -1,7 +1,6 @@
 package jacz.peerengineservice.client.connection.peers.kb;
 
 import jacz.storage.ActiveJDBCController;
-import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.DB;
 
 /**

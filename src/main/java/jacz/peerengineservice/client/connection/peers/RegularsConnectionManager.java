@@ -12,6 +12,8 @@ import java.util.List;
 
 /**
  * Handles connections to regular peers
+ * todo add code for retrieving the address of those regulars that we like (recent last session, not bad affinity)
+ * todo but we lost their address due to a failed connection
  */
 public class RegularsConnectionManager {
 

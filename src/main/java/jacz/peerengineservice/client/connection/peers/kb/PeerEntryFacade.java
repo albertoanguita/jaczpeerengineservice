@@ -4,7 +4,6 @@ import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.PeerAddress;
 import jacz.storage.ActiveJDBCController;
-import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.Model;
 
 import java.io.IOException;
@@ -44,6 +43,16 @@ public class PeerEntryFacade {
         peerEntry.setString(Management.WISH_REGULAR_CONNECTIONS.name, Management.ConnectionWish.YES.name());
         peerEntry.setBoolean(Management.IS_CONNECTED.name, false);
         peerEntry.setInteger(Management.AFFINITY.name, 0);
+    }
+
+    public void openTransaction() {
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
+        ActiveJDBCController.getDB().openTransaction();
+    }
+
+    public void commitTransaction() {
+        ActiveJDBCController.getDB().commitTransaction();
+        ActiveJDBCController.disconnect();
     }
 
     static List<PeerEntryFacade> buildList(List<? extends Model> peerEntries, String dbPath) {
@@ -127,7 +136,6 @@ public class PeerEntryFacade {
         ActiveJDBCController.disconnect();
     }
 
-    // todo I am not using the connection info ever. I probably do not need it at this level, only at the pkb. Just remove these 2 methods
     public boolean isConnected() {
         ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         boolean connected = peerEntry.getBoolean(Management.IS_CONNECTED.name);
@@ -139,8 +147,10 @@ public class PeerEntryFacade {
         ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setBoolean(Management.IS_CONNECTED.name, connected);
         if (!connected) {
-            // also update last session
+            // also update last session and "clear" last connection attempt
             peerEntry.setLong(Management.LAST_SESSION.name, new Date().getTime());
+            Long nullLong = null;
+            PeerEntry.updateAll(Management.LAST_CONNECTION_ATTEMPT.name + " = ?", nullLong);
         }
         peerEntry.saveIt();
         ActiveJDBCController.disconnect();
@@ -174,6 +184,7 @@ public class PeerEntryFacade {
         return affinity;
     }
 
+    // todo invoke
     public void setAffinity(int affinity) {
         ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setInteger(Management.AFFINITY.name, affinity);
