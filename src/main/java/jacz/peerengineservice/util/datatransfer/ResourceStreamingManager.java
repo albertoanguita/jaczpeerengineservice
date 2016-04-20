@@ -26,6 +26,7 @@ import jacz.util.queues.event_processing.MessageHandler;
 import jacz.util.queues.event_processing.MessageProcessor;
 import jacz.util.sets.availableelements.AvailableElementsShort;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Future;
@@ -609,8 +610,8 @@ public class ResourceStreamingManager {
             PeerId ownPeerId,
             ResourceTransferEvents resourceTransferEvents,
             ConnectedPeersMessenger connectedPeersMessenger,
-            TransferStatistics transferStatistics,
-            double accuracy) {
+            String transferStatisticsPath,
+            double accuracy) throws IOException {
         this.ownPeerId = ownPeerId;
         this.resourceTransferEventsBridge = new ResourceTransferEventsBridge(resourceTransferEvents);
         this.connectedPeersMessenger = connectedPeersMessenger;
@@ -624,7 +625,7 @@ public class ResourceStreamingManager {
         uploadsManager = new UploadsManager(this.resourceTransferEventsBridge);
         uploadPriorityManager = new GenericPriorityManager(true);
         downloadPriorityManager = new GenericPriorityManager(true);
-        this.transferStatistics = transferStatistics;
+        this.transferStatistics = new TransferStatistics(transferStatisticsPath);
         this.accuracy = new ContinuousDegree(accuracy);
         writeDataLock = new ReentrantLock(true);
         alive = new AtomicBoolean(true);
@@ -670,7 +671,7 @@ public class ResourceStreamingManager {
 
     public long write(PeerId destinationPeer, short subchannel, byte[] message, boolean isData, boolean flush) {
         if (isData) {
-            transferStatistics.addUploadedBytes(destinationPeer, message.length);
+            transferStatistics.addUploadedBytes(message.length);
         }
         return connectedPeersMessenger.sendDataMessage(destinationPeer, ChannelConstants.RESOURCE_STREAMING_MANAGER_CHANNEL, SubchannelDataMessage.encode(subchannel, message), flush);
     }
@@ -687,6 +688,10 @@ public class ResourceStreamingManager {
     synchronized void processMessage(byte[] bytes) {
         SubchannelDataMessage subchannelDataMessage = SubchannelDataMessage.decode(bytes);
         subchannelManager.processMessage(subchannelDataMessage.subchannel, subchannelDataMessage.data);
+    }
+
+    public TransferStatistics getTransferStatistics() {
+        return transferStatistics;
     }
 
     /**
@@ -866,7 +871,6 @@ public class ResourceStreamingManager {
     }
 
     public synchronized Float getMaxDesiredDownloadSpeed() {
-        // todo add a localStorage for max download and upload speeds
         return downloadPriorityManager.getTotalMaxDesiredSpeed();
     }
 
@@ -898,7 +902,7 @@ public class ResourceStreamingManager {
     }
 
     public void reportDownloadedSize(PeerId peerId, long bytes) {
-        transferStatistics.addDownloadedBytes(peerId, bytes);
+        transferStatistics.addDownloadedBytes(bytes);
     }
 
     /**
@@ -911,6 +915,7 @@ public class ResourceStreamingManager {
         if (alive.get()) {
             alive.set(false);
             resourceTransferEventsBridge.stop();
+            transferStatistics.stop();
             Collection<Future> futureCollection;
             synchronized (this) {
                 // subchannel assignments

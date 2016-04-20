@@ -75,7 +75,7 @@ public class ServerAPI {
 
     public enum ConnectionResponseType {
         OK,
-        // todo: make server return this if the public ip does not match what we are sending to him. Include public ip in connection message
+        // todo: make server return this if the public ip does not match what we are sending to him. Include public ip in connection message (@FUTURE@)
 //        PUBLIC_IP_MISMATCH,
         UNREGISTERED_PEER,
         PEER_MAIN_SERVER_UNREACHABLE,

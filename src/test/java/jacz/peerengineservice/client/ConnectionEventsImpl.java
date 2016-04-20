@@ -13,8 +13,13 @@ public class ConnectionEventsImpl implements ConnectionEvents {
     }
 
     @Override
-    public void listeningPortModified(int port) {
-        System.out.println("Listening port modified: " + port);
+    public void localPortModified(int port) {
+        System.out.println("Local port modified: " + port);
+    }
+
+    @Override
+    public void externalPortModified(int port) {
+        System.out.println("External port modified: " + port);
     }
 
     @Override

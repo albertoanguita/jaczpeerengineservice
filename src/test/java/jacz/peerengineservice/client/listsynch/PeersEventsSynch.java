@@ -1,21 +1,21 @@
 package jacz.peerengineservice.client.listsynch;
 
 import jacz.peerengineservice.PeerId;
-import jacz.peerengineservice.client.GeneralEventsImpl;
 import jacz.peerengineservice.client.PeerIdGenerator;
-import jacz.peerengineservice.util.PeerRelationship;
+import jacz.peerengineservice.client.PeersEventsImpl;
+import jacz.peerengineservice.client.connection.peers.PeerInfo;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 
 /**
  * Created by Alberto on 10/12/2015.
  */
-public class GeneralEventsSynch extends GeneralEventsImpl {
+public class PeersEventsSynch extends PeersEventsImpl {
 
     private final DataAccessor dataAccessor;
 
     private ListSynchProgress clientProgress;
 
-    public GeneralEventsSynch(DataAccessor dataAccessor) {
+    public PeersEventsSynch(DataAccessor dataAccessor) {
         this.dataAccessor = dataAccessor;
     }
 
@@ -24,8 +24,8 @@ public class GeneralEventsSynch extends GeneralEventsImpl {
     }
 
     @Override
-    public void newPeerConnected(PeerId peerId, PeerRelationship peerRelationship) {
-        super.newPeerConnected(peerId, peerRelationship);
+    public void newPeerConnected(PeerId peerId, PeerInfo peerInfo) {
+        super.newPeerConnected(peerId, peerInfo);
         try {
             if (peerId.equals(PeerIdGenerator.peerID(2))) {
                 clientProgress = new ListSynchProgress(peerId, "list0", true);

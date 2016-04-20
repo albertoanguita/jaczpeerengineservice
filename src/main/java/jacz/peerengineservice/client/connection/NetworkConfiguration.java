@@ -29,8 +29,8 @@ public class NetworkConfiguration implements Updater {
 
     public NetworkConfiguration(String localStoragePath, int localPort, int externalPort) throws IOException {
         localStorage = VersionedLocalStorage.createNew(localStoragePath, CURRENT_VERSION);
-        localStorage.setInteger(LOCAL_PORT, localPort);
-        localStorage.setInteger(EXTERNAL_PORT, externalPort);
+        setLocalPort(localPort);
+        setExternalPort(externalPort);
     }
 
     public NetworkConfiguration(String localStoragePath) throws IOException {

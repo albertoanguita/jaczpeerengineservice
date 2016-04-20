@@ -1,28 +1,19 @@
 package jacz.peerengineservice.client.connection.peers;
 
 import com.neovisionaries.i18n.CountryCode;
-import jacz.util.event.notification.NotificationEmitter;
-import jacz.util.event.notification.NotificationProcessor;
-import jacz.util.event.notification.NotificationReceiver;
+import jacz.util.io.serialization.localstorage.Updater;
+import jacz.util.io.serialization.localstorage.VersionedLocalStorage;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * todo synchronize, remove public from set methods
- * todo use local storage
+ * Connection configuration
  */
-public class PeerConnectionConfig implements NotificationEmitter {
+public class PeerConnectionConfig implements Updater {
 
     private static final int MIN_REGULAR_CONNECTIONS_FOR_OTHER_COUNTRIES = 5;
-
-    public enum  Event {
-        LOWER_MAX_CONNECTIONS,
-        MODIFIED_WISH_REGULAR_CONNECTIONS,
-        MODIFIED_MAIN_LANGUAGE,
-        MODIFIED_MAIN_COUNTRY,
-        MODIFIED_ADDITIONAL_LANGUAGES
-    }
 
     private static final int DEFAULT_MAX_REGULAR_CONNECTIONS = 100;
 
@@ -30,111 +21,113 @@ public class PeerConnectionConfig implements NotificationEmitter {
 
     private static final int DEFAULT_MAX_REGULAR_CONNECTIONS_ADDITIONAL_COUNTRY = 5;
 
-    private int maxRegularConnections;
-
-    private boolean wishRegularConnections;
-
-    private CountryCode mainCountry;
-
-    private List<CountryCode> additionalCountries;
-
-    private int maxRegularConnectionsForAdditionalCountries;
-
-    /**
-     * For submitting config changes to some specific classes
-     *
-     * This notification processor does not need to be stopped, since no class will use the timed functions
-     */
-    private final NotificationProcessor notificationProcessor;
 
 
-    public PeerConnectionConfig(CountryCode mainCountry) {
-        this(DEFAULT_MAX_REGULAR_CONNECTIONS, DEFAULT_REGULAR_WISH, mainCountry, new ArrayList<>(), DEFAULT_MAX_REGULAR_CONNECTIONS_ADDITIONAL_COUNTRY);
+    /**** LOCAL STORAGE DATA AND KEYS ****/
+
+    private static final String VERSION_0_1_0 = "0.1.0";
+
+    private static final String CURRENT_VERSION = VERSION_0_1_0;
+
+    private static final String MAX_REGULAR_CONNECTIONS = "maxRegularConnections";
+
+    private static final String WISH_REGULAR_CONNECTIONS = "wishRegularConnections";
+
+    private static final String MAIN_COUNTRY = "mainCountry";
+
+    private static final String ADDITIONAL_COUNTRIES = "additionalCountries";
+
+    private static final String MAX_REGULAR_CONNECTIONS_FOR_ADDITIONAL_COUNTRIES = "maxRegularConnectionsForAdditionalCountries";
+
+    private final VersionedLocalStorage localStorage;
+
+
+    public PeerConnectionConfig(String localStoragePath, CountryCode mainCountry) throws IOException {
+        localStorage = VersionedLocalStorage.createNew(localStoragePath, CURRENT_VERSION);
+        setMaxRegularConnections(DEFAULT_MAX_REGULAR_CONNECTIONS);
+        setWishRegularConnections(DEFAULT_REGULAR_WISH);
+        setMainCountry(mainCountry);
+        setAdditionalCountries(new ArrayList<>());
+        setMaxRegularConnectionsForAdditionalCountries(DEFAULT_MAX_REGULAR_CONNECTIONS_ADDITIONAL_COUNTRY);
+    }
+
+    public PeerConnectionConfig(String localStoragePath) throws IOException {
+        localStorage = new VersionedLocalStorage(localStoragePath, this, CURRENT_VERSION);
     }
 
     public PeerConnectionConfig(
+            String localStoragePath,
             int maxRegularConnections,
             boolean wishRegularConnections,
             CountryCode mainCountry,
             List<CountryCode> additionalCountries,
-            int maxRegularConnectionsForAdditionalCountries) {
-        this.maxRegularConnections = maxRegularConnections;
-        this.wishRegularConnections = wishRegularConnections;
-        this.mainCountry = mainCountry;
-        this.additionalCountries = additionalCountries;
-        this.maxRegularConnectionsForAdditionalCountries = maxRegularConnectionsForAdditionalCountries;
-        notificationProcessor = new NotificationProcessor();
+            int maxRegularConnectionsForAdditionalCountries) throws IOException {
+        this(localStoragePath, mainCountry);
+        setMaxRegularConnections(maxRegularConnections);
+        setWishRegularConnections(wishRegularConnections);
+        setAdditionalCountries(additionalCountries);
+        setMaxRegularConnectionsForAdditionalCountries(maxRegularConnectionsForAdditionalCountries);
     }
 
     public int getMaxRegularConnections() {
-        return maxRegularConnections;
+        return localStorage.getInteger(MAX_REGULAR_CONNECTIONS);
     }
 
-    public void setMaxRegularConnections(int maxRegularConnections) {
-        this.maxRegularConnections = maxRegularConnections;
+    boolean setMaxRegularConnections(int maxRegularConnections) {
+        return localStorage.setInteger(MAX_REGULAR_CONNECTIONS, maxRegularConnections);
     }
 
     public boolean isWishRegularConnections() {
-        return wishRegularConnections;
+        return localStorage.getBoolean(WISH_REGULAR_CONNECTIONS);
     }
 
-    void setWishRegularConnections(boolean wishRegularConnections) {
-        this.wishRegularConnections = wishRegularConnections;
+    boolean setWishRegularConnections(boolean wishRegularConnections) {
+        return localStorage.setBoolean(WISH_REGULAR_CONNECTIONS, wishRegularConnections);
     }
 
     public CountryCode getMainCountry() {
-        return mainCountry;
+        return localStorage.getEnum(MAIN_COUNTRY, CountryCode.class);
     }
 
-    public void setMainCountry(CountryCode mainCountry) {
-        this.mainCountry = mainCountry;
+    boolean setMainCountry(CountryCode mainCountry) {
+        return localStorage.setEnum(MAIN_COUNTRY, CountryCode.class, mainCountry);
     }
 
     public List<CountryCode> getAdditionalCountries() {
-        return new ArrayList<>(additionalCountries);
+        return localStorage.getEnumList(ADDITIONAL_COUNTRIES, CountryCode.class);
     }
 
     public boolean isAdditionalCountry(CountryCode country) {
-        return additionalCountries.contains(country);
+        return getAdditionalCountries().contains(country);
     }
 
     public List<CountryCode> getAllCountries() {
         List<CountryCode> allCountries = getAdditionalCountries();
-        allCountries.add(mainCountry);
+        allCountries.add(getMainCountry());
         return allCountries;
     }
 
-    public void setAdditionalCountries(List<CountryCode> additionalCountries) {
-        this.additionalCountries = additionalCountries;
+    void setAdditionalCountries(List<CountryCode> additionalCountries) {
+        localStorage.setEnumList(ADDITIONAL_COUNTRIES, CountryCode.class, additionalCountries);
     }
 
     public int getMaxRegularConnectionsForAdditionalCountries() {
-        return maxRegularConnectionsForAdditionalCountries;
+        return localStorage.getInteger(MAX_REGULAR_CONNECTIONS_FOR_ADDITIONAL_COUNTRIES);
     }
 
     public int getMaxRegularConnectionsForOtherCountries() {
         return Math.max(
-                additionalCountries.size() * maxRegularConnectionsForAdditionalCountries + 1,
+                getAdditionalCountries().size() * getMaxRegularConnectionsForAdditionalCountries() + 1,
                 MIN_REGULAR_CONNECTIONS_FOR_OTHER_COUNTRIES);
     }
 
-    public void setMaxRegularConnectionsForAdditionalCountries(int maxRegularConnectionsForAdditionalLanguages) {
-        this.maxRegularConnectionsForAdditionalCountries = maxRegularConnectionsForAdditionalLanguages;
+    boolean setMaxRegularConnectionsForAdditionalCountries(int maxRegularConnectionsForAdditionalLanguages) {
+        return localStorage.setInteger(MAX_REGULAR_CONNECTIONS_FOR_ADDITIONAL_COUNTRIES, maxRegularConnectionsForAdditionalLanguages);
     }
 
     @Override
-    public String subscribe(String receiverID, NotificationReceiver notificationReceiver) throws IllegalArgumentException {
-        return notificationProcessor.subscribeReceiver(receiverID, notificationReceiver);
-    }
-
-    @Override
-    public String subscribe(String receiverID, NotificationReceiver notificationReceiver, long millis, double timeFactorAtEachEvent, int limit) throws IllegalArgumentException {
-        // todo error, timed functions are not available here
+    public String update(VersionedLocalStorage versionedLocalStorage, String storedVersion) {
+        // no versions yet, cannot be invoked
         return null;
-    }
-
-    @Override
-    public void unsubscribe(String receiverID) {
-        notificationProcessor.unsubscribeReceiver(receiverID);
     }
 }

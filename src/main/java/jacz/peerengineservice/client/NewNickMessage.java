@@ -5,11 +5,11 @@ import java.io.Serializable;
 /**
  * Message for broadcasting nick changes
  */
-public class NewNickMessage implements Serializable {
+class NewNickMessage implements Serializable {
 
     final String nick;
 
-    public NewNickMessage(String nick) {
+    NewNickMessage(String nick) {
         this.nick = nick;
     }
 }

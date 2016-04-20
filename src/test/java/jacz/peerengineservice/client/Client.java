@@ -1,42 +1,35 @@
 package jacz.peerengineservice.client;
 
-import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
-import jacz.peerengineservice.client.connection.peers.PeerConnectionConfig;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.datatransfer.ResourceTransferEvents;
-import jacz.peerengineservice.util.datatransfer.TransferStatistics;
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
-import jacz.util.io.serialization.VersionedObjectSerializer;
-import jacz.util.io.serialization.VersionedSerializationException;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * Created by Alberto on 12/04/2016.
+ * Client for tests
  */
 public class Client {
-
-    private static final String STATISTICS_PATH = "./statistics.dat";
 
     private PeerClient peerClient;
 
     TempFileManager tempFileManager;
-
-    private TransferStatistics transferStatistics;
 
     public Client(
             PeerId ownPeerId,
             String networkConfigurationPath,
             String peersPersonalDataPath,
             String peerKnowledgeBasePath,
+            String peerConnectionConfigPath,
+            String transferStatisticsPath,
             GeneralEventsImpl generalEvents,
             ConnectionEventsImpl connectionEvents,
+            PeersEventsImpl peersEvents,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(ownPeerId, networkConfigurationPath, peersPersonalDataPath, peerKnowledgeBasePath, generalEvents, connectionEvents, new ResourceTransferEventsImpl(), customFSMs);
+        this(ownPeerId, networkConfigurationPath, peersPersonalDataPath, peerKnowledgeBasePath, peerConnectionConfigPath, transferStatisticsPath, generalEvents, connectionEvents, peersEvents, new ResourceTransferEventsImpl(), customFSMs);
     }
 
     public Client(
@@ -44,11 +37,14 @@ public class Client {
             String networkConfigurationPath,
             String peersPersonalDataPath,
             String peerKnowledgeBasePath,
+            String peerConnectionConfigPath,
+            String transferStatisticsPath,
             GeneralEventsImpl generalEvents,
             ConnectionEventsImpl connectionEvents,
+            PeersEventsImpl peersEvents,
             ResourceTransferEvents resourceTransferEvents,
             Map<String, PeerFSMFactory> customFSMs) throws IOException {
-        this(ownPeerId, new PeerEncryption(new byte[0]), networkConfigurationPath, peersPersonalDataPath, peerKnowledgeBasePath, generalEvents, connectionEvents, resourceTransferEvents, customFSMs, null, null);
+        this(ownPeerId, new PeerEncryption(new byte[0]), networkConfigurationPath, peersPersonalDataPath, peerKnowledgeBasePath, peerConnectionConfigPath, transferStatisticsPath, generalEvents, connectionEvents, peersEvents, resourceTransferEvents, customFSMs, null, null);
     }
 
     public Client(
@@ -57,13 +53,16 @@ public class Client {
             String networkConfigurationPath,
             String peersPersonalDataPath,
             String peerKnowledgeBasePath,
+            String peerConnectionConfigPath,
+            String transferStatisticsPath,
             GeneralEventsImpl generalEvents,
             ConnectionEventsImpl connectionEvents,
+            PeersEventsImpl peersEvents,
             ResourceTransferEvents resourceTransferEvents,
             Map<String, PeerFSMFactory> customFSMs,
             Map<String, DataAccessor> readingLists,
             Map<String, DataAccessor> writingLists) throws IOException {
-        generalEvents.init(this);
+        peersEvents.init(this);
 
         String serverURL = "https://jaczserver.appspot.com/_ah/api/server/v1/";
         ListContainer listContainer = new ListContainer(readingLists, writingLists);
@@ -74,34 +73,24 @@ public class Client {
 //            globalDownloadStatistics = new GlobalDownloadStatistics();
 //        }
 
-        try {
-            transferStatistics = new TransferStatistics(STATISTICS_PATH);
-        } catch (IOException | VersionedSerializationException e) {
-            transferStatistics = new TransferStatistics();
-        }
         peerClient = new PeerClient(
                 ownPeerId,
                 serverURL,
-                buildPeerConnectionConfig(),
+                peerConnectionConfigPath,
                 peerKnowledgeBasePath,
                 peerEncryption,
                 networkConfigurationPath,
                 generalEvents,
                 connectionEvents,
+                peersEvents,
                 resourceTransferEvents,
                 peersPersonalDataPath,
-                transferStatistics,
+                transferStatisticsPath,
                 customFSMs,
                 listContainer,
                 null);
 
         tempFileManager = null;
-    }
-
-    private PeerConnectionConfig buildPeerConnectionConfig() {
-        return new PeerConnectionConfig(
-                100, false, CountryCode.ES, new ArrayList<>(), 10
-        );
     }
 
     public void startClient() throws IOException {
@@ -113,20 +102,10 @@ public class Client {
         if (tempFileManager != null) {
             tempFileManager.stop();
         }
-        transferStatistics.stop();
-        try {
-            VersionedObjectSerializer.serialize(transferStatistics, 4, STATISTICS_PATH);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public PeerClient getPeerClient() {
         return peerClient;
-    }
-
-    public TransferStatistics getTransferStatistics() {
-        return transferStatistics;
     }
 
     public void disconnect() {

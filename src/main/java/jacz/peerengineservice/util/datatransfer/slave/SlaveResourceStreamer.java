@@ -52,7 +52,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
 
         private final LongRangeQueue queue;
 
-        // todo hash is used?????????? remove!!!
+        // todo hash is used?????????? remove!!! (@FUTURE@)
         private long currentHashSize;
 
         private long amountOfCurrentHashSent;

@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util;
 
 /**
- * Created by Alberto on 04/04/2016.
+ * Different relationships that we can have with other peers
  */
 public enum PeerRelationship {
 

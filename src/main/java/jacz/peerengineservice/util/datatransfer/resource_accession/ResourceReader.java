@@ -13,7 +13,7 @@ public interface ResourceReader {
 
     /**
      * Whether this resource reader supports random access or not
-     * todo use
+     * todo use (@FUTURE@)
      *
      * @return true if random access is supported
      */

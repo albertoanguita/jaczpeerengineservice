@@ -1,11 +1,12 @@
 package jacz.peerengineservice.client.connection;
 
+import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
-import jacz.peerengineservice.client.GeneralEvents;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
-import jacz.peerengineservice.client.connection.peers.PeerConnectionConfig;
 import jacz.peerengineservice.client.connection.peers.PeerConnectionManager;
+import jacz.peerengineservice.client.connection.peers.PeersEvents;
+import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.PeerRelationship;
 import jacz.util.AI.evolve.EvolvingState;
@@ -90,10 +91,10 @@ public class PeerClientConnectionManager {
             PeerId ownPeerId,
             PeerEncryption ownPeerEncryption,
             String serverURL,
-            PeerConnectionConfig peerConnectionConfig,
+            String peerConnectionConfigPath,
             String peerKnowledgeBasePath,
             String networkConfigurationPath,
-            GeneralEvents generalEvents) throws IOException {
+            PeersEvents peersEvents) throws IOException {
         this.connectionEvents = new ConnectionEventsBridge(connectionEvents, this);
         this.networkConfiguration = new NetworkConfiguration(networkConfigurationPath);
 
@@ -112,12 +113,12 @@ public class PeerClientConnectionManager {
                 ownPeerId,
                 ownPeerEncryption,
                 serverURL,
-                peerConnectionConfig,
+                peerConnectionConfigPath,
                 peerKnowledgeBasePath,
                 connectedPeers,
                 peerClientPrivateInterface,
                 this,
-                generalEvents);
+                peersEvents);
 
         this.connectedPeers = connectedPeers;
 
@@ -290,14 +291,14 @@ public class PeerClientConnectionManager {
     public synchronized void setLocalPort(int port) {
         if (networkConfiguration.setLocalPort(port)) {
             reconnectDueToNetworkConfigurationChange();
-            connectionEvents.listeningPortModified(port);
+            connectionEvents.localPortModified(port);
         }
     }
 
     public synchronized void setExternalPort(int port) {
         if (networkConfiguration.setExternalPort(port)) {
             reconnectDueToNetworkConfigurationChange();
-            connectionEvents.listeningPortModified(port); // todo a different call
+            connectionEvents.externalPortModified(port);
         }
     }
 
@@ -368,7 +369,7 @@ public class PeerClientConnectionManager {
      * Performs a connected friend search. Searches are performed periodically, but the user can force a search using this method. If we are not
      * connected to the server, this method will have no effect
      */
-    public synchronized void searchFavorites() {
+    public void searchFavorites() {
         peerConnectionManager.searchFavorites();
     }
 
@@ -407,5 +408,21 @@ public class PeerClientConnectionManager {
         }
         concurrentChannels.add(restOfChannels);
         return concurrentChannels;
+    }
+
+    public void updatePeerAffinity(PeerId peerId, int affinity) {
+        peerConnectionManager.updatePeerAffinity(peerId, affinity);
+    }
+
+    public void newPeerNick(PeerId peerId, String nick) {
+        peerConnectionManager.newPeerNick(peerId, nick);
+    }
+
+    public void newRelationshipToUs(PeerId peerId, Management.Relationship relationship) {
+        peerConnectionManager.newRelationshipToUs(peerId, relationship);
+    }
+
+    public void peerModifiedHisMainCountry(PeerId peerId, CountryCode mainCountry) {
+        peerConnectionManager.peerModifiedHisMainCountry(peerId, mainCountry);
     }
 }

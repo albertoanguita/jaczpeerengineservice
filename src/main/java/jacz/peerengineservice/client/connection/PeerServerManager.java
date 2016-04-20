@@ -220,7 +220,7 @@ public class PeerServerManager {
                     return true;
                 case WRONG_AUTHENTICATION:
                     // ignore
-                    // todo
+                    // todo (@CONNECTION-AUTH@)
                     controller.setState(State.ConnectionToServerState.WAITING_FOR_NEXT_CONNECTION_TRY);
                     return true;
                 default:

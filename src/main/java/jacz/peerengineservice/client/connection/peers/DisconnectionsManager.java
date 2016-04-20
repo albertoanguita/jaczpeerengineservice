@@ -1,5 +1,6 @@
 package jacz.peerengineservice.client.connection.peers;
 
+import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.ConnectedPeers;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
@@ -8,7 +9,9 @@ import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -60,7 +63,11 @@ public class DisconnectionsManager {
     }
 
     private void checkPeersToDisconnect() {
+        // todo try to disconnect peers with no active transfers (@FUTURE@)
         Set<PeerId> peersToDisconnect = new HashSet<>();
+        int maxRegularConnectionsForMainCountry = peerConnectionManager.getMaxRegularConnections();
+        Map<CountryCode, Integer> maxRegularConnectionsForAdditionalCountry = initMaxRegularConnectionsForAdditionalCountries();
+        int maxRegularConnectionsForOtherCountries = peerConnectionManager.getMaxRegularConnectionsForOtherCountries();
         for (PeerId peerId : connectedPeers.getConnectedPeers()) {
             PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
 
@@ -71,14 +78,56 @@ public class DisconnectionsManager {
             }
 
             // REGULAR peers, and we do not wish to connect to regulars
-            if (peerEntryFacade.getRelationship() == Management.Relationship.REGULAR && !peerConnectionManager.isOwnWishForRegularConnections()) {
+            if (peerEntryFacade.getRelationship() == Management.Relationship.REGULAR
+                    && !peerConnectionManager.isOwnWishForRegularConnections()) {
                 peersToDisconnect.add(peerId);
                 continue;
             }
 
-            // todo add conditions for too many connections, or undesired countries
+            // REGULAR peers, we do wish regular connections, and he offers our main country
+            if (peerEntryFacade.getRelationship() == Management.Relationship.REGULAR
+                    && peerConnectionManager.isOwnWishForRegularConnections()
+                    && peerEntryFacade.getMainCountry() == peerConnectionManager.getMainCountry()) {
+                if (maxRegularConnectionsForMainCountry > 0) {
+                    maxRegularConnectionsForMainCountry--;
+                } else {
+                    peersToDisconnect.add(peerId);
+                    continue;
+                }
+            }
+
+            // REGULAR peers, we do wish regular connections, and he offers one additional country
+            if (peerEntryFacade.getRelationship() == Management.Relationship.REGULAR
+                    && peerConnectionManager.isOwnWishForRegularConnections()
+                    && peerConnectionManager.isAdditionalCountry(peerEntryFacade.getMainCountry())) {
+                if (maxRegularConnectionsForAdditionalCountry.get(peerEntryFacade.getMainCountry()) > 0) {
+                    maxRegularConnectionsForAdditionalCountry.put(peerEntryFacade.getMainCountry(), maxRegularConnectionsForAdditionalCountry.get(peerEntryFacade.getMainCountry()) -1);
+                } else {
+                    peersToDisconnect.add(peerId);
+                    continue;
+                }
+            }
+
+            // REGULAR peers, we do wish regular connections, and he offers an unknown country
+            if (peerEntryFacade.getRelationship() == Management.Relationship.REGULAR
+                    && peerConnectionManager.isOwnWishForRegularConnections()
+                    && !peerConnectionManager.getAllCountries().contains(peerEntryFacade.getMainCountry())) {
+                if (maxRegularConnectionsForOtherCountries > 0) {
+                    maxRegularConnectionsForOtherCountries--;
+                } else {
+                    peersToDisconnect.add(peerId);
+                }
+            }
         }
         mustDisconnectFromPeers(peersToDisconnect);
+    }
+
+    private Map<CountryCode, Integer> initMaxRegularConnectionsForAdditionalCountries() {
+        Map<CountryCode, Integer> maxRegularConnectionsForMainCountry = new HashMap<>();
+        for (CountryCode countryCode : peerConnectionManager.getAdditionalCountries()) {
+            maxRegularConnectionsForMainCountry.put(countryCode, peerConnectionManager.getMaxRegularConnectionsForAdditionalCountries());
+        }
+        return maxRegularConnectionsForMainCountry;
     }
 
     synchronized void mustDisconnectFromPeers(Set<PeerId> peerIds) {

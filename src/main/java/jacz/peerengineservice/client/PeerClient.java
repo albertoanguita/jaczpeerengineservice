@@ -1,5 +1,6 @@
 package jacz.peerengineservice.client;
 
+import com.neovisionaries.i18n.CountryCode;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.NotAliveException;
@@ -7,7 +8,8 @@ import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.connection.*;
-import jacz.peerengineservice.client.connection.peers.PeerConnectionConfig;
+import jacz.peerengineservice.client.connection.peers.PeersEvents;
+import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.PeerRelationship;
@@ -107,15 +109,16 @@ public class PeerClient {
     public PeerClient(
             PeerId ownPeerId,
             String serverURL,
-            PeerConnectionConfig peerConnectionConfig,
+            String peerConnectionConfigPath,
             String peerKnowledgeBasePath,
             PeerEncryption peerEncryption,
             String networkConfigurationPath,
             GeneralEvents generalEvents,
             ConnectionEvents connectionEvents,
+            PeersEvents peersEvents,
             ResourceTransferEvents resourceTransferEvents,
             String peersPersonalDataPath,
-            TransferStatistics transferStatistics,
+            String transferStatisticsPath,
             Map<String, PeerFSMFactory> customFSMs,
             DataAccessorContainer dataAccessorContainer,
             ErrorHandler errorHandler) throws IOException {
@@ -137,15 +140,15 @@ public class PeerClient {
                     ownPeerId,
                     peerEncryption,
                     serverURL,
-                    peerConnectionConfig,
+                    peerConnectionConfigPath,
                     peerKnowledgeBasePath,
                     networkConfigurationPath,
-                    this.generalEvents);
+                    peersEvents);
         } catch (IOException e) {
             stop();
             throw e;
         }
-        resourceStreamingManager = new ResourceStreamingManager(ownPeerId, resourceTransferEvents, connectedPeersMessenger, transferStatistics, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
+        resourceStreamingManager = new ResourceStreamingManager(ownPeerId, resourceTransferEvents, connectedPeersMessenger, transferStatisticsPath, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
         // initialize the list synchronizer utility (better here than in the client side)
         dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer);
         PeerClient.errorHandler = new ErrorHandlerBridge(this, errorHandler);
@@ -250,6 +253,10 @@ public class PeerClient {
         return connectedPeers.getConnectedPeersData();
     }
 
+    public void updatePeerAffinity(PeerId peerId, int affinity) {
+        peerClientConnectionManager.updatePeerAffinity(peerId, affinity);
+    }
+
     public synchronized PeerRelationship getPeerRelationship(PeerId peerId) {
         return peerClientConnectionManager.getPeerRelationship(peerId);
     }
@@ -266,7 +273,7 @@ public class PeerClient {
         return peerClientConnectionManager.getFavoritePeers();
     }
 
-    public synchronized void addFavoritePeer(final PeerId peerId) {
+    public void addFavoritePeer(final PeerId peerId) {
         peerClientConnectionManager.addFavoritePeer(peerId);
         peerClientConnectionManager.searchFavorites();
     }
@@ -412,6 +419,10 @@ public class PeerClient {
         return resourceStreamingManager.downloadResource(serverPeerId, resourceStoreName, resourceID, resourceWriter, downloadProgressNotificationHandler, streamingNeed, totalHash, totalHashAlgorithm);
     }
 
+    public TransferStatistics getTransferStatistics() {
+        return resourceStreamingManager.getTransferStatistics();
+    }
+
     public synchronized Float getMaxDesiredDownloadSpeed() {
         return resourceStreamingManager.getMaxDesiredDownloadSpeed();
     }
@@ -490,18 +501,21 @@ public class PeerClient {
         resourceStreamingManager.getUploadsManager().stopTimer();
     }
 
-    void newPeerConnected(final PeerId peerId, final ChannelConnectionPoint ccp, PeerRelationship peerRelationship) {
+    synchronized void newPeerConnected(final PeerId peerId, final ChannelConnectionPoint ccp, PeerRelationship peerRelationship) {
         // first notify the resource streaming manager, so it sets up the necessary FSMs for receiving resource data. Then, notify the client
         dataSynchronizer.getDataAccessorContainer().peerConnected(peerId);
         resourceStreamingManager.newPeerConnected(ccp);
-        generalEvents.newPeerConnected(peerId, peerRelationship);
+//        generalEvents.newPeerConnected(peerId, peerRelationship);
         // send the other peer own nick, to ensure he has our latest value
         sendObjectMessage(peerId, new NewNickMessage(peersPersonalData.getOwnNick()));
     }
 
-    void modifiedPeerRelationship(final PeerId peerId, PeerRelationship peerRelationship, boolean connected) {
-        // first notify the resource streaming manager, so it sets up the necessary FSMs for receiving resource data. Then, notify the client
-        generalEvents.modifiedPeerRelationship(peerId, peerRelationship, connected);
+    void modifiedPeerRelationship(final PeerId peerId, Management.Relationship relationship) {
+        sendObjectMessage(peerId, new NewRelationshipMessage(relationship));
+    }
+
+    void modifiedMainCountry(CountryCode mainCountry) {
+        broadcastObjectMessage(new NewMainCountryMessage(mainCountry));
     }
 
     /**
@@ -654,27 +668,24 @@ public class PeerClient {
         if (connectedPeers.isConnectedPeer(peerId)) {
             if (message instanceof NewNickMessage) {
                 // new nick from other peer received
-                final NewNickMessage newNickMessage = (NewNickMessage) message;
+                NewNickMessage newNickMessage = (NewNickMessage) message;
                 if (peersPersonalData.setPeerNick(peerId, newNickMessage.nick)) {
-                    generalEvents.newPeerNick(peerId, newNickMessage.nick);
+                    peerClientConnectionManager.newPeerNick(peerId, newNickMessage.nick);
                 }
+            } else if (message instanceof NewRelationshipMessage) {
+                // new relationship to us
+                final NewRelationshipMessage newRelationshipMessage = (NewRelationshipMessage) message;
+                peerClientConnectionManager.newRelationshipToUs(peerId, newRelationshipMessage.relationship);
+            } else if (message instanceof NewMainCountryMessage) {
+                // new relationship to us
+                final NewMainCountryMessage newMainCountryMessage = (NewMainCountryMessage) message;
+                peerClientConnectionManager.peerModifiedHisMainCountry(peerId, newMainCountryMessage.mainCountry);
             } else {
                 generalEvents.newObjectMessage(peerId, message);
             }
         }
     }
 
-    /**
-     * Retrieves the connection status from a connected peer. The connection status indicates if this peer is a friend of us and we are a friend
-     * of him (CORRECT), he is not a friend of us but we are a friend of him (UNVALIDATED) or he is our friend but we are waiting for
-     * him to make us his friend (WAITING_FOR_REMOTE_VALIDATION)
-     * <p/>
-     * //     * @param peerId peer whose connection status we want to retrieve
-     * //     * @return the connection status of the given peer, or null if we are not connected to this peer
-     */
-//    public synchronized ConnectionStatus getPeerConnectionStatus(PeerId peerId) {
-//        return connectedPeers.getPeerConnectionStatus(peerId);
-//    }
     public synchronized void subscribeToConnectedPeers(String receiverID, NotificationReceiver notificationReceiver) {
         connectedPeers.subscribe(receiverID, notificationReceiver);
     }
@@ -691,6 +702,5 @@ public class PeerClient {
      */
     synchronized void peerDisconnected(PeerId peerId, CommError error) {
         dataSynchronizer.getDataAccessorContainer().peerDisconnected(peerId);
-        generalEvents.peerDisconnected(peerId, error);
     }
 }

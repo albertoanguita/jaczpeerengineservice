@@ -11,7 +11,7 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.TempFileWrite
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
 import jacz.util.concurrency.ThreadUtil;
 import jacz.util.files.FileReaderWriter;
-import jacz.util.lists.tuple.Four_Tuple;
+import jacz.util.lists.tuple.SixTuple;
 import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
@@ -27,11 +27,11 @@ import java.util.HashMap;
 @Category(IntegrationTest.class)
 public class TransferTest {
 
-    private static final long WARM_UP = 25000;
+    private static final long WARM_UP = 20000;
 
     private static final long CYCLE_LENGTH = 10000;
 
-    private static final long DOWNLOAD_LENGTH = 75000;
+    private static final long DOWNLOAD_LENGTH = 65000;
 
     private static final String filesPath = "./etc/files";
     private static final String tempPath = "./etc/files/temp";
@@ -45,13 +45,15 @@ public class TransferTest {
     public void transfer1() throws Exception {
         String config = "./etc/tests/clientConf_1_new.xml";
         String userDir = "./etc/tests/client1";
-        Four_Tuple<PeerId, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
+        SixTuple<PeerId, String, String, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
         PeerId ownPeerId = data.element1;
         String networkConfiguration = data.element2;
         String peersPersonalData = data.element3;
         String peerRelations = data.element4;
+        String peerConnectionConfig = data.element5;
+        String transferStatistics = data.element6;
 
-        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new HashMap<>());
+        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new HashMap<>());
         ForeignStoreShare foreignStoreShare = new ForeignStoreShare(client.getPeerClient());
         foreignStoreShare.addResourceProvider(hash, PeerIdGenerator.peerID(2));
         foreignStoreShare.addResourceProvider(hash, PeerIdGenerator.peerID(3));
@@ -111,18 +113,20 @@ public class TransferTest {
     public void transfer2() throws Exception {
         String config = "./etc/tests/clientConf_2_new.xml";
         String userDir = "./etc/tests/client2";
-        Four_Tuple<PeerId, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
+        SixTuple<PeerId, String, String, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
         PeerId ownPeerId = data.element1;
         String networkConfiguration = data.element2;
         String peersPersonalData = data.element3;
         String peerRelations = data.element4;
+        String peerConnectionConfig = data.element5;
+        String transferStatistics = data.element6;
 
         FileUtils.cleanDirectory(new File(filesPath));
         FileUtils.forceMkdir(new File(tempPath));
         FileUtils.forceMkdir(new File(down1Path));
         buildFile(path);
 
-        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new HashMap<>());
+        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new HashMap<>());
         client.getPeerClient().addLocalResourceStore("files", new ResourceStoreImpl(hash, path));
         client.startClient();
 
@@ -139,13 +143,15 @@ public class TransferTest {
     public void transfer3() throws Exception {
         String config = "./etc/tests/clientConf_3_new.xml";
         String userDir = "./etc/tests/client3";
-        Four_Tuple<PeerId, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
+        SixTuple<PeerId, String, String, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
         PeerId ownPeerId = data.element1;
         String networkConfiguration = data.element2;
         String peersPersonalData = data.element3;
         String peerRelations = data.element4;
+        String peerConnectionConfig = data.element5;
+        String transferStatistics = data.element6;
 
-        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new HashMap<>());
+        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new HashMap<>());
         client.getPeerClient().addLocalResourceStore("files", new ResourceStoreImpl(hash, path));
         client.startClient();
 

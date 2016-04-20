@@ -150,7 +150,7 @@ public class PeerEntryFacade {
             // also update last session and "clear" last connection attempt
             peerEntry.setLong(Management.LAST_SESSION.name, new Date().getTime());
             Long nullLong = null;
-            PeerEntry.updateAll(Management.LAST_CONNECTION_ATTEMPT.name + " = ?", nullLong);
+            peerEntry.setLong(Management.LAST_CONNECTION_ATTEMPT.name + " = ?", nullLong);
         }
         peerEntry.saveIt();
         ActiveJDBCController.disconnect();
@@ -184,7 +184,6 @@ public class PeerEntryFacade {
         return affinity;
     }
 
-    // todo invoke
     public void setAffinity(int affinity) {
         ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setInteger(Management.AFFINITY.name, affinity);
@@ -212,4 +211,5 @@ public class PeerEntryFacade {
         peerEntry.saveIt();
         ActiveJDBCController.disconnect();
     }
+
 }

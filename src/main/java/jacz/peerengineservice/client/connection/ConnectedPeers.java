@@ -27,16 +27,6 @@ public class ConnectedPeers implements NotificationEmitter {
      */
     public static class PeerConnectionData {
 
-//        /**
-//         * The connection status of this peer with respect to us (for internal authorization purposes)
-//         */
-//        private ConnectionStatus status;
-//
-//        /**
-//         * ChannelConnectionPoint used to reach this client
-//         */
-//        private final ChannelConnectionPoint ccp;
-
         public final PeerId peerId;
 
         public CountryCode peerMainCountry;
@@ -49,8 +39,6 @@ public class ConnectedPeers implements NotificationEmitter {
         public PeerConnectionData(PeerId peerId, CountryCode peerMainCountry, Byte... occupiedChannels) {
             this.peerId = peerId;
             this.peerMainCountry = peerMainCountry;
-//            this.status = status;
-//            this.ccp = ccp;
             availableChannels = new AvailableElementsByte(occupiedChannels);
         }
     }
@@ -64,7 +52,7 @@ public class ConnectedPeers implements NotificationEmitter {
     /**
      * Count of connected peers by main countries
      */
-    private final ObjectCount<CountryCode> contriesCount;
+    private final ObjectCount<CountryCode> countriesCount;
 
     /**
      * Initially occupied channels for new connections
@@ -79,7 +67,7 @@ public class ConnectedPeers implements NotificationEmitter {
 
     public ConnectedPeers(Byte... occupiedChannels) {
         connectedPeers = new DoubleKeyMap<>();
-        contriesCount = new ObjectCount<>();
+        countriesCount = new ObjectCount<>();
         this.occupiedChannels = occupiedChannels;
         notificationProcessor = new NotificationProcessor();
     }
@@ -98,15 +86,14 @@ public class ConnectedPeers implements NotificationEmitter {
         // the initially occupied channels are the channel for the RequestDispatcher and the channel for the connection
         // process (the latter will be released shortly)
         connectedPeers.put(peerId, ccp, new PeerConnectionData(peerId, peerMainCountry, occupiedChannels));
-        contriesCount.addObject(peerMainCountry);
+        countriesCount.addObject(peerMainCountry);
         notificationProcessor.newEvent(peerId);
     }
 
-    // todo invoke when a peer changes his country
     public synchronized void setConnectedPeerMainCountry(PeerId peerId, CountryCode peerMainCountry) {
         if (connectedPeers.get(peerId).peerMainCountry != peerMainCountry) {
-            contriesCount.subtractObject(connectedPeers.get(peerId).peerMainCountry);
-            contriesCount.addObject(peerMainCountry);
+            countriesCount.subtractObject(connectedPeers.get(peerId).peerMainCountry);
+            countriesCount.addObject(peerMainCountry);
             connectedPeers.get(peerId).peerMainCountry = peerMainCountry;
         }
     }
@@ -135,11 +122,11 @@ public class ConnectedPeers implements NotificationEmitter {
     }
 
     public int getConnectedPeersCountryCount(CountryCode mainCountry) {
-        return contriesCount.getObjectCount(mainCountry);
+        return countriesCount.getObjectCount(mainCountry);
     }
 
     public int getConnectedPeersCountryCountExcept(Collection<CountryCode> countries) {
-        return connectedPeers.size() - contriesCount.getObjectCount(countries);
+        return connectedPeers.size() - countriesCount.getObjectCount(countries);
     }
 
     /**

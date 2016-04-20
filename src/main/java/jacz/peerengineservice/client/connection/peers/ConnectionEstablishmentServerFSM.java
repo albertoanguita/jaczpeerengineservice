@@ -5,11 +5,13 @@ import com.neovisionaries.i18n.CountryCode;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.channel.TimedChannelFSMAction;
 import jacz.peerengineservice.PeerId;
+import jacz.peerengineservice.client.connection.PeerAddress;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
 
 import java.io.Serializable;
 import java.security.PublicKey;
+import java.util.HashMap;
 
 /**
  * This FSM allows negotiating with other peers who want to connect to our PeerClient. This FSM implements the server
@@ -51,8 +53,6 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         WRONG_AUTHENTICATION_FALSE_PEER,
         // we would like to accept, but we are full for his offer
         REGULAR_SPOTS_TEMPORARILY_FULL,
-        // this client does not accept regular connections
-//        REJECT_REGULARS, --> INCORRECT!!
         // this client has blocked the requester
         BLOCKED,
         // we are no longer accepting any connections
@@ -66,6 +66,8 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         final ConnectionResultType connectionResultType;
 
         final ResponseDetail responseDetail;
+
+        final HashMap<PeerId, PeerAddress> tryThesePeers;
 
         public ConnectionResult(ConnectionResultType connectionResultType) {
             this.connectionResultType = connectionResultType;
@@ -178,7 +180,7 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
                     return State.CONNECTION_SUCCESSFUL;
                 } else {
                     // the client dismissed this connection due to failed authentication
-                    // todo notify client
+                    // todo notify client (not currently used) (@CONNECTION-AUTH@)
                     return State.ERROR;
                 }
             } else {

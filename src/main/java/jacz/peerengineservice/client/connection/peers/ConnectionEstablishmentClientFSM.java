@@ -224,10 +224,14 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
                     peerEntryFacade.openTransaction();
                     peerEntryFacade.setRelationshipToUs(Management.Relationship.REGULAR);
                     peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.NOT_NOW);
+                    peerEntryFacade.updateConnectionAttempt();
                     peerEntryFacade.commitTransaction();
                     return State.CONNECTION_DENIED;
                 case BLOCKED:
+                    peerEntryFacade.openTransaction();
                     peerEntryFacade.setRelationshipToUs(Management.Relationship.BLOCKED);
+                    peerEntryFacade.updateConnectionAttempt();
+                    peerEntryFacade.commitTransaction();
                     return State.CONNECTION_DENIED;
                 case DENY:
                     // peer no longer available, no need to update any info
@@ -249,7 +253,7 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
     private State processDetailAcceptedConnection(
             ConnectionEstablishmentServerFSM.DetailAcceptedConnection detailAcceptedConnection,
             ChannelConnectionPoint ccp) {
-        // todo check server auth
+        // todo check server auth (@CONNECTION-AUTH@)
         // send confirmation message
         ccp.write(ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL, true);
         peerConnectionManager.connectionAsClientCompleted(serverPeerId, ccp, detailAcceptedConnection.serverToClientRelationship, peerEntryFacade.getMainCountry());

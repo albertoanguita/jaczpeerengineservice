@@ -64,12 +64,22 @@ public class ConnectionEventsBridge {
         this.externalPort = externalPort;
     }
 
-    public void listeningPortModified(final int port) {
-        logger.info("LISTENING PORT MODIFIED. Port: " + port);
+    public void localPortModified(final int port) {
+        logger.info("LOCAL PORT MODIFIED. Port: " + port);
         sequentialTaskExecutor.submit(new Runnable() {
             @Override
             public void run() {
-                connectionEvents.listeningPortModified(port);
+                connectionEvents.localPortModified(port);
+            }
+        });
+    }
+
+    public void externalPortModified(final int port) {
+        logger.info("EXTERNAL PORT MODIFIED. Port: " + port);
+        sequentialTaskExecutor.submit(new Runnable() {
+            @Override
+            public void run() {
+                connectionEvents.externalPortModified(port);
             }
         });
     }

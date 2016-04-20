@@ -12,7 +12,7 @@ import java.util.Set;
 /**
  * Created by Alberto on 21/09/2015.
  *
- * todo check possibility of updating communications to java NIO socketchannel
+ * todo check possibility of updating communications to java NIO socketchannel (@FUTURE@)
  * http://tutorials.jenkov.com/java-nio/socketchannel.html
  */
 public class GenericPriorityManager implements TimerAction {

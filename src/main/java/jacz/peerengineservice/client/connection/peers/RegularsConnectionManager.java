@@ -8,12 +8,11 @@ import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
  * Handles connections to regular peers
- * todo add code for retrieving the address of those regulars that we like (recent last session, not bad affinity)
- * todo but we lost their address due to a failed connection
  */
 public class RegularsConnectionManager {
 
@@ -21,29 +20,31 @@ public class RegularsConnectionManager {
 
         private final List<PeerEntryFacade> targetPeers;
 
-        private int performedAttempts;
-
         public TargetPeerList(List<PeerEntryFacade> targetPeers) {
             this.targetPeers = targetPeers;
-            performedAttempts = 0;
+            filterTargetPeers();
+        }
+
+        private void filterTargetPeers() {
+            // remove target peers who do not meet conditions for connecting
+            Iterator<PeerEntryFacade> it = targetPeers.iterator();
+            while (it.hasNext()) {
+                PeerEntryFacade peerEntryFacade = it.next();
+                if (peerConnectionManager.discardConnectionAttempt(peerEntryFacade)) {
+                    // invalid target peer -> remove
+                    it.remove();
+                }
+            }
         }
 
         public boolean isEmpty() {
             return targetPeers.isEmpty();
         }
 
-        public int performedAttemptsCount() {
-            return performedAttempts;
-        }
-
-        public List<PeerEntryFacade> retrieveTargets(int maxSize) {
+        public List<PeerEntryFacade> retrieveTargetBatch(int maxSize) {
             List<PeerEntryFacade> targets = new ArrayList<>();
             while (!targetPeers.isEmpty() && targets.size() < TARGET_BATCH_SIZE && targets.size() < maxSize) {
-                PeerEntryFacade target = targetPeers.remove(0);
-                if (!peerConnectionManager.discardConnectionAttempt(target)) {
-                    targets.add(target);
-                    performedAttempts++;
-                }
+                targets.add(targetPeers.remove(0));
             }
             return targets;
         }
@@ -72,7 +73,7 @@ public class RegularsConnectionManager {
 
     private static final int TARGET_BATCH_SIZE = 5;
 
-    private static final int MINIMUM_ATTEMPTS_FOR_REGULAR_REQUEST = 20;
+//    private static final int MINIMUM_ATTEMPTS_FOR_REGULAR_REQUEST = 20;
 
 
     private final PeerConnectionManager peerConnectionManager;
@@ -103,8 +104,16 @@ public class RegularsConnectionManager {
                             // look for a language that needs more connections (start by currentLanguage)
                             if (findCountryNeedingMoreConnections(state, peerConnectionConfig)) {
                                 // language found, attempt connections with it
-                                state.stateCase = StateCase.ATTEMPTING_CONNECTIONS;
                                 targetPeers = getTargetPeers(state.currentCountry, peerKnowledgeBase);
+                                if (targetPeers.isEmpty()) {
+                                    // we do not have any valid regular peers for this country -> ask for more
+                                    // and go back to idle
+                                    peerConnectionManager.askForMoreRegularPeers(state.currentCountry);
+                                    state.stateCase = StateCase.IDLE;
+                                } else {
+                                    // there are target peers -> try to connect with them
+                                    state.stateCase = StateCase.ATTEMPTING_CONNECTIONS;
+                                }
                                 controller.stateHasChanged();
                                 return false;
                             } else {
@@ -114,26 +123,17 @@ public class RegularsConnectionManager {
                                 return true;
                             }
                         case ATTEMPTING_CONNECTIONS:
-                            // check if we have reached the desired level of connections
-                            if (haveEnoughConnections(state.currentCountry)) {
+                            // check if we have reached the desired level of connections, or there are no more
+                            // available target peers
+                            if (haveEnoughConnections(state.currentCountry) || targetPeers.isEmpty()) {
                                 // go to idle and try another country
                                 moveToIdle(state);
                                 controller.stateHasChanged();
                                 return false;
-                            }
-                            if (!targetPeers.isEmpty()) {
+                            } else {
                                 // try a new batch of connections to the target peers and wait some time
                                 attemptMoreConnections();
                                 return true;
-                            } else {
-                                // we exhausted the list of target peers. Go back to idle state so we ask for more
-                                if (targetPeers.performedAttemptsCount() < MINIMUM_ATTEMPTS_FOR_REGULAR_REQUEST) {
-                                    // if this list of target peers produced very few attempts, ask for more regulars before
-                                    peerConnectionManager.askForMoreRegularPeers(state.currentCountry);
-                                }
-                                moveToIdle(state);
-                                controller.stateHasChanged();
-                                return false;
                             }
                         default:
                             return true;
@@ -202,7 +202,7 @@ public class RegularsConnectionManager {
     }
 
     private void attemptMoreConnections() {
-        for (PeerEntryFacade target : targetPeers.retrieveTargets(remainingConnections(dynamicState.state().currentCountry))) {
+        for (PeerEntryFacade target : targetPeers.retrieveTargetBatch(remainingConnections(dynamicState.state().currentCountry))) {
             peerConnectionManager.attemptConnection(target);
         }
     }

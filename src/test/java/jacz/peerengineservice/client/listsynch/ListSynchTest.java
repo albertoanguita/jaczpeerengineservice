@@ -6,7 +6,7 @@ import jacz.peerengineservice.client.*;
 import jacz.peerengineservice.test.IntegrationTest;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.util.concurrency.ThreadUtil;
-import jacz.util.lists.tuple.Four_Tuple;
+import jacz.util.lists.tuple.SixTuple;
 import jacz.util.lists.tuple.Triple;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
@@ -25,20 +25,22 @@ public class ListSynchTest {
     public void listSynchTest1() throws Exception {
         String config = "./etc/tests/clientConf_1_new.xml";
         String userDir = "./etc/tests/client1";
-        Four_Tuple<PeerId, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
+        SixTuple<PeerId, String, String, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
         PeerId ownPeerId = data.element1;
         String networkConfiguration = data.element2;
         String peersPersonalData = data.element3;
         String peerRelations = data.element4;
+        String peerConnectionConfig = data.element5;
+        String transferStatistics = data.element6;
 
         Triple<Map<String, DataAccessor>, Map<String, DataAccessor>, DataAccessor> lists = readingWritingListsTest1();
 
-        GeneralEventsSynch generalEventsSynch = new GeneralEventsSynch(lists.element3);
-        Client client = new Client(ownPeerId, new PeerEncryption(new byte[0]), networkConfiguration, peersPersonalData, peerRelations, generalEventsSynch, new ConnectionEventsImpl(), new ResourceTransferEventsImpl(), new HashMap<>(), lists.element1, lists.element2);
+        PeersEventsSynch peersEventsSynch = new PeersEventsSynch(lists.element3);
+        Client client = new Client(ownPeerId, new PeerEncryption(new byte[0]), networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), peersEventsSynch, new ResourceTransferEventsImpl(), new HashMap<>(), lists.element1, lists.element2);
         client.startClient();
 
         ThreadUtil.safeSleep(WARM_UP);
-        Assert.assertTrue(generalEventsSynch.getClientProgress().isSuccess());
+        Assert.assertTrue(peersEventsSynch.getClientProgress().isSuccess());
 
         client.stopClient();
     }
@@ -47,15 +49,17 @@ public class ListSynchTest {
     public void listSynchTest2() throws Exception {
         String config = "./etc/tests/clientConf_2_new.xml";
         String userDir = "./etc/tests/client2";
-        Four_Tuple<PeerId, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
+        SixTuple<PeerId, String, String, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
         PeerId ownPeerId = data.element1;
         String networkConfiguration = data.element2;
         String peersPersonalData = data.element3;
         String peerRelations = data.element4;
+        String peerConnectionConfig = data.element5;
+        String transferStatistics = data.element6;
 
         Triple<Map<String, DataAccessor>, Map<String, DataAccessor>, DataAccessor> lists = readingWritingListsTest2();
 
-        Client client = new Client(ownPeerId, new PeerEncryption(new byte[0]), networkConfiguration, peersPersonalData, peerRelations, new GeneralEventsImpl(), new ConnectionEventsImpl(), new ResourceTransferEventsImpl(), new HashMap<>(), lists.element1, lists.element2);
+        Client client = new Client(ownPeerId, new PeerEncryption(new byte[0]), networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new ResourceTransferEventsImpl(), new HashMap<>(), lists.element1, lists.element2);
         client.startClient();
 
         ThreadUtil.safeSleep(WARM_UP);

@@ -1,17 +1,21 @@
 package jacz.peerengineservice.client;
 
+import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.NetworkConfiguration;
+import jacz.peerengineservice.client.connection.peers.PeerConnectionConfig;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
+import jacz.peerengineservice.util.datatransfer.TransferStatistics;
 import jacz.util.io.serialization.StrCast;
 import jacz.util.io.xml.XMLReader;
-import jacz.util.lists.tuple.Four_Tuple;
+import jacz.util.lists.tuple.SixTuple;
 import org.apache.commons.io.FileUtils;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Created by Alberto on 13/04/2016.
@@ -24,7 +28,11 @@ public class ConfigReader {
 
     private static final String PEER_KNOWLEDGE_BASE = "peerKnowledgeBase";
 
-    public static Four_Tuple<PeerId, String, String, String> readPeerClientData(
+    private static final String PEER_CONNECTION_CONFIG = "peerConnectionConfig";
+
+    private static final String TRANSFER_STATISTICS = "transferStatistics";
+
+    public static SixTuple<PeerId, String, String, String, String, String> readPeerClientData(
             String path,
             String userDir
     ) throws IOException, XMLStreamException, IllegalArgumentException {
@@ -66,6 +74,19 @@ public class ConfigReader {
             peerKnowledgeBase.getPeerEntryFacade(peerId).setRelationship(Management.Relationship.BLOCKED);
             xmlReader.gotoParent();
         }
-        return new Four_Tuple<>(ownPeerId, networkConfigurationPath, peersPersonalDataPath, peerKnowledgeBasePath);
+
+        String peerConnectionConfigPath = FileUtils.getFile(userDir, PEER_CONNECTION_CONFIG + ".db").getPath();
+        buildPeerConnectionConfig(peerConnectionConfigPath);
+
+        String transferStatisticsPath = FileUtils.getFile(userDir, TRANSFER_STATISTICS + ".db").getPath();
+        if (!new File(transferStatisticsPath).isFile()) {
+            TransferStatistics.createNew(transferStatisticsPath);
+        }
+
+        return new SixTuple<>(ownPeerId, networkConfigurationPath, peersPersonalDataPath, peerKnowledgeBasePath, peerConnectionConfigPath, transferStatisticsPath);
+    }
+
+    private static void buildPeerConnectionConfig(String peerConnectionConfigPath) throws IOException {
+        new PeerConnectionConfig(peerConnectionConfigPath, 100, false, CountryCode.ES, new ArrayList<>(), 10);
     }
 }

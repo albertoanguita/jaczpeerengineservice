@@ -59,41 +59,6 @@ public class PeerRequestDispatcherFSM implements ChannelFSMAction<PeerRequestDis
                     // if we don't have that custom FSM registered, simply ignore
                     String value = requestFromPeerToPeer.value;
                     peerClientPrivateInterface.requestServerCustomFSM(requestFromPeerToPeer, value, peerId, ccp, outgoingChannel);
-//                    if (customFSMs.containsKey(value)) {
-//                        // requestFromPeerToPeer a channel for the new required custom FSM
-//                        // the channel should be sent in the init method of the custom FSM, not our responsibility
-//                        PeerFSMAction<?> peerFSMAction = customFSMs.get(value).buildPeerFSMAction(connectedPeers.getPeerConnectionStatus(peerId));
-//                        if (peerFSMAction != null) {
-//                            Byte assignedChannel = connectedPeers.requestChannel(peerId);
-//                            //System.out.println("RequestDispatcher sends " + assignedChannel + " to " + outgoingChannel);
-//                            if (assignedChannel != null) {
-//                                // set up custom FSM
-//                                // non-timed
-//                                if (customFSMs.get(value).getTimeoutMillis() == null) {
-//                                    @SuppressWarnings({"unchecked"})
-//                                    CustomPeerFSM customPeerFSM = new CustomPeerFSM(peerFSMAction, assignedChannel, outgoingChannel);
-//                                    try {
-//                                        ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
-//                                    } catch (Exception e) {
-//                                        ErrorControl.reportError(PeerRequestDispatcherFSM.class, "Could not register FSM due to exception", requestFromPeerToPeer, assignedChannel, customFSMs, ccp);
-//                                        ccp.write(outgoingChannel, new ObjectListWrapper(PeerFSMServerResponse.REQUEST_DENIED, null));
-//                                    }
-//                                }
-//                                // timed
-//                                else {
-//                                    @SuppressWarnings({"unchecked"})
-//                                    CustomTimedPeerFSM customTimedPeerFSM = new CustomTimedPeerFSM((PeerTimedFSMAction) peerFSMAction, assignedChannel, outgoingChannel);
-//                                    ccp.registerTimedFSM(customTimedPeerFSM, customFSMs.get(value).getTimeoutMillis(), "UnnamedCustomTimedPeerFSM", assignedChannel);
-//                                }
-//                            } else {
-//                                ccp.write(outgoingChannel, new ObjectListWrapper(PeerFSMServerResponse.UNAVAILABLE_CHANNEL, null));
-//                            }
-//                        } else {
-//                            ccp.write(outgoingChannel, new ObjectListWrapper(PeerFSMServerResponse.REQUEST_DENIED, null));
-//                        }
-//                    } else {
-//                        ccp.write(outgoingChannel, new ObjectListWrapper(PeerFSMServerResponse.UNRECOGNIZED_FSM, null));
-//                    }
                     break;
             }
         }

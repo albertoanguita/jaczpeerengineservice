@@ -1,5 +1,6 @@
 package jacz.peerengineservice;
 
+import jacz.peerengineservice.client.PeerClient;
 import jacz.util.io.serialization.*;
 
 import java.io.IOException;
@@ -47,7 +48,7 @@ public final class PeerEncryption implements VersionedObject {
             keyGen.initialize(size, random);
             return keyGen.generateKeyPair();
         } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-            // todo fatal error
+            PeerClient.reportError(e.toString(), ALGORITHM, RAND_ALGORITHM, RAND_PROVIDER);
             return null;
         }
     }

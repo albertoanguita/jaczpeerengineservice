@@ -7,7 +7,9 @@ import jacz.util.network.IP4Port;
  */
 public interface ConnectionEvents {
 
-    void listeningPortModified(int port);
+    void localPortModified(int port);
+
+    void externalPortModified(int port);
 
     void initializingConnection();
 
