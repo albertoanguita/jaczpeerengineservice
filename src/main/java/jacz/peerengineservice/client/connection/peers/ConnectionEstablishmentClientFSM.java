@@ -13,6 +13,7 @@ import jacz.util.network.IP4Port;
 
 import java.io.Serializable;
 import java.security.PublicKey;
+import java.util.List;
 
 /**
  * This FSM negotiates the first part of a connection with a peerClient. Info about the PeerId is obtained.
@@ -152,6 +153,8 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
 
     private final CountryCode clientMainCountry;
 
+    private final CountryCode serverMainCountry;
+
     private final PeerEntryFacade peerEntryFacade;
 
 
@@ -191,6 +194,7 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         this.clientWishRegularConnections = clientWishRegularConnections;
         this.clientAddress = clientAddress;
         this.clientMainCountry = clientMainCountry;
+        this.serverMainCountry = peerEntryFacade.getMainCountry();
         this.peerEntryFacade = peerEntryFacade;
         this.secondaryIP4Port = secondaryIP4Port;
     }
@@ -199,6 +203,7 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
     public State processMessage(State state, byte channel, Object message, ChannelConnectionPoint ccp) throws IllegalArgumentException {
         if (message instanceof ConnectionEstablishmentServerFSM.ConnectionResult) {
             ConnectionEstablishmentServerFSM.ConnectionResult connectionResult = (ConnectionEstablishmentServerFSM.ConnectionResult) message;
+            peerConnectionManager.processExtraPeersInfo(connectionResult.tryThesePeers, serverMainCountry);
             switch (connectionResult.connectionResultType) {
 
                 case OK:

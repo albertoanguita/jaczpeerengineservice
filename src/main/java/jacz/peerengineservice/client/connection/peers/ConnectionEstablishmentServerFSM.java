@@ -5,20 +5,17 @@ import com.neovisionaries.i18n.CountryCode;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.channel.TimedChannelFSMAction;
 import jacz.peerengineservice.PeerId;
-import jacz.peerengineservice.client.connection.PeerAddress;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
 
 import java.io.Serializable;
 import java.security.PublicKey;
-import java.util.HashMap;
+import java.util.List;
 
 /**
  * This FSM allows negotiating with other peers who want to connect to our PeerClient. This FSM implements the server
  * part of that connection. First it receives the data of a new peer trying to connect to us, and then it answers to
  * that peer if it accepts the connection or not.
- *
- * todo add info about other peers when rejecting regulars
  */
 public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<ConnectionEstablishmentServerFSM.State> {
 
@@ -67,16 +64,16 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
 
         final ResponseDetail responseDetail;
 
-        final HashMap<PeerId, PeerAddress> tryThesePeers;
+        final List<PeersLookingForRegularConnectionsRecord.PeerRecord> tryThesePeers;
 
-        public ConnectionResult(ConnectionResultType connectionResultType) {
-            this.connectionResultType = connectionResultType;
-            this.responseDetail = null;
+        public ConnectionResult(ConnectionResultType connectionResultType, List<PeersLookingForRegularConnectionsRecord.PeerRecord> tryThesePeers) {
+            this(connectionResultType, null, tryThesePeers);
         }
 
-        public ConnectionResult(ConnectionResultType connectionResultType, ResponseDetail responseDetail) {
+        public ConnectionResult(ConnectionResultType connectionResultType, ResponseDetail responseDetail, List<PeersLookingForRegularConnectionsRecord.PeerRecord> tryThesePeers) {
             this.connectionResultType = connectionResultType;
             this.responseDetail = responseDetail;
+            this.tryThesePeers = tryThesePeers;
         }
     }
 

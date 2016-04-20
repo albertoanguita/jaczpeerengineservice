@@ -16,6 +16,7 @@ import jacz.peerengineservice.util.PeerRelationship;
 import jacz.util.network.IP4Port;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -42,12 +43,17 @@ public class PeerConnectionManager {
      */
     private static final long OLD_CONNECTION_THRESHOLD = 1000L * 60L * 60L * 24L * 7L;
 
-
-
     /**
      * Five seconds for connection (should be enough, increase if needed)
      */
     private static final long CONNECTION_TIMEOUT = 5000;
+
+    /**
+     * Amount of peers sent as extra information to requesting peers
+     */
+    private static final int PEER_RECORDS_SIZE = 2;
+
+
 
     /**
      * Our own ID. Cannot be modified after construction time
@@ -102,6 +108,8 @@ public class PeerConnectionManager {
 
     private final PeersEventsBridge peersEvents;
 
+    private final PeersLookingForRegularConnectionsRecord peersLookingForRegularConnectionsRecord;
+
 
     public PeerConnectionManager(
             PeerId ownPeerId,
@@ -128,6 +136,7 @@ public class PeerConnectionManager {
         this.peerClientConnectionManager = peerClientConnectionManager;
         this.disconnectionsManager = new DisconnectionsManager(this, connectedPeers, peerKnowledgeBase);
         this.peersEvents = new PeersEventsBridge(peersEvents, peerClientPrivateInterface);
+        this.peersLookingForRegularConnectionsRecord = new PeersLookingForRegularConnectionsRecord();
     }
 
     public void setWishForConnect(boolean enabled) {
@@ -184,6 +193,7 @@ public class PeerConnectionManager {
             // notify all connected peers
             peerClientPrivateInterface.modifiedMainCountry(mainCountry);
             disconnectionsManager.checkDisconnections();
+            peersLookingForRegularConnectionsRecord.invalidateData();
         }
     }
 
@@ -392,32 +402,47 @@ public class PeerConnectionManager {
         } else {
             peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.NO);
         }
+        PeerAddress clientAddress;
         try {
-            peerEntryFacade.setPeerAddress(new PeerAddress(connectionRequest.clientAddress));
+            clientAddress = new PeerAddress(connectionRequest.clientAddress);
         } catch (IOException e) {
             // invalid address code -> deny connection
             return null;
         }
+        peerEntryFacade.setPeerAddress(clientAddress);
         peerEntryFacade.setMainCountry(connectionRequest.clientMainCountry);
         peerEntryFacade.setRelationshipToUs(connectionRequest.clientToServerRelationship);
+
+        // prepare the list of peer records that will be sent together with the response
+        List<PeersLookingForRegularConnectionsRecord.PeerRecord> peerRecords;
+        if (connectionRequest.clientWishRegularConnections && peerConnectionConfig.getMainCountry().equals(connectionRequest.serverMainCountry)) {
+            peerRecords = peersLookingForRegularConnectionsRecord.getRecords(connectionRequest.clientPeerId, PEER_RECORDS_SIZE);
+            if (peerConnectionConfig.getMainCountry().equals(connectionRequest.clientMainCountry)) {
+                // the client's country is our own country -> also store this peer in our records, for future requests from other peers
+                peersLookingForRegularConnectionsRecord.addPeer(connectionRequest.clientPeerId, clientAddress);
+            }
+        } else {
+            peerRecords = new ArrayList<>();
+        }
 
         // first check the basic situations: no longer connected, already connected
         if (!wishForConnection.get()) {
             // not connected
-            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.DENY);
+            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.DENY, peerRecords);
         } else if (connectedPeers.isConnectedPeer(connectionRequest.clientPeerId)) {
             // already connected
-            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.ALREADY_CONNECTED);
+            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.ALREADY_CONNECTED, peerRecords);
         } else if ((ownPeerId.hasHigherPriorityThan(connectionRequest.clientPeerId) && ongoingClientConnections.contains(connectionRequest.clientPeerId))) {
             // ongoing connection with higher priority
-            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.ALREADY_CONNECTED);
+            return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.ALREADY_CONNECTED, peerRecords);
         }
 
         // check incorrect information passed by client and referring to us
         if (incorrectInfoFromClient(connectionRequest)) {
             return new ConnectionEstablishmentServerFSM.ConnectionResult(
                     ConnectionEstablishmentServerFSM.ConnectionResultType.INCORRECT_SERVER_INFO,
-                    buildCorrectedInfo(peerEntryFacade));
+                    buildCorrectedInfo(peerEntryFacade),
+                    peerRecords);
         }
 
         // check client authentication
@@ -440,7 +465,8 @@ public class PeerConnectionManager {
                 // accept connection always
                 return new ConnectionEstablishmentServerFSM.ConnectionResult(
                         ConnectionEstablishmentServerFSM.ConnectionResultType.OK,
-                        buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret));
+                        buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret),
+                        peerRecords);
             case REGULAR:
                 // check what this peer offers to us, and see if we have room for his offer
                 CountryCode clientMainCountry = connectionRequest.clientMainCountry;
@@ -450,10 +476,13 @@ public class PeerConnectionManager {
                         // allowed to connect
                         return new ConnectionEstablishmentServerFSM.ConnectionResult(
                                 ConnectionEstablishmentServerFSM.ConnectionResultType.OK,
-                                buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret));
+                                buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret),
+                                peerRecords);
                     } else {
                         // full
-                        return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.REGULAR_SPOTS_TEMPORARILY_FULL);
+                        return new ConnectionEstablishmentServerFSM.ConnectionResult(
+                                ConnectionEstablishmentServerFSM.ConnectionResultType.REGULAR_SPOTS_TEMPORARILY_FULL,
+                                peerRecords);
                     }
                 } else if (peerConnectionConfig.getAdditionalCountries().contains(clientMainCountry)) {
                     // this client offers a country in the list of additional countries
@@ -461,10 +490,13 @@ public class PeerConnectionManager {
                         // allowed to connect
                         return new ConnectionEstablishmentServerFSM.ConnectionResult(
                                 ConnectionEstablishmentServerFSM.ConnectionResultType.OK,
-                                buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret));
+                                buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret),
+                                peerRecords);
                     } else {
                         // full
-                        return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.REGULAR_SPOTS_TEMPORARILY_FULL);
+                        return new ConnectionEstablishmentServerFSM.ConnectionResult(
+                                ConnectionEstablishmentServerFSM.ConnectionResultType.REGULAR_SPOTS_TEMPORARILY_FULL,
+                                peerRecords);
                     }
                 } else {
                     // this peer offers a country we are not interested in
@@ -472,15 +504,20 @@ public class PeerConnectionManager {
                         // allowed to connect
                         return new ConnectionEstablishmentServerFSM.ConnectionResult(
                                 ConnectionEstablishmentServerFSM.ConnectionResultType.OK,
-                                buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret));
+                                buildAcceptedConnectionDetail(peerEntryFacade, connectionRequest.centralServerSecret),
+                                peerRecords);
                     } else {
                         // full
-                        return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.REGULAR_SPOTS_TEMPORARILY_FULL);
+                        return new ConnectionEstablishmentServerFSM.ConnectionResult(
+                                ConnectionEstablishmentServerFSM.ConnectionResultType.REGULAR_SPOTS_TEMPORARILY_FULL,
+                                peerRecords);
                     }
                 }
             case BLOCKED:
                 // deny always
-                return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.BLOCKED);
+                return new ConnectionEstablishmentServerFSM.ConnectionResult(
+                        ConnectionEstablishmentServerFSM.ConnectionResultType.BLOCKED,
+                        peerRecords);
             default:
                 // cannot happen
                 return null;
@@ -592,6 +629,16 @@ public class PeerConnectionManager {
             peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.NO);
         }
         peerEntryFacade.setMainCountry(detailCorrectedInformation.serverMainCountry);
+    }
+
+    void processExtraPeersInfo(List<PeersLookingForRegularConnectionsRecord.PeerRecord> peerRecords, CountryCode country) {
+        // some peer records received from other peer -> load into pkb
+        for (PeersLookingForRegularConnectionsRecord.PeerRecord peerRecord : peerRecords) {
+            PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerRecord.peerId);
+            peerEntryFacade.setPeerAddress(peerRecord.peerAddress);
+            peerEntryFacade.setMainCountry(country);
+            peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.YES);
+        }
     }
 
     /**
