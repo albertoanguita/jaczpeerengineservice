@@ -15,6 +15,7 @@ import jacz.util.concurrency.ThreadUtil;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -373,6 +374,53 @@ public class PeerClientConnectionManager {
         peerConnectionManager.searchFavorites();
     }
 
+    public boolean isWishForRegularConnections() {
+        return peerConnectionManager.isWishForRegularConnections();
+    }
+
+    public void setWishForRegularsConnections(boolean enabled) {
+        peerConnectionManager.setWishForRegularsConnections(enabled);
+    }
+
+    public int getMaxRegularConnections() {
+        return peerConnectionManager.getMaxRegularConnections();
+    }
+
+    public void setMaxRegularConnections(int maxRegularConnections) {
+        peerConnectionManager.setMaxRegularConnections(maxRegularConnections);
+    }
+
+    public int getMaxRegularConnectionsForAdditionalCountries() {
+        return peerConnectionManager.getMaxRegularConnectionsForAdditionalCountries();
+    }
+
+    public void setMaxRegularConnectionsForAdditionalCountries(int maxRegularConnections) {
+        peerConnectionManager.setMaxRegularConnectionsForAdditionalCountries(maxRegularConnections);
+    }
+
+    public int getMaxRegularConnectionsForOtherCountries() {
+        return peerConnectionManager.getMaxRegularConnectionsForOtherCountries();
+    }
+
+    public CountryCode getMainCountry() {
+        return peerConnectionManager.getMainCountry();
+    }
+
+    public void setMainCountry(CountryCode mainCountry) {
+        peerConnectionManager.setMainCountry(mainCountry);
+    }
+
+    public List<CountryCode> getAdditionalCountries() {
+        return peerConnectionManager.getAdditionalCountries();
+    }
+
+    public boolean isAdditionalCountry(CountryCode country) {
+        return peerConnectionManager.isAdditionalCountry(country);
+    }
+
+    public void setAdditionalCountries(List<CountryCode> additionalCountries) {
+        peerConnectionManager.setAdditionalCountries(additionalCountries);
+    }
 
     private void delay() {
         ThreadUtil.safeSleep(DELAY);

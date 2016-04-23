@@ -14,6 +14,8 @@ import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.PeerRelationship;
 import jacz.util.network.IP4Port;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,6 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * base and checking authentication. Changes in connection config are done through here.
  */
 public class PeerConnectionManager {
+
+    private final static Logger logger = LoggerFactory.getLogger(PeersEvents.class);
 
     // todo remove (@CONNECTION-AUTH@)
     private static final String FAKE_SERVER_SECRET = "@FAKE@";
@@ -146,7 +150,7 @@ public class PeerConnectionManager {
             ownPeerAddress = peerClientConnectionManager.getPeerAddress();
         }
         favoritesConnectionManager.setConnectionGoal(enabled);
-//        regularsConnectionManager.setConnectionGoal(enabled);
+        regularsConnectionManager.setConnectionGoal(enabled);
         disconnectionsManager.checkDisconnections();
     }
 
@@ -156,7 +160,7 @@ public class PeerConnectionManager {
 
     public void setWishForRegularsConnections(boolean enabled) {
         peerConnectionConfig.setWishRegularConnections(enabled);
-//        regularsConnectionManager.connectionConfigHasChanged();
+        regularsConnectionManager.connectionConfigHasChanged();
         disconnectionsManager.checkDisconnections();
     }
 
@@ -166,7 +170,7 @@ public class PeerConnectionManager {
 
     public void setMaxRegularConnections(int maxRegularConnections) {
         peerConnectionConfig.setMaxRegularConnections(maxRegularConnections);
-//        regularsConnectionManager.connectionConfigHasChanged();
+        regularsConnectionManager.connectionConfigHasChanged();
         disconnectionsManager.checkDisconnections();
     }
 
@@ -176,7 +180,7 @@ public class PeerConnectionManager {
 
     public void setMaxRegularConnectionsForAdditionalCountries(int maxRegularConnections) {
         peerConnectionConfig.setMaxRegularConnectionsForAdditionalCountries(maxRegularConnections);
-//        regularsConnectionManager.connectionConfigHasChanged();
+        regularsConnectionManager.connectionConfigHasChanged();
         disconnectionsManager.checkDisconnections();
     }
 
@@ -205,7 +209,7 @@ public class PeerConnectionManager {
         return peerConnectionConfig.isAdditionalCountry(country);
     }
 
-    void setAdditionalCountries(List<CountryCode> additionalCountries) {
+    public void setAdditionalCountries(List<CountryCode> additionalCountries) {
         peerConnectionConfig.setAdditionalCountries(additionalCountries);
         disconnectionsManager.checkDisconnections();
     }
@@ -294,6 +298,7 @@ public class PeerConnectionManager {
 
         IP4Port externalIP4Port = peerEntryFacade.getPeerAddress().getExternalAddress();
         IP4Port localIP4Port = peerEntryFacade.getPeerAddress().getLocalAddress();
+        logger.info("Attempting to connect with " + peerEntryFacade.getPeerId());
         try {
             // first try public connection
             tryConnection(externalIP4Port, peerEntryFacade.getPeerId(), localIP4Port);
@@ -312,6 +317,7 @@ public class PeerConnectionManager {
     }
 
     private void invalidatePeerAddressInfo(PeerId peerId) {
+        logger.info("Invalidating address for " + peerId);
         PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
         peerEntryFacade.setPeerAddress(PeerAddress.nullPeerAddress());
     }
@@ -337,6 +343,7 @@ public class PeerConnectionManager {
         // depending on whether we are client or server, the corresponding FSM for establishing connection with the
         // other peer is created. This FSMs will send and receive data about the ID of the other peer to accept or
         // revoke the connection
+        logger.info("Contact with peer achieved: " + remotePeerId + ". We are client: " + isClient);
         pauseChannelsExceptConnection(ccp);
         if (isClient) {
             // first mark as ongoing client connection
@@ -396,6 +403,7 @@ public class PeerConnectionManager {
         // the server invokes this one. This PeerClient didn't know about this connection, so it must be confirmed
         // if we have higher priority in the connection process, check that we are not already trying to connect to
         // this same peer as clients
+        logger.info("New request connection as server: " + connectionRequest);
         PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(connectionRequest.clientPeerId);
         if (connectionRequest.clientWishRegularConnections) {
             peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.YES);
@@ -633,6 +641,7 @@ public class PeerConnectionManager {
 
     void processExtraPeersInfo(List<PeersLookingForRegularConnectionsRecord.PeerRecord> peerRecords, CountryCode country) {
         // some peer records received from other peer -> load into pkb
+        logger.info("Extra peers info received from server: " + peerRecords + ". Country: " + country);
         for (PeersLookingForRegularConnectionsRecord.PeerRecord peerRecord : peerRecords) {
             PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerRecord.peerId);
             peerEntryFacade.setPeerAddress(peerRecord.peerAddress);

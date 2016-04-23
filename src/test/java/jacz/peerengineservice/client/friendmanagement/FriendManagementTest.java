@@ -36,7 +36,7 @@ public class FriendManagementTest {
         String peerConnectionConfig = data.element5;
         String transferStatistics = data.element6;
 
-        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new HashMap<>());
         client.startClient();
 
         Assert.assertTrue(client.getPeerClient().isFavoritePeer(PeerIdGenerator.peerID(2)));
@@ -73,7 +73,7 @@ public class FriendManagementTest {
         String peerConnectionConfig = data.element5;
         String transferStatistics = data.element6;
 
-        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new HashMap<String, PeerFSMFactory>());
+        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new HashMap<>());
         client.startClient();
 
         Assert.assertTrue(client.getPeerClient().isFavoritePeer(PeerIdGenerator.peerID(1)));

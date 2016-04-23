@@ -13,7 +13,6 @@ import jacz.util.network.IP4Port;
 
 import java.io.Serializable;
 import java.security.PublicKey;
-import java.util.List;
 
 /**
  * This FSM negotiates the first part of a connection with a peerClient. Info about the PeerId is obtained.
@@ -123,6 +122,23 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
             this.encodedCentralServerSecret = encodedCentralServerSecret;
             this.serverMainCountry = peerEntryFacade.getMainCountry();
             this.clientToServerRelationship = peerEntryFacade.getRelationship();
+        }
+
+        @Override
+        public String toString() {
+            return "ConnectionRequest{" +
+                    "clientPeerId=" + clientPeerId +
+                    ", serverPeerId=" + serverPeerId +
+                    //", clientPublicKey=" + clientPublicKey +
+                    //", centralServerSecret='" + centralServerSecret + '\'' +
+                    //", encodedCentralServerSecret='" + encodedCentralServerSecret + '\'' +
+                    ", clientWishRegularConnections=" + clientWishRegularConnections +
+                    ", serverWishRegularConnections=" + serverWishRegularConnections +
+                    ", clientAddress='" + clientAddress + '\'' +
+                    ", clientMainCountry=" + clientMainCountry +
+                    ", serverMainCountry=" + serverMainCountry +
+                    ", clientToServerRelationship=" + clientToServerRelationship +
+                    '}';
         }
     }
 

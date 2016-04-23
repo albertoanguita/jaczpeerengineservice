@@ -308,6 +308,54 @@ public class PeerClient {
         peerClientConnectionManager.searchFavorites();
     }
 
+    public boolean isWishForRegularConnections() {
+        return peerClientConnectionManager.isWishForRegularConnections();
+    }
+
+    public void setWishForRegularsConnections(boolean enabled) {
+        peerClientConnectionManager.setWishForRegularsConnections(enabled);
+    }
+
+    public int getMaxRegularConnections() {
+        return peerClientConnectionManager.getMaxRegularConnections();
+    }
+
+    public void setMaxRegularConnections(int maxRegularConnections) {
+        peerClientConnectionManager.setMaxRegularConnections(maxRegularConnections);
+    }
+
+    public int getMaxRegularConnectionsForAdditionalCountries() {
+        return peerClientConnectionManager.getMaxRegularConnectionsForAdditionalCountries();
+    }
+
+    public void setMaxRegularConnectionsForAdditionalCountries(int maxRegularConnections) {
+        peerClientConnectionManager.setMaxRegularConnectionsForAdditionalCountries(maxRegularConnections);
+    }
+
+    public int getMaxRegularConnectionsForOtherCountries() {
+        return peerClientConnectionManager.getMaxRegularConnectionsForOtherCountries();
+    }
+
+    public CountryCode getMainCountry() {
+        return peerClientConnectionManager.getMainCountry();
+    }
+
+    public void setMainCountry(CountryCode mainCountry) {
+        peerClientConnectionManager.setMainCountry(mainCountry);
+    }
+
+    public List<CountryCode> getAdditionalCountries() {
+        return peerClientConnectionManager.getAdditionalCountries();
+    }
+
+    public boolean isAdditionalCountry(CountryCode country) {
+        return peerClientConnectionManager.isAdditionalCountry(country);
+    }
+
+    public void setAdditionalCountries(List<CountryCode> additionalCountries) {
+        peerClientConnectionManager.setAdditionalCountries(additionalCountries);
+    }
+
     /**
      * Adds a store containing resources that we share to the rest of peers. It is used for handling download requests
      * incoming from other peers

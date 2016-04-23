@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
  */
 class PeersEventsBridge {
 
-    final static Logger logger = LoggerFactory.getLogger(GeneralEvents.class);
+    private final static Logger logger = LoggerFactory.getLogger(PeersEvents.class);
 
     private final PeersEvents peersEvents;
 

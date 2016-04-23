@@ -69,7 +69,7 @@ public class RegularsConnectionManager {
 
     private static final long CONNECTIONS_DELAY = 5000L;
 
-    private static final long GENERAL_DELAY = 2 * CONNECTIONS_DELAY;
+    private static final long GENERAL_DELAY = 4 * CONNECTIONS_DELAY;
 
     private static final int TARGET_BATCH_SIZE = 5;
 
@@ -93,29 +93,36 @@ public class RegularsConnectionManager {
         dynamicState = new EvolvingState<>(new State(), false, new EvolvingState.Transitions<State, Boolean>() {
             @Override
             public boolean runTransition(State state, Boolean goal, EvolvingStateController<State, Boolean> controller) {
+                System.out.println("Regular evolve. Goal: " + goal + ", wish for regulars: " + peerConnectionConfig.isWishRegularConnections());
                 if (goal && peerConnectionConfig.isWishRegularConnections()) {
                     switch (state.stateCase) {
                         case IDLE:
                             // look for some connections need
                             state.stateCase = StateCase.LOOKING_FOR_CONNECTIONS_NEED;
+                            System.out.println("move to " + state.stateCase);
                             controller.stateHasChanged();
                             return false;
                         case LOOKING_FOR_CONNECTIONS_NEED:
                             // look for a language that needs more connections (start by currentLanguage)
                             if (findCountryNeedingMoreConnections(state, peerConnectionConfig)) {
-                                // language found, attempt connections with it
+                                System.out.println("Country to search found: " + state.currentCountry);
+                                // country found, attempt connections with it
                                 targetPeers = getTargetPeers(state.currentCountry, peerKnowledgeBase);
                                 if (targetPeers.isEmpty()) {
+                                    System.out.println("No target peers found, ask server");
                                     // we do not have any valid regular peers for this country -> ask for more
-                                    // and go back to idle
+                                    // and go back to idle (and wait some time)
                                     peerConnectionManager.askForMoreRegularPeers(state.currentCountry);
                                     state.stateCase = StateCase.IDLE;
+                                    controller.stateHasChanged();
+                                    return true;
                                 } else {
+                                    System.out.println("Some target peers found: " + targetPeers);
                                     // there are target peers -> try to connect with them
                                     state.stateCase = StateCase.ATTEMPTING_CONNECTIONS;
+                                    controller.stateHasChanged();
+                                    return false;
                                 }
-                                controller.stateHasChanged();
-                                return false;
                             } else {
                                 // all languages have enough connections -> go back to idle and wait
                                 moveToIdle(state);
@@ -208,7 +215,9 @@ public class RegularsConnectionManager {
     }
 
     public void setConnectionGoal(boolean connect) {
+        System.out.println("REGULARS CONNECT: " + connect);
         dynamicState.setGoal(connect);
+        dynamicState.evolve();
     }
 
     public void connectionConfigHasChanged() {
