@@ -57,11 +57,6 @@ public class PeerClientConnectionManager {
     private final NetworkConfiguration networkConfiguration;
 
     /**
-     * Collection of all information related to connection to the server, as provided by the user
-     */
-//    private final ConnectionInformation wishedConnectionInformation;
-
-    /**
      * Handles detection of network properties
      */
     private final NetworkTopologyManager networkTopologyManager;
@@ -99,9 +94,6 @@ public class PeerClientConnectionManager {
         this.connectionEvents = new ConnectionEventsBridge(connectionEvents, this);
         this.networkConfiguration = new NetworkConfiguration(networkConfigurationPath);
 
-//        wishedConnectionInformation = new ConnectionInformation();
-//        wishedConnectionInformation.setListeningPort(networkConfiguration.getLocalPort());
-
         networkTopologyManager = new NetworkTopologyManager(this, this.connectionEvents);
         localServerManager = new LocalServerManager(
                 ownPeerId,
@@ -109,7 +101,6 @@ public class PeerClientConnectionManager {
                 networkConfiguration,
                 this.connectionEvents);
         peerServerManager = new PeerServerManager(ownPeerId, serverURL, this, this.connectionEvents);
-//        friendConnectionManager = new FriendConnectionManager(ownPeerId, serverURL, connectedPeers, peerClientPrivateInterface, this, peerRelations);
         peerConnectionManager = new PeerConnectionManager(
                 ownPeerId,
                 ownPeerEncryption,

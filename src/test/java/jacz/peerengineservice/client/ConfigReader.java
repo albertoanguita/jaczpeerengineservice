@@ -15,7 +15,6 @@ import org.apache.commons.io.FileUtils;
 import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  * Created by Alberto on 13/04/2016.
@@ -87,6 +86,10 @@ public class ConfigReader {
     }
 
     private static void buildPeerConnectionConfig(String peerConnectionConfigPath) throws IOException {
-        new PeerConnectionConfig(peerConnectionConfigPath, 100, false, CountryCode.ES, new ArrayList<>(), 10);
+        PeerConnectionConfig peerConnectionConfig = new PeerConnectionConfig(peerConnectionConfigPath, CountryCode.ES);
+        peerConnectionConfig.setMaxRegularConnections(100);
+        peerConnectionConfig.setWishRegularConnections(false);
+        peerConnectionConfig.setMaxRegularConnectionsForAdditionalCountries(10);
+
     }
 }

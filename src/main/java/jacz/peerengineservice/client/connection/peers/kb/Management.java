@@ -35,7 +35,7 @@ public class Management {
 
     static final TableField IS_CONNECTED = new TableField("is_connected", "BOOLEAN NOT NULL");
 
-    static final TableField LAST_SESSION = new TableField("last_session", "TEXT");
+    static final TableField LAST_SESSION = new TableField("last_session", "INTEGER");
 
     static final TableField LAST_CONNECTION_ATTEMPT = new TableField("last_connection_attempt", "INTEGER");
 

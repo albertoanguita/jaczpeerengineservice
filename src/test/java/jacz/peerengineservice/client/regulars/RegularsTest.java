@@ -25,9 +25,9 @@ import java.util.List;
  */
 public class RegularsTest {
 
-    private static final long WARM_UP = 40000;
+    private static final long WARM_UP = 30000;
 
-    private static final long CYCLE_LENGTH = 8000;
+    private static final long CYCLE_LENGTH = 10000;
 
     @org.junit.Test
     public void regularsTest1() throws Exception {
@@ -55,21 +55,8 @@ public class RegularsTest {
         client.startClient();
 
         ThreadUtil.safeSleep(WARM_UP);
-        Assert.assertTrue(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(2)));
 
-//        ThreadUtil.safeSleep(CYCLE_LENGTH);
-//        Assert.assertFalse(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(2)));
-//
-//        ThreadUtil.safeSleep(CYCLE_LENGTH);
-//        Assert.assertFalse(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(2)));
-//
-//        ThreadUtil.safeSleep(CYCLE_LENGTH);
-//        Assert.assertFalse(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(2)));
-//
-//        ThreadUtil.safeSleep(CYCLE_LENGTH);
-//        Assert.assertTrue(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(2)));
-//
-//        ThreadUtil.safeSleep(CYCLE_LENGTH / 2);
+        ThreadUtil.safeSleep(2 * CYCLE_LENGTH);
         client.stopClient();
     }
 
@@ -97,35 +84,66 @@ public class RegularsTest {
         ThreadUtil.safeSleep(WARM_UP);
         Assert.assertTrue(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(1)));
 
-//        System.out.println("2 removes 1");
-//        client.getPeerClient().removeFavoritePeer(PeerIdGenerator.peerID(1));
-//        ThreadUtil.safeSleep(CYCLE_LENGTH);
-//        Assert.assertFalse(client.getPeerClient().isFavoritePeer(PeerIdGenerator.peerID(1)));
-//        Assert.assertFalse(client.getPeerClient().isBlockedPeer(PeerIdGenerator.peerID(1)));
-//        Assert.assertFalse(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(1)));
-//
-//        System.out.println("2 blocks 1");
-//        client.getPeerClient().addBlockedPeer(PeerIdGenerator.peerID(1));
-//        ThreadUtil.safeSleep(CYCLE_LENGTH);
-//        Assert.assertFalse(client.getPeerClient().isFavoritePeer(PeerIdGenerator.peerID(1)));
-//        Assert.assertTrue(client.getPeerClient().isBlockedPeer(PeerIdGenerator.peerID(1)));
-//        Assert.assertFalse(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(1)));
-//
-//        System.out.println("2 removes block to 1");
-//        client.getPeerClient().removeBlockedPeer(PeerIdGenerator.peerID(1));
-//        ThreadUtil.safeSleep(CYCLE_LENGTH);
-//        Assert.assertFalse(client.getPeerClient().isFavoritePeer(PeerIdGenerator.peerID(1)));
-//        Assert.assertFalse(client.getPeerClient().isBlockedPeer(PeerIdGenerator.peerID(1)));
-//        Assert.assertFalse(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(1)));
-//
-//        System.out.println("2 adds 1");
-//        client.getPeerClient().addFavoritePeer(PeerIdGenerator.peerID(1));
-//        ThreadUtil.safeSleep(CYCLE_LENGTH);
-//        Assert.assertTrue(client.getPeerClient().isFavoritePeer(PeerIdGenerator.peerID(1)));
-//        Assert.assertFalse(client.getPeerClient().isBlockedPeer(PeerIdGenerator.peerID(1)));
-//        Assert.assertTrue(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(1)));
-//
-//        ThreadUtil.safeSleep(CYCLE_LENGTH / 2);
+        ThreadUtil.safeSleep(CYCLE_LENGTH);
+        client.stopClient();
+    }
+
+    @org.junit.Test
+    public void regularsTest3() throws Exception {
+        String config = "./etc/tests/clientConf_3_new.xml";
+        String userDir = "./etc/tests/client3";
+        SixTuple<PeerId, String, String, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
+        PeerId ownPeerId = data.element1;
+        String networkConfiguration = data.element2;
+        String peersPersonalData = data.element3;
+        String peerRelations = data.element4;
+        String peerConnectionConfig = data.element5;
+        String transferStatistics = data.element6;
+
+        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new HashMap<>());
+        client.getPeerClient().removeFavoritePeer(PeerIdGenerator.peerID(1));
+        client.getPeerClient().removeFavoritePeer(PeerIdGenerator.peerID(2));
+        client.getPeerClient().removeFavoritePeer(PeerIdGenerator.peerID(3));
+        client.getPeerClient().removeFavoritePeer(PeerIdGenerator.peerID(4));
+        client.getPeerClient().setWishForRegularsConnections(true);
+        client.getPeerClient().setMainCountry(CountryCode.AR);
+        List<CountryCode> additionalCountries = new ArrayList<>();
+        additionalCountries.add(CountryCode.ES);
+        client.getPeerClient().setAdditionalCountries(additionalCountries);
+        client.startClient();
+
+        ThreadUtil.safeSleep(WARM_UP);
+        Assert.assertTrue(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(1)));
+
+        ThreadUtil.safeSleep(2 * CYCLE_LENGTH);
+        client.stopClient();
+    }
+
+    @org.junit.Test
+    public void regularsTest4() throws Exception {
+        String config = "./etc/tests/clientConf_4_new.xml";
+        String userDir = "./etc/tests/client4";
+        SixTuple<PeerId, String, String, String, String, String> data = ConfigReader.readPeerClientData(config, userDir);
+        PeerId ownPeerId = data.element1;
+        String networkConfiguration = data.element2;
+        String peersPersonalData = data.element3;
+        String peerRelations = data.element4;
+        String peerConnectionConfig = data.element5;
+        String transferStatistics = data.element6;
+
+        Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new HashMap<>());
+        client.getPeerClient().removeFavoritePeer(PeerIdGenerator.peerID(1));
+        client.getPeerClient().removeFavoritePeer(PeerIdGenerator.peerID(2));
+        client.getPeerClient().removeFavoritePeer(PeerIdGenerator.peerID(3));
+        client.getPeerClient().removeFavoritePeer(PeerIdGenerator.peerID(4));
+        client.getPeerClient().setWishForRegularsConnections(true);
+        client.getPeerClient().setMainCountry(CountryCode.ES);
+        client.startClient();
+
+        ThreadUtil.safeSleep(WARM_UP);
+        Assert.assertFalse(client.getPeerClient().isConnectedPeer(PeerIdGenerator.peerID(1)));
+
+        ThreadUtil.safeSleep(2 * CYCLE_LENGTH);
         client.stopClient();
     }
 

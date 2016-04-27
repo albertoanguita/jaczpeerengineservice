@@ -69,12 +69,20 @@ public class PeerKnowledgeBaseTest {
         Assert.assertEquals(Management.Relationship.FAVORITE, peerEntryFacade.getRelationship());
         Assert.assertEquals(Management.Relationship.BLOCKED, peerEntryFacade.getRelationshipToUs());
         Assert.assertTrue(peerEntryFacade.isConnected());
-        Assert.assertTrue(new Date().getTime() - peerEntryFacade.getLastSession().getTime() < 100);
-        Assert.assertTrue((new Date().getTime() - peerEntryFacade.getLastConnectionAttempt().getTime() < 100));
+        Assert.assertTrue(new Date().getTime() - peerEntryFacade.getLastSession().getTime() < 200);
+        Assert.assertTrue((new Date().getTime() - peerEntryFacade.getLastConnectionAttempt().getTime() < 200));
         Assert.assertEquals(Management.ConnectionWish.NOT_NOW, peerEntryFacade.getWishForRegularConnections());
         Assert.assertEquals(23, peerEntryFacade.getAffinity());
         Assert.assertEquals(new IP4Port("205.103.101.94", 32000).toString(), peerEntryFacade.getPeerAddress().getExternalAddress().toString());
         Assert.assertEquals(new IP4Port("192.168.1.27", 50000).toString(), peerEntryFacade.getPeerAddress().getLocalAddress().toString());
+
+        // disconnect
+        peerEntryFacade.setConnected(false);
+        Assert.assertFalse(peerEntryFacade.isConnected());
+        Assert.assertTrue(new Date().getTime() - peerEntryFacade.getLastSession().getTime() < 200);
+        Assert.assertEquals(null, peerEntryFacade.getLastConnectionAttempt());
+        peerEntryFacade.setConnected(true);
+
 
         // set up relations with rest of peers
         peerEntryFacade = pkb.getPeerEntryFacade(peerId02);

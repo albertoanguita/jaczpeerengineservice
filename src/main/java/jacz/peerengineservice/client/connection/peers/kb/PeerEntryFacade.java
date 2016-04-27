@@ -149,8 +149,7 @@ public class PeerEntryFacade {
         if (!connected) {
             // also update last session and "clear" last connection attempt
             peerEntry.setLong(Management.LAST_SESSION.name, new Date().getTime());
-            Long nullLong = null;
-            peerEntry.setLong(Management.LAST_CONNECTION_ATTEMPT.name + " = ?", nullLong);
+            peerEntry.setLong(Management.LAST_CONNECTION_ATTEMPT.name, null);
         }
         peerEntry.saveIt();
         ActiveJDBCController.disconnect();
@@ -212,4 +211,19 @@ public class PeerEntryFacade {
         ActiveJDBCController.disconnect();
     }
 
+    @Override
+    public String toString() {
+        return "PeerEntryFacade{" +
+                "peerId=" + getPeerId() +
+                "mainCountry=" + getMainCountry() +
+                "relationship=" + getRelationship() +
+                "relationshipToUs=" + getRelationshipToUs() +
+                "wishRegularConnections=" + getWishForRegularConnections() +
+                "isConnected=" + isConnected() +
+                "lastSession=" + getLastSession() +
+                "lastConnectionAttempt=" + getLastConnectionAttempt() +
+                "affinity=" + getAffinity() +
+                "address=" + getPeerAddress() +
+                '}';
+    }
 }

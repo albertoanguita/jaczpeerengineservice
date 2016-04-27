@@ -57,23 +57,56 @@ public class RegularsConnectionManager {
     }
 
     private class State {
+
         StateCase stateCase;
+
         CountryCode currentCountry;
+
+        boolean mainCountryTurn;
+
+        CountryCode lastCheckedAdditionalCountry;
 
         public State() {
             stateCase = StateCase.IDLE;
             currentCountry = null;
+            mainCountryTurn = true;
+            lastCheckedAdditionalCountry = null;
+        }
+
+        private void checkMainCountry(CountryCode mainCountry) {
+            currentCountry = mainCountry;
+            mainCountryTurn = false;
+            lastCheckedAdditionalCountry = null;
+        }
+
+        private void checkAdditionalCountry(CountryCode additionalCountry) {
+            currentCountry = additionalCountry;
+            mainCountryTurn = true;
+            lastCheckedAdditionalCountry = additionalCountry;
+        }
+
+        public void noAdditionalCountryChecked() {
+            lastCheckedAdditionalCountry = null;
+        }
+
+        @Override
+        public String toString() {
+            return "State{" +
+                    "stateCase=" + stateCase +
+                    ", currentCountry=" + currentCountry +
+                    ", mainCountryTurn=" + mainCountryTurn +
+                    ", lastCheckedAdditionalCountry=" + lastCheckedAdditionalCountry +
+                    '}';
         }
     }
 
 
     private static final long CONNECTIONS_DELAY = 5000L;
 
-    private static final long GENERAL_DELAY = 4 * CONNECTIONS_DELAY;
+    private static final long GENERAL_DELAY = 1 * CONNECTIONS_DELAY;
 
     private static final int TARGET_BATCH_SIZE = 5;
 
-//    private static final int MINIMUM_ATTEMPTS_FOR_REGULAR_REQUEST = 20;
 
 
     private final PeerConnectionManager peerConnectionManager;
@@ -93,23 +126,23 @@ public class RegularsConnectionManager {
         dynamicState = new EvolvingState<>(new State(), false, new EvolvingState.Transitions<State, Boolean>() {
             @Override
             public boolean runTransition(State state, Boolean goal, EvolvingStateController<State, Boolean> controller) {
-                System.out.println("Regular evolve. Goal: " + goal + ", wish for regulars: " + peerConnectionConfig.isWishRegularConnections());
+                System.out.println("Regular evolve. State: " + state + ". Goal: " + goal + ", wish for regulars: " + peerConnectionConfig.isWishRegularConnections());
                 if (goal && peerConnectionConfig.isWishRegularConnections()) {
                     switch (state.stateCase) {
                         case IDLE:
                             // look for some connections need
                             state.stateCase = StateCase.LOOKING_FOR_CONNECTIONS_NEED;
-                            System.out.println("move to " + state.stateCase);
                             controller.stateHasChanged();
                             return false;
                         case LOOKING_FOR_CONNECTIONS_NEED:
+                            state.stateCase = StateCase.IDLE;
                             // look for a language that needs more connections (start by currentLanguage)
                             if (findCountryNeedingMoreConnections(state, peerConnectionConfig)) {
-                                System.out.println("Country to search found: " + state.currentCountry);
+                                System.out.println("found country needing more connections: " + state.currentCountry);
                                 // country found, attempt connections with it
                                 targetPeers = getTargetPeers(state.currentCountry, peerKnowledgeBase);
                                 if (targetPeers.isEmpty()) {
-                                    System.out.println("No target peers found, ask server");
+                                    System.out.println("No target peers found -> ask server");
                                     // we do not have any valid regular peers for this country -> ask for more
                                     // and go back to idle (and wait some time)
                                     peerConnectionManager.askForMoreRegularPeers(state.currentCountry);
@@ -117,7 +150,7 @@ public class RegularsConnectionManager {
                                     controller.stateHasChanged();
                                     return true;
                                 } else {
-                                    System.out.println("Some target peers found: " + targetPeers);
+                                    System.out.println("Some target peers found -> attempt connections");
                                     // there are target peers -> try to connect with them
                                     state.stateCase = StateCase.ATTEMPTING_CONNECTIONS;
                                     controller.stateHasChanged();
@@ -164,7 +197,6 @@ public class RegularsConnectionManager {
         }, "RegularsConnectionManager");
         dynamicState.setEvolveStateTimer(state -> state.stateCase == StateCase.ATTEMPTING_CONNECTIONS, CONNECTIONS_DELAY);
         dynamicState.setEvolveStateTimer(state -> true, GENERAL_DELAY);
-        dynamicState.evolve();
     }
 
     private TargetPeerList getTargetPeers(CountryCode currentCountry, PeerKnowledgeBase peerKnowledgeBase) {
@@ -173,17 +205,49 @@ public class RegularsConnectionManager {
 
     private boolean findCountryNeedingMoreConnections(State state, PeerConnectionConfig peerConnectionConfig) {
         // start checking the main country, then the additional countries
+        // once the main country is fulfilled, we cycle through additional countries until we find one lacking
+        // connections (this way we avoid that one with no connections blocks the others)
+        if (state.mainCountryTurn) {
+            return checkMainCountry(state) || checkAdditionalCountries(state);
+        } else {
+            return checkAdditionalCountries(state) || checkMainCountry(state);
+        }
+    }
+
+    private boolean checkMainCountry(State state) {
         if (!haveEnoughConnections(peerConnectionConfig.getMainCountry())) {
-            state.currentCountry = peerConnectionConfig.getMainCountry();
+            state.checkMainCountry(peerConnectionConfig.getMainCountry());
             return true;
         } else {
-            for (CountryCode country : peerConnectionConfig.getAdditionalCountries()) {
-                if (!haveEnoughConnections(country)) {
-                    state.currentCountry = country;
-                    return true;
-                }
+            return false;
+        }
+    }
+
+    private boolean checkAdditionalCountries(State state) {
+        List<CountryCode> additionalCountries = peerConnectionConfig.getAdditionalCountries();
+        // index of the last checked additional country, or -1 if no last checked additional country
+        int indexOfLastCheckedAdditionalCountry = state.lastCheckedAdditionalCountry != null ? additionalCountries.indexOf(state.lastCheckedAdditionalCountry) : -1;
+        for (int i = indexOfLastCheckedAdditionalCountry + 1; i < additionalCountries.size(); i++) {
+            if (checkAdditionalCountry(state, additionalCountries, i)) {
+                return true;
             }
-            // all additional countries have enough connections
+        }
+        for (int i = 0; i < indexOfLastCheckedAdditionalCountry; i++) {
+            if (checkAdditionalCountry(state, additionalCountries, i)) {
+                return true;
+            }
+        }
+        // all additional countries have enough connections
+        state.noAdditionalCountryChecked();
+        return false;
+    }
+
+    private boolean checkAdditionalCountry(State state, List<CountryCode> additionalCountries, int index) {
+        CountryCode country = additionalCountries.get(index);
+        if (!haveEnoughConnections(country)) {
+            state.checkAdditionalCountry(country);
+            return true;
+        } else {
             return false;
         }
     }
@@ -215,7 +279,6 @@ public class RegularsConnectionManager {
     }
 
     public void setConnectionGoal(boolean connect) {
-        System.out.println("REGULARS CONNECT: " + connect);
         dynamicState.setGoal(connect);
         dynamicState.evolve();
     }

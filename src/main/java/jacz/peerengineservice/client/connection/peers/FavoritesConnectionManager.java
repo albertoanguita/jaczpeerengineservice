@@ -5,6 +5,8 @@ import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +19,8 @@ public class FavoritesConnectionManager {
     enum State {
         SINGLE_STATE
     }
+
+    private final static Logger logger = LoggerFactory.getLogger(FavoritesConnectionManager.class);
 
     private static final long RETRY = 90000L;
 
@@ -70,8 +74,10 @@ public class FavoritesConnectionManager {
 
     private void connectToFavoritePeers() {
         for (PeerEntryFacade peerEntryFacade : peerKnowledgeBase.getFavoritePeers(PeerKnowledgeBase.ConnectedQuery.DISCONNECTED)) {
+            logger.info("Trying to connect to favorite peer: " + peerEntryFacade.getPeerId());
             // go through all disconnected favorite peers and try to connect to them
             if (!peerConnectionManager.discardConnectionAttempt(peerEntryFacade)) {
+                logger.info("Attempt to connect with favorite peer: " + peerEntryFacade.getPeerId());
                 peerConnectionManager.attemptConnection(peerEntryFacade);
             }
         }

@@ -55,25 +55,11 @@ public class PeerConnectionConfig implements Updater {
         localStorage = new VersionedLocalStorage(localStoragePath, this, CURRENT_VERSION);
     }
 
-    public PeerConnectionConfig(
-            String localStoragePath,
-            int maxRegularConnections,
-            boolean wishRegularConnections,
-            CountryCode mainCountry,
-            List<CountryCode> additionalCountries,
-            int maxRegularConnectionsForAdditionalCountries) throws IOException {
-        this(localStoragePath, mainCountry);
-        setMaxRegularConnections(maxRegularConnections);
-        setWishRegularConnections(wishRegularConnections);
-        setAdditionalCountries(additionalCountries);
-        setMaxRegularConnectionsForAdditionalCountries(maxRegularConnectionsForAdditionalCountries);
-    }
-
     public int getMaxRegularConnections() {
         return localStorage.getInteger(MAX_REGULAR_CONNECTIONS);
     }
 
-    boolean setMaxRegularConnections(int maxRegularConnections) {
+    public boolean setMaxRegularConnections(int maxRegularConnections) {
         return localStorage.setInteger(MAX_REGULAR_CONNECTIONS, maxRegularConnections);
     }
 
@@ -81,7 +67,7 @@ public class PeerConnectionConfig implements Updater {
         return localStorage.getBoolean(WISH_REGULAR_CONNECTIONS);
     }
 
-    boolean setWishRegularConnections(boolean wishRegularConnections) {
+    public boolean setWishRegularConnections(boolean wishRegularConnections) {
         return localStorage.setBoolean(WISH_REGULAR_CONNECTIONS, wishRegularConnections);
     }
 
@@ -89,7 +75,7 @@ public class PeerConnectionConfig implements Updater {
         return localStorage.getEnum(MAIN_COUNTRY, CountryCode.class);
     }
 
-    boolean setMainCountry(CountryCode mainCountry) {
+    public boolean setMainCountry(CountryCode mainCountry) {
         return localStorage.setEnum(MAIN_COUNTRY, CountryCode.class, mainCountry);
     }
 
@@ -107,7 +93,7 @@ public class PeerConnectionConfig implements Updater {
         return allCountries;
     }
 
-    void setAdditionalCountries(List<CountryCode> additionalCountries) {
+    public void setAdditionalCountries(List<CountryCode> additionalCountries) {
         localStorage.setEnumList(ADDITIONAL_COUNTRIES, CountryCode.class, additionalCountries);
     }
 
@@ -121,7 +107,7 @@ public class PeerConnectionConfig implements Updater {
                 MIN_REGULAR_CONNECTIONS_FOR_OTHER_COUNTRIES);
     }
 
-    boolean setMaxRegularConnectionsForAdditionalCountries(int maxRegularConnectionsForAdditionalLanguages) {
+    public boolean setMaxRegularConnectionsForAdditionalCountries(int maxRegularConnectionsForAdditionalLanguages) {
         return localStorage.setInteger(MAX_REGULAR_CONNECTIONS_FOR_ADDITIONAL_COUNTRIES, maxRegularConnectionsForAdditionalLanguages);
     }
 

@@ -1,0 +1,10 @@
+<peer-client-config>
+  <field name="nick">dea</field>
+  <field name="port">0</field>
+  <field name="external-port">37720</field>
+  <field name="peer-id">0000000000000000000000000000000000000000004</field>
+  <struct name="friend-peers">
+  </struct>
+  <struct name="blocked-peers">
+  </struct>
+</peer-client-config>

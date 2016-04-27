@@ -1,6 +1,6 @@
 <peer-client-config>
   <field name="nick">jor</field>
-  <field name="port">0</field>
+  <field name="port">10001</field>
   <field name="external-port">37720</field>
   <field name="peer-id">0000000000000000000000000000000000000000002</field>
   <struct name="friend-peers">

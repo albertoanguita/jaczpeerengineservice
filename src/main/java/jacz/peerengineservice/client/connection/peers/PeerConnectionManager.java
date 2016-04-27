@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class PeerConnectionManager {
 
-    private final static Logger logger = LoggerFactory.getLogger(PeersEvents.class);
+    private final static Logger logger = LoggerFactory.getLogger(PeerConnectionManager.class);
 
     // todo remove (@CONNECTION-AUTH@)
     private static final String FAKE_SERVER_SECRET = "@FAKE@";
@@ -56,7 +56,6 @@ public class PeerConnectionManager {
      * Amount of peers sent as extra information to requesting peers
      */
     private static final int PEER_RECORDS_SIZE = 2;
-
 
 
     /**
@@ -95,7 +94,7 @@ public class PeerConnectionManager {
      * and avoid duplicate connections.
      * <p/>
      * Connections as client first go here. Then, atomically, go to connected peers
-     *
+     * <p/>
      * This set is backed by a concurrent map, so it is thread-safe
      */
     private final Set<PeerId> ongoingClientConnections;
@@ -215,8 +214,8 @@ public class PeerConnectionManager {
     }
 
     public List<CountryCode> getAllCountries() {
-            return peerConnectionConfig.getAllCountries();
-        }
+        return peerConnectionConfig.getAllCountries();
+    }
 
     boolean discardConnectionAttempt(PeerEntryFacade peerEntryFacade) {
         // discard those who:
@@ -225,26 +224,42 @@ public class PeerConnectionManager {
         // - do not temporarily want to connect with us and the last connection attempt is recent
         // - do not definitely want to connect with us and the last connection attempt is very old
         if (connectedPeers.isConnectedPeer(peerEntryFacade.getPeerId())) {
+            logger.info("Connection attempt discarded due to already connected");
+            return true;
+        }
+        if (peerEntryFacade.getPeerAddress().isNull()) {
+            logger.info("Connection attempt discarded due to unavailable peer address");
             return true;
         }
         if (ongoingClientConnections.contains(peerEntryFacade.getPeerId())) {
+            logger.info("Connection attempt discarded due to ongoing connection");
             return true;
         }
-        if (peerEntryFacade.getWishForRegularConnections() == Management.ConnectionWish.NOT_NOW && connectionAttemptIsRecent(peerEntryFacade)) {
+        if (peerEntryFacade.getRelationship() == Management.Relationship.BLOCKED) {
+            logger.info("Connection attempt discarded due to being blocked");
             return true;
         }
-        if (peerEntryFacade.getWishForRegularConnections() == Management.ConnectionWish.NO && !connectionAttemptIsVeryOld(peerEntryFacade)) {
+        if (peerEntryFacade.getRelationship() == Management.Relationship.REGULAR &&
+                peerEntryFacade.getWishForRegularConnections() == Management.ConnectionWish.NOT_NOW &&
+                connectionAttemptIsRecent(peerEntryFacade)) {
+            logger.info("Connection attempt discarded due to peer not currently accepting us, and recently tried");
+            return true;
+        }
+        if (peerEntryFacade.getRelationship() == Management.Relationship.REGULAR &&
+                peerEntryFacade.getWishForRegularConnections() == Management.ConnectionWish.NO &&
+                !connectionAttemptIsVeryOld(peerEntryFacade)) {
+            logger.info("Connection attempt discarded due to peer not wishing to connect with us");
             return true;
         }
         return false;
     }
 
     private boolean connectionAttemptIsRecent(PeerEntryFacade peerEntryFacade) {
-        return peerEntryFacade.getLastConnectionAttempt().getTime() + RECENT_CONNECTION_THRESHOLD > System.currentTimeMillis();
+        return peerEntryFacade.getLastConnectionAttempt() != null && peerEntryFacade.getLastConnectionAttempt().getTime() + RECENT_CONNECTION_THRESHOLD > System.currentTimeMillis();
     }
 
     private boolean connectionAttemptIsVeryOld(PeerEntryFacade peerEntryFacade) {
-        return peerEntryFacade.getLastConnectionAttempt().getTime() + OLD_CONNECTION_THRESHOLD < System.currentTimeMillis();
+        return peerEntryFacade.getLastConnectionAttempt() != null && peerEntryFacade.getLastConnectionAttempt().getTime() + OLD_CONNECTION_THRESHOLD < System.currentTimeMillis();
     }
 
     synchronized void askForFavoritePeersInfo(List<PeerId> needInfoFavorites) {
@@ -270,30 +285,39 @@ public class PeerConnectionManager {
 
     private void digestServerInfoResponse(ServerAPI.InfoResponse infoResponse) {
         for (ServerAPI.PeerIdInfo peerIdInfo : infoResponse.getPeerIdInfoList()) {
-            // update info for each peer
-            PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerIdInfo.getPeerId());
-            peerEntryFacade.openTransaction();
-            peerEntryFacade.setMainCountry(peerIdInfo.getMainCountry());
-            if (peerIdInfo.isWishRegularConnections()) {
-                peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.YES);
-            } else {
-                peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.NO);
+            // we must filter out our own peer id, as the server might provide this info to us
+            if (!peerIdInfo.getPeerId().equals(ownPeerId)) {
+                // update info for each peer
+                PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerIdInfo.getPeerId());
+                peerEntryFacade.openTransaction();
+                peerEntryFacade.setMainCountry(peerIdInfo.getMainCountry());
+                if (peerIdInfo.isWishRegularConnections()) {
+                    peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.YES);
+                } else {
+                    peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.NO);
+                }
+                IP4Port externalAddress = new IP4Port(peerIdInfo.getExternalIPAddress(), peerIdInfo.getExternalMainServerPort());
+                IP4Port localAddress = new IP4Port(peerIdInfo.getLocalIPAddress(), peerIdInfo.getLocalMainServerPort());
+                peerEntryFacade.setPeerAddress(new PeerAddress(externalAddress, localAddress));
+                peerEntryFacade.commitTransaction();
             }
-            IP4Port externalAddress = new IP4Port(peerIdInfo.getExternalIPAddress(), peerIdInfo.getExternalMainServerPort());
-            IP4Port localAddress = new IP4Port(peerIdInfo.getLocalIPAddress(), peerIdInfo.getLocalMainServerPort());
-            peerEntryFacade.setPeerAddress(new PeerAddress(externalAddress, localAddress));
-            peerEntryFacade.commitTransaction();
         }
     }
 
-    synchronized boolean attemptConnection(PeerEntryFacade peerEntryFacade) {
+    synchronized void attemptConnection(PeerEntryFacade peerEntryFacade) {
         // A client module is created for each received peer. If connection is achieved, a
         // Connection Client FSM is created. The init method in the FSM will take care
         // of checking if it is actually possible to proceed with the connection
 
         if (connectedPeers.isConnectedPeer(peerEntryFacade.getPeerId()) || ongoingClientConnections.contains(peerEntryFacade.getPeerId())) {
             // check that we are not connected to this peer, or trying to connect to it
-            return true;
+            return;
+        }
+
+        if (peerEntryFacade.getPeerId().equals(ownPeerId)) {
+            // this entry corresponds to owr own peer -> ignore and delete entry
+            // todo delete entry
+            return;
         }
 
         IP4Port externalIP4Port = peerEntryFacade.getPeerAddress().getExternalAddress();
@@ -302,16 +326,13 @@ public class PeerConnectionManager {
         try {
             // first try public connection
             tryConnection(externalIP4Port, peerEntryFacade.getPeerId(), localIP4Port);
-            return true;
         } catch (IOException e) {
             // if this didn't work, try local connection (if exists)
             try {
                 tryConnection(localIP4Port, peerEntryFacade.getPeerId(), null);
-                return true;
             } catch (IOException e2) {
                 // peer not available or wrong/outdated peer data
                 invalidatePeerAddressInfo(peerEntryFacade.getPeerId());
-                return false;
             }
         }
     }
@@ -643,10 +664,13 @@ public class PeerConnectionManager {
         // some peer records received from other peer -> load into pkb
         logger.info("Extra peers info received from server: " + peerRecords + ". Country: " + country);
         for (PeersLookingForRegularConnectionsRecord.PeerRecord peerRecord : peerRecords) {
-            PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerRecord.peerId);
-            peerEntryFacade.setPeerAddress(peerRecord.peerAddress);
-            peerEntryFacade.setMainCountry(country);
-            peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.YES);
+            // avoid owr own peer to be processed
+            if (!peerRecord.peerId.equals(ownPeerId)) {
+                PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerRecord.peerId);
+                peerEntryFacade.setPeerAddress(peerRecord.peerAddress);
+                peerEntryFacade.setMainCountry(country);
+                peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.YES);
+            }
         }
     }
 

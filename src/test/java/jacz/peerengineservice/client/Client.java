@@ -66,12 +66,6 @@ public class Client {
 
         String serverURL = "https://jaczserver.appspot.com/_ah/api/server/v1/";
         ListContainer listContainer = new ListContainer(readingLists, writingLists);
-//        if (FileUtil.isFile("globalDownloads.txt")) {
-//            VersionedObjectSerializer.deserializeVersionedObject(globalDownloadStatistics);
-//            globalDownloadStatistics = new GlobalDownloadStatistics();
-//        } else {
-//            globalDownloadStatistics = new GlobalDownloadStatistics();
-//        }
 
         peerClient = new PeerClient(
                 ownPeerId,
