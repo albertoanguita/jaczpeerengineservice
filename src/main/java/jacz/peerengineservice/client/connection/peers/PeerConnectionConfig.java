@@ -21,6 +21,10 @@ public class PeerConnectionConfig implements Updater {
 
     private static final int DEFAULT_MAX_REGULAR_CONNECTIONS_ADDITIONAL_COUNTRY = 5;
 
+    private static final double DEFAULT_PART_SELECTION_ACCURACY = 0.5d;
+
+
+
 
 
     /**** LOCAL STORAGE DATA AND KEYS ****/
@@ -39,6 +43,21 @@ public class PeerConnectionConfig implements Updater {
 
     private static final String MAX_REGULAR_CONNECTIONS_FOR_ADDITIONAL_COUNTRIES = "maxRegularConnectionsForAdditionalCountries";
 
+    private static final String MAX_DOWNLOAD_SPEED = "maxDownloadSpeed";
+
+    private static final String MAX_UPLOAD_SPEED = "maxUploadSpeed";
+
+    /**
+     * The accuracy employed in downloads for selecting the parts to assign to each resource provider
+     * <p/>
+     * The algorithm for assigning a segment to a slave is always approximate (to avoid excessive cpu utilization). It
+     * can be however chosen how accurate this algorithm is, at the expense of higher cpu dependency. This attribute
+     * indicates such accuracy. 1.0 means maximum accuracy, while 0.0 indicates minimum accuracy.
+     * <p/>
+     * Access to this field is synchronized to avoid inconsistencies
+     */
+    private static final String DOWNLOAD_PART_SELECTION_ACCURACY = "downloadPartSelectionAccuracy";
+
     private final VersionedLocalStorage localStorage;
 
 
@@ -49,6 +68,9 @@ public class PeerConnectionConfig implements Updater {
         setMainCountry(mainCountry);
         setAdditionalCountries(new ArrayList<>());
         setMaxRegularConnectionsForAdditionalCountries(DEFAULT_MAX_REGULAR_CONNECTIONS_ADDITIONAL_COUNTRY);
+        setMaxDownloadSpeed(null);
+        setMaxUploadSpeed(null);
+        setDownloadPartSelectionAccuracy(DEFAULT_PART_SELECTION_ACCURACY);
     }
 
     public PeerConnectionConfig(String localStoragePath) throws IOException {
@@ -109,6 +131,30 @@ public class PeerConnectionConfig implements Updater {
 
     public boolean setMaxRegularConnectionsForAdditionalCountries(int maxRegularConnectionsForAdditionalLanguages) {
         return localStorage.setInteger(MAX_REGULAR_CONNECTIONS_FOR_ADDITIONAL_COUNTRIES, maxRegularConnectionsForAdditionalLanguages);
+    }
+
+    public Float getMaxDownloadSpeed() {
+        return localStorage.getFloat(MAX_DOWNLOAD_SPEED);
+    }
+
+    public void setMaxDownloadSpeed(Float speed) {
+        localStorage.setFloat(MAX_DOWNLOAD_SPEED, speed);
+    }
+
+    public Float getMaxUploadSpeed() {
+        return localStorage.getFloat(MAX_UPLOAD_SPEED);
+    }
+
+    public void setMaxUploadSpeed(Float speed) {
+        localStorage.setFloat(MAX_UPLOAD_SPEED, speed);
+    }
+
+    public double getDownloadPartSelectionAccuracy() {
+        return localStorage.getDouble(DOWNLOAD_PART_SELECTION_ACCURACY);
+    }
+
+    public void setDownloadPartSelectionAccuracy(double accuracy) {
+        localStorage.setDouble(DOWNLOAD_PART_SELECTION_ACCURACY, accuracy);
     }
 
     @Override

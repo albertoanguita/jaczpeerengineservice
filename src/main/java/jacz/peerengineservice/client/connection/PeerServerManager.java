@@ -8,6 +8,8 @@ import java.io.IOException;
 
 /**
  * This class defines an evolving state for handling connection with the central server
+ *
+ * todo if internet connection is lost, the code blocks trying to disconnect from the server. Solve
  */
 public class PeerServerManager {
 

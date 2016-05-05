@@ -4,6 +4,7 @@ import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
 import jacz.peerengineservice.util.datatransfer.GenericPriorityManagerStakeholder;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
+import jacz.peerengineservice.util.datatransfer.TransfersConfig;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceLink;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
@@ -75,6 +76,11 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * The resource streaming manager that created this object (will assign incoming channels)
      */
     private final ResourceStreamingManager resourceStreamingManager;
+
+    /**
+     * Interface for retrieving accuracy
+     */
+    private final TransfersConfig transfersConfig;
 
     /**
      * Download manager for controlling this download
@@ -164,6 +170,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
 
     public MasterResourceStreamer(
             ResourceStreamingManager resourceStreamingManager,
+            TransfersConfig transfersConfig,
             PeerId specificPeerDownload,
             String storeName,
             String resourceID,
@@ -174,6 +181,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             String totalHashAlgorithm) {
         id = AlphaNumFactory.getStaticId();
         this.resourceStreamingManager = resourceStreamingManager;
+        this.transfersConfig = transfersConfig;
         this.specificPeerDownload = specificPeerDownload;
         this.storeName = storeName;
         this.resourceID = resourceID;
@@ -215,7 +223,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         } catch (IOException e) {
             error = true;
         }
-        resourcePartScheduler = new ResourcePartScheduler(this, resourceStreamingManager, resourceSize, availableSegments, streamingNeed);
+        resourcePartScheduler = new ResourcePartScheduler(this, transfersConfig, resourceSize, availableSegments, streamingNeed);
         this.totalHash = totalHash;
         this.totalHashAlgorithm = totalHashAlgorithm;
         active = new AtomicBoolean(true);

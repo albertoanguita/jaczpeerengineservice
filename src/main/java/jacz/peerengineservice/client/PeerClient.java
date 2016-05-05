@@ -148,7 +148,7 @@ public class PeerClient {
             stop();
             throw e;
         }
-        resourceStreamingManager = new ResourceStreamingManager(ownPeerId, resourceTransferEvents, connectedPeersMessenger, transferStatisticsPath, ResourceStreamingManager.DEFAULT_PART_SELECTION_ACCURACY);
+        resourceStreamingManager = new ResourceStreamingManager(ownPeerId, resourceTransferEvents, connectedPeersMessenger, transferStatisticsPath, peerClientConnectionManager);
         // initialize the list synchronizer utility (better here than in the client side)
         dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer);
         PeerClient.errorHandler = new ErrorHandlerBridge(this, errorHandler);
@@ -471,28 +471,28 @@ public class PeerClient {
         return resourceStreamingManager.getTransferStatistics();
     }
 
-    public synchronized Float getMaxDesiredDownloadSpeed() {
-        return resourceStreamingManager.getMaxDesiredDownloadSpeed();
+    public synchronized Float getMaxDownloadSpeed() {
+        return peerClientConnectionManager.getMaxDownloadSpeed();
     }
 
-    public synchronized void setMaxDesiredDownloadSpeed(Float totalMaxDesiredSpeed) {
-        resourceStreamingManager.setMaxDesiredDownloadSpeed(totalMaxDesiredSpeed);
+    public synchronized void setMaxDownloadSpeed(Float speed) {
+        peerClientConnectionManager.setMaxDownloadSpeed(speed);
     }
 
-    public synchronized Float getMaxDesiredUploadSpeed() {
-        return resourceStreamingManager.getMaxDesiredUploadSpeed();
+    public synchronized Float getMaxUploadSpeed() {
+        return peerClientConnectionManager.getMaxUploadSpeed();
     }
 
-    public synchronized void setMaxDesiredUploadSpeed(Float totalMaxDesiredSpeed) {
-        resourceStreamingManager.setMaxDesiredUploadSpeed(totalMaxDesiredSpeed);
+    public synchronized void setMaxUploadSpeed(Float speed) {
+        peerClientConnectionManager.setMaxUploadSpeed(speed);
     }
 
     public double getDownloadPartSelectionAccuracy() {
-        return resourceStreamingManager.getAccuracy();
+        return peerClientConnectionManager.getDownloadPartSelectionAccuracy();
     }
 
     public void setDownloadPartSelectionAccuracy(double accuracy) {
-        resourceStreamingManager.setAccuracy(accuracy);
+        peerClientConnectionManager.setDownloadPartSelectionAccuracy(accuracy);
     }
 
     /**

@@ -9,6 +9,7 @@ import jacz.peerengineservice.client.connection.peers.PeersEvents;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.PeerRelationship;
+import jacz.peerengineservice.util.datatransfer.TransfersConfig;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
 import jacz.util.concurrency.ThreadUtil;
@@ -35,7 +36,7 @@ import java.util.Set;
  * We store a few variables to know in which state are we (connected to the server or not, open server for friends to connect or closed, server
  * data to which we are connected, port we are using for listening to incoming connections, etc)
  */
-public class PeerClientConnectionManager {
+public class PeerClientConnectionManager implements TransfersConfig {
 
     private enum ConnectionState {
         DISCONNECTED,
@@ -411,6 +412,30 @@ public class PeerClientConnectionManager {
 
     public void setAdditionalCountries(List<CountryCode> additionalCountries) {
         peerConnectionManager.setAdditionalCountries(additionalCountries);
+    }
+
+    public synchronized Float getMaxDownloadSpeed() {
+        return peerConnectionManager.getMaxDownloadSpeed();
+    }
+
+    public synchronized void setMaxDownloadSpeed(Float speed) {
+        peerConnectionManager.setMaxDownloadSpeed(speed);
+    }
+
+    public synchronized Float getMaxUploadSpeed() {
+        return peerConnectionManager.getMaxUploadSpeed();
+    }
+
+    public synchronized void setMaxUploadSpeed(Float speed) {
+        peerConnectionManager.setMaxUploadSpeed(speed);
+    }
+
+    public double getDownloadPartSelectionAccuracy() {
+        return peerConnectionManager.getDownloadPartSelectionAccuracy();
+    }
+
+    public void setDownloadPartSelectionAccuracy(double accuracy) {
+        peerConnectionManager.setDownloadPartSelectionAccuracy(accuracy);
     }
 
     private void delay() {

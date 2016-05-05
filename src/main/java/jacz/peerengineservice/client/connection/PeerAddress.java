@@ -4,6 +4,7 @@ import jacz.util.io.serialization.StrCast;
 import jacz.util.network.IP4Port;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
@@ -12,7 +13,7 @@ import java.util.StringTokenizer;
  *
  * The class includes code for serializing and de-serializing into a human-readable string
  */
-public class PeerAddress {
+public class PeerAddress implements Serializable {
 
     private static final String SEPARATOR = "/";
 
@@ -84,6 +85,14 @@ public class PeerAddress {
 
     public IP4Port getLocalAddress() {
         return localAddress;
+    }
+
+    @Override
+    public String toString() {
+        return "PeerAddress{" +
+                "externalAddress=" + externalAddress +
+                ", localAddress=" + localAddress +
+                '}';
     }
 
     @Override

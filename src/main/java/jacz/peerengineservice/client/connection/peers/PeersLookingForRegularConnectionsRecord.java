@@ -1,9 +1,11 @@
 package jacz.peerengineservice.client.connection.peers;
 
+import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.PeerAddress;
 import jacz.util.queues.TimedQueue;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -17,7 +19,7 @@ import java.util.List;
  */
 public class PeersLookingForRegularConnectionsRecord {
 
-    public static class PeerRecord {
+    public static class PeerRecord implements Serializable {
 
         public final PeerId peerId;
 
@@ -27,6 +29,14 @@ public class PeersLookingForRegularConnectionsRecord {
             this.peerId = peerId;
             this.peerAddress = peerAddress;
         }
+
+        @Override
+        public String toString() {
+            return "PeerRecord{" +
+                    "peerId=" + peerId +
+                    ", peerAddress=" + peerAddress +
+                    '}';
+        }
     }
 
     /**
@@ -34,10 +44,22 @@ public class PeersLookingForRegularConnectionsRecord {
      */
     private static final long STORAGE_TIME = 1000L * 60L * 10L;
 
+    private CountryCode mainCountry;
+
     private final TimedQueue<PeerRecord> peerRecordQueue;
 
-    public PeersLookingForRegularConnectionsRecord() {
+    public PeersLookingForRegularConnectionsRecord(CountryCode mainCountry) {
+        this.mainCountry = mainCountry;
         peerRecordQueue = new TimedQueue<>(STORAGE_TIME);
+    }
+
+    public CountryCode getMainCountry() {
+        return mainCountry;
+    }
+
+    public void setMainCountry(CountryCode mainCountry) {
+        this.mainCountry = mainCountry;
+        peerRecordQueue.clear();
     }
 
     public void addPeer(PeerId peerId, PeerAddress peerAddress) {
@@ -46,20 +68,16 @@ public class PeersLookingForRegularConnectionsRecord {
 
     public List<PeerRecord> getRecords(PeerId exceptPeer, int maxCount) {
         peerRecordQueue.clearOldElements();
-        List<PeerRecord> peerRecords = peerRecordQueue.getFirstElements(maxCount);
+        List<PeerRecord> peerRecords = peerRecordQueue.peek(maxCount);
         // check if the exceptPeer is present in the retrieved list
         for (int i = 0; i < peerRecords.size(); i++) {
             if (peerRecords.get(i).peerId.equals(exceptPeer)) {
                 // exceptPeer found -> remove and require one more
                 peerRecords.remove(i);
-                peerRecords.addAll(peerRecordQueue.getFirstElements(1));
+                peerRecords.addAll(peerRecordQueue.peek(1));
                 break;
             }
         }
         return peerRecords;
-    }
-
-    public void invalidateData() {
-        peerRecordQueue.clear();
     }
 }

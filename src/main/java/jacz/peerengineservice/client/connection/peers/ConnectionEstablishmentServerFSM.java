@@ -7,6 +7,10 @@ import jacz.commengine.channel.TimedChannelFSMAction;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
+import jacz.util.concurrency.ThreadUtil;
+import jacz.util.id.AlphaNumFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.security.PublicKey;
@@ -75,6 +79,15 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
             this.responseDetail = responseDetail;
             this.tryThesePeers = tryThesePeers;
         }
+
+        @Override
+        public String toString() {
+            return "ConnectionResult{" +
+                    "connectionResultType=" + connectionResultType +
+                    ", responseDetail=" + responseDetail +
+                    ", tryThesePeers=" + tryThesePeers +
+                    '}';
+        }
     }
 
     static class ResponseDetail implements Serializable {
@@ -86,6 +99,14 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         public ResponseDetail(PublicKey serverPublicKey, Management.Relationship serverToClientRelationship) {
             this.serverPublicKey = serverPublicKey;
             this.serverToClientRelationship = serverToClientRelationship;
+        }
+
+        @Override
+        public String toString() {
+            return "ResponseDetail{" +
+                    "serverPublicKey=..." +
+                    ", serverToClientRelationship=" + serverToClientRelationship +
+                    '}';
         }
     }
 
@@ -135,13 +156,16 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
         }
     }
 
+    private final static Logger logger = LoggerFactory.getLogger(ConnectionEstablishmentServerFSM.class);
+
+    private final String id;
 
     /**
      * FriendConnectionManager object controlling connections with friends
      */
-    private PeerConnectionManager peerConnectionManager;
+    private final PeerConnectionManager peerConnectionManager;
 
-    private PeerId ownPeerId;
+    private final PeerId ownPeerId;
 
     /**
      * Once we receive the client's connection request, we store it in case the connection is confirmed
@@ -149,6 +173,7 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
     private ConnectionEstablishmentClientFSM.ConnectionRequest clientConnectionRequest;
 
     public ConnectionEstablishmentServerFSM(PeerConnectionManager peerConnectionManager, PeerId ownPeerId) {
+        this.id = AlphaNumFactory.getStaticId();
         this.peerConnectionManager = peerConnectionManager;
         this.ownPeerId = ownPeerId;
     }
@@ -162,6 +187,7 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
             } else if (message instanceof PingRequest) {
                 // a ping request, probably from a PortTestServer --> answer with a true and finish
                 PingRequest pingRequest = (PingRequest) message;
+                logMessage("Ping request received");
                 ccp.write(pingRequest.channel, ownPeerId);
                 return State.PING_ANSWERED;
             } else {
@@ -173,15 +199,18 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
                 Boolean clientConfirmation = (Boolean) message;
                 if (clientConfirmation) {
                     // the client confirms the connection
+                    logMessage("Client confirmed connection");
                     peerConnectionManager.connectionAsServerCompleted(clientConnectionRequest.clientPeerId, ccp, clientConnectionRequest.clientMainCountry);
                     return State.CONNECTION_SUCCESSFUL;
                 } else {
                     // the client dismissed this connection due to failed authentication
+                    logMessage("Client denied connection");
                     // todo notify client (not currently used) (@CONNECTION-AUTH@)
                     return State.ERROR;
                 }
             } else {
                 // incorrect data format received
+                logMessage("Invalid confirmation message");
                 return State.ERROR;
             }
         } else {
@@ -191,8 +220,10 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
     }
 
     private State processInitialRequest(ConnectionEstablishmentClientFSM.ConnectionRequest connectionRequest, ChannelConnectionPoint ccp) {
+        logMessage("Connection request received: " + connectionRequest);
         ConnectionResult connectionResult = peerConnectionManager.newRequestConnectionAsServer(connectionRequest);
         if (connectionResult != null) {
+            logMessage("Connection result is " + connectionResult.connectionResultType.name());
             ccp.write(ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL, connectionResult);
             if (connectionResult.connectionResultType == ConnectionResultType.OK) {
                 return State.REQUEST_ACCEPTED;
@@ -201,6 +232,7 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
             }
         } else {
             // connection failed
+            logMessage("Connection denied due to invalid request");
             return State.ERROR;
         }
     }
@@ -224,10 +256,12 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
 
             case CONNECTION_SUCCESSFUL:
             case PING_ANSWERED:
+                logMessage("success");
                 return true;
 
             case REQUEST_DENIED:
             case ERROR:
+                logMessage("disconnect");
                 ccp.disconnect();
                 return true;
 
@@ -238,13 +272,18 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
 
     @Override
     public void disconnected(ChannelConnectionPoint ccp) {
+        logMessage("disconnected");
         // ignore
     }
-
 
     @Override
     public void timedOut(State state, ChannelConnectionPoint ccp) {
         // disconnect
+        logMessage("timed out");
         ccp.disconnect();
+    }
+
+    private void logMessage(String message) {
+        logger.info("{id=" + id + "} " + message);
     }
 }

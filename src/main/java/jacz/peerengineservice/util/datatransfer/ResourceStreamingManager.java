@@ -21,7 +21,6 @@ import jacz.util.io.serialization.MutableOffset;
 import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.io.serialization.Serializer;
 import jacz.util.lists.DoubleElementArrayList;
-import jacz.util.numeric.ContinuousDegree;
 import jacz.util.queues.event_processing.MessageHandler;
 import jacz.util.queues.event_processing.MessageProcessor;
 import jacz.util.sets.availableelements.AvailableElementsShort;
@@ -418,7 +417,7 @@ public class ResourceStreamingManager {
             assignedSubchannels.put(subchannel, new SubchannelData(owner, new MessageProcessor("MessageProcessor - " + subchannel, new MessageHandlerImpl(subchannel, owner))));
             assignedSubchannels.get(subchannel).messageProcessor.start();
             if (!subchannelsForEachOwner.containsKey(owner)) {
-                subchannelsForEachOwner.put(owner, new HashSet<Short>(1));
+                subchannelsForEachOwner.put(owner, new HashSet<>(1));
             }
             subchannelsForEachOwner.get(owner).add(subchannel);
         }
@@ -527,8 +526,6 @@ public class ResourceStreamingManager {
      */
     public static final short SLAVE_GRANT_SUBCHANNEL = 0;
 
-    public static final double DEFAULT_PART_SELECTION_ACCURACY = 0.5d;
-
     private static final long MILLIS_FOR_GENERAL_PROVIDER_UPDATE = 15000;
 
     private final PeerId ownPeerId;
@@ -574,6 +571,11 @@ public class ResourceStreamingManager {
     private final UploadsManager uploadsManager;
 
     /**
+     * Interface for retrieving accuracy
+     */
+    private final TransfersConfig transfersConfig;
+
+    /**
      * Manager for controlling upload speeds of resource transfers
      */
     private final GenericPriorityManager uploadPriorityManager;
@@ -584,17 +586,6 @@ public class ResourceStreamingManager {
     private final GenericPriorityManager downloadPriorityManager;
 
     private final TransferStatistics transferStatistics;
-
-    /**
-     * The accuracy employed in downloads for selecting the parts to assign to each resource provider
-     * <p/>
-     * The algorithm for assigning a segment to a slave is always approximate (to avoid excessive cpu utilization). It
-     * can be however chosen how accurate this algorithm is, at the expense of higher cpu dependency. This attribute
-     * indicates such accuracy. 1.0 means maximum accuracy, while 0.0 indicates minimum accuracy.
-     * <p/>
-     * Access to this field is synchronized to avoid inconsistencies
-     */
-    private final ContinuousDegree accuracy;
 
     private final Lock writeDataLock;
 
@@ -611,7 +602,7 @@ public class ResourceStreamingManager {
             ResourceTransferEvents resourceTransferEvents,
             ConnectedPeersMessenger connectedPeersMessenger,
             String transferStatisticsPath,
-            double accuracy) throws IOException {
+            TransfersConfig transfersConfig) throws IOException {
         this.ownPeerId = ownPeerId;
         this.resourceTransferEventsBridge = new ResourceTransferEventsBridge(resourceTransferEvents);
         this.connectedPeersMessenger = connectedPeersMessenger;
@@ -623,10 +614,10 @@ public class ResourceStreamingManager {
         activeDownloadSet = new ActiveDownloadSet(this);
         downloadsManager = new DownloadsManager(this.resourceTransferEventsBridge);
         uploadsManager = new UploadsManager(this.resourceTransferEventsBridge);
-        uploadPriorityManager = new GenericPriorityManager(true);
-        downloadPriorityManager = new GenericPriorityManager(true);
+        this.transfersConfig = transfersConfig;
+        uploadPriorityManager = new GenericPriorityManager(this.transfersConfig::getMaxUploadSpeed, true);
+        downloadPriorityManager = new GenericPriorityManager(this.transfersConfig::getMaxDownloadSpeed, true);
         this.transferStatistics = new TransferStatistics(transferStatisticsPath);
-        this.accuracy = new ContinuousDegree(accuracy);
         writeDataLock = new ReentrantLock(true);
         alive = new AtomicBoolean(true);
         ManuallyRemovedElementBag.getInstance(PeerClient.MANUAL_REMOVE_BAG).createElement(this.getClass().getName());
@@ -804,6 +795,7 @@ public class ResourceStreamingManager {
             MasterResourceStreamer masterResourceStreamer =
                     new MasterResourceStreamer(
                             this,
+                            transfersConfig,
                             null,
                             resourceStoreName,
                             resourceID,
@@ -853,6 +845,7 @@ public class ResourceStreamingManager {
             MasterResourceStreamer masterResourceStreamer =
                     new MasterResourceStreamer(
                             this,
+                            transfersConfig,
                             serverPeerId,
                             resourceStoreName,
                             resourceID,
@@ -870,36 +863,36 @@ public class ResourceStreamingManager {
         }
     }
 
-    public synchronized Float getMaxDesiredDownloadSpeed() {
-        return downloadPriorityManager.getTotalMaxDesiredSpeed();
-    }
-
-    public synchronized void setMaxDesiredDownloadSpeed(Float totalMaxDesiredSpeed) {
-        resourceTransferEventsBridge.setMaxDesiredDownloadSpeed(totalMaxDesiredSpeed);
-        downloadPriorityManager.setTotalMaxDesiredSpeed(totalMaxDesiredSpeed);
-    }
-
-    public synchronized Float getMaxDesiredUploadSpeed() {
-        return uploadPriorityManager.getTotalMaxDesiredSpeed();
-    }
-
-    public synchronized void setMaxDesiredUploadSpeed(Float totalMaxDesiredSpeed) {
-        resourceTransferEventsBridge.setMaxDesiredUploadSpeed(totalMaxDesiredSpeed);
-        uploadPriorityManager.setTotalMaxDesiredSpeed(totalMaxDesiredSpeed);
-    }
-
-    public double getAccuracy() {
-        synchronized (accuracy) {
-            return accuracy.getValue();
-        }
-    }
-
-    public void setAccuracy(double accuracy) {
-        resourceTransferEventsBridge.setAccuracy(accuracy);
-        synchronized (this.accuracy) {
-            this.accuracy.setDegree(accuracy);
-        }
-    }
+//    public synchronized Float getMaxDesiredDownloadSpeed() {
+//        return downloadPriorityManager.getTotalMaxDesiredSpeed();
+//    }
+//
+//    public synchronized void setMaxDesiredDownloadSpeed(Float totalMaxDesiredSpeed) {
+//        resourceTransferEventsBridge.setMaxDesiredDownloadSpeed(totalMaxDesiredSpeed);
+//        downloadPriorityManager.setTotalMaxDesiredSpeed(totalMaxDesiredSpeed);
+//    }
+//
+//    public synchronized Float getMaxDesiredUploadSpeed() {
+//        return uploadPriorityManager.getTotalMaxDesiredSpeed();
+//    }
+//
+//    public synchronized void setMaxDesiredUploadSpeed(Float totalMaxDesiredSpeed) {
+//        resourceTransferEventsBridge.setMaxDesiredUploadSpeed(totalMaxDesiredSpeed);
+//        uploadPriorityManager.setTotalMaxDesiredSpeed(totalMaxDesiredSpeed);
+//    }
+//
+//    public double getAccuracy() {
+//        synchronized (accuracy) {
+//            return accuracy.getValue();
+//        }
+//    }
+//
+//    public void setAccuracy(double accuracy) {
+//        resourceTransferEventsBridge.setAccuracy(accuracy);
+//        synchronized (this.accuracy) {
+//            this.accuracy.setDegree(accuracy);
+//        }
+//    }
 
     public void reportDownloadedSize(PeerId peerId, long bytes) {
         transferStatistics.addDownloadedBytes(bytes);

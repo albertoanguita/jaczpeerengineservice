@@ -17,21 +17,26 @@ import java.util.Set;
  */
 public class GenericPriorityManager implements TimerAction {
 
+    public interface MaxDesiredSpeedInterface {
+
+        Float getMaxDesiredSpeed();
+    }
+
     private static final long WAIT_TIME = 2500;
 
     private final Map<GenericPriorityManagerStakeholder, Set<GenericPriorityManagerRegulatedResource>> resources;
 
-    private Float totalMaxDesiredSpeed;
-
     private final Timer timer;
+
+    private final MaxDesiredSpeedInterface maxDesiredSpeedInterface;
 
     private final boolean regulateOnlyStakeholderLevel;
 
 
-    public GenericPriorityManager(boolean regulateOnlyStakeholderLevel) {
+    public GenericPriorityManager(MaxDesiredSpeedInterface maxDesiredSpeedInterface, boolean regulateOnlyStakeholderLevel) {
         resources = new HashMap<>();
-        totalMaxDesiredSpeed = null;
         timer = new Timer(WAIT_TIME, this);
+        this.maxDesiredSpeedInterface = maxDesiredSpeedInterface;
         this.regulateOnlyStakeholderLevel = regulateOnlyStakeholderLevel;
     }
 
@@ -44,8 +49,8 @@ public class GenericPriorityManager implements TimerAction {
         }
 
         // update variations of stakeholders
-        float totalConsumption = PriorityResourceDistribution.distributeResources(resources.keySet(), totalMaxDesiredSpeed);
-        boolean maxSpeedReached = totalMaxDesiredSpeed != null && totalConsumption > totalMaxDesiredSpeed;
+        float totalConsumption = PriorityResourceDistribution.distributeResources(resources.keySet(), maxDesiredSpeedInterface.getMaxDesiredSpeed());
+        boolean maxSpeedReached = maxDesiredSpeedInterface.getMaxDesiredSpeed() != null && totalConsumption > maxDesiredSpeedInterface.getMaxDesiredSpeed();
 
         // transmit variations to resources
         for (Map.Entry<GenericPriorityManagerStakeholder, Set<GenericPriorityManagerRegulatedResource>> stakeholderResources : resources.entrySet()) {
@@ -64,14 +69,6 @@ public class GenericPriorityManager implements TimerAction {
                 }
             }
         }
-    }
-
-    public synchronized Float getTotalMaxDesiredSpeed() {
-        return totalMaxDesiredSpeed;
-    }
-
-    public synchronized void setTotalMaxDesiredSpeed(Float totalMaxDesiredSpeed) {
-        this.totalMaxDesiredSpeed = totalMaxDesiredSpeed;
     }
 
     public synchronized void addRegulatedResource(GenericPriorityManagerStakeholder stakeholder, GenericPriorityManagerRegulatedResource regulatedResource) {

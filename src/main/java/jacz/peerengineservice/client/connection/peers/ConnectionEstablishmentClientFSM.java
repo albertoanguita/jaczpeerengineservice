@@ -9,7 +9,10 @@ import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.util.ChannelConstants;
+import jacz.util.id.AlphaNumFactory;
 import jacz.util.network.IP4Port;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.security.PublicKey;
@@ -142,6 +145,10 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         }
     }
 
+    private final static Logger logger = LoggerFactory.getLogger(ConnectionEstablishmentClientFSM.class);
+
+    private final String id;
+
     /**
      * FriendConnectionManager which is trying to connect to another peer (server peer)
      */
@@ -201,6 +208,7 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
             CountryCode clientMainCountry,
             PeerEntryFacade peerEntryFacade,
             IP4Port secondaryIP4Port) {
+        this.id = AlphaNumFactory.getStaticId();
         this.peerConnectionManager = peerConnectionManager;
         this.ownPeerId = ownPeerId;
         this.serverPeerId = serverPeerId;
@@ -219,6 +227,7 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
     public State processMessage(State state, byte channel, Object message, ChannelConnectionPoint ccp) throws IllegalArgumentException {
         if (message instanceof ConnectionEstablishmentServerFSM.ConnectionResult) {
             ConnectionEstablishmentServerFSM.ConnectionResult connectionResult = (ConnectionEstablishmentServerFSM.ConnectionResult) message;
+            logMessage("Connection request to " + serverPeerId + " answered: " + connectionResult);
             peerConnectionManager.processExtraPeersInfo(connectionResult.tryThesePeers, serverMainCountry);
             switch (connectionResult.connectionResultType) {
 
@@ -266,6 +275,7 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
             }
         } else {
             // log error
+            logMessage("Invalid connection result received from " + serverPeerId);
             PeerClient.reportError("Incorrect data received from server peer when establishing connection", state, channel, message, ccp);
             return State.ERROR;
         }
@@ -292,9 +302,18 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         // first we must ask permission to the PeerClientConnectionManager for proceeding with this new connection
         // if we are granted access, send our own PeerId to the server peer (only the client performs this in the INIT)
         // if the PeerClientConnectionManager does not grant permission, terminate the connection process
-        ccp.write(
-                ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL,
-                new ConnectionRequest(ownPeerId, serverPeerId, ownPublicKey, centralServerSecret, encodedCentralServerSecret, clientWishRegularConnections, clientAddress, clientMainCountry, peerEntryFacade));
+        ConnectionRequest connectionRequest = new ConnectionRequest(
+                ownPeerId,
+                serverPeerId,
+                ownPublicKey,
+                centralServerSecret,
+                encodedCentralServerSecret,
+                clientWishRegularConnections,
+                clientAddress,
+                clientMainCountry,
+                peerEntryFacade);
+        logMessage("Connection request sent to " + serverPeerId + ": " + connectionRequest);
+        ccp.write(ChannelConstants.CONNECTION_ESTABLISHMENT_CHANNEL, connectionRequest);
         return State.REQUEST_SENT;
     }
 
@@ -304,10 +323,12 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
         switch (state) {
 
             case CONNECTION_ACCEPTED:
+                logMessage("connection succeeded");
                 return true;
 
             case CONNECTION_DENIED:
             case ERROR:
+                logMessage("connection failed");
                 connectionFailed();
                 ccp.disconnect();
                 return true;
@@ -319,12 +340,14 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
 
     @Override
     public void disconnected(ChannelConnectionPoint ccp) {
+        logMessage("disconnected");
         connectionFailed();
     }
 
 
     @Override
     public void timedOut(State state, ChannelConnectionPoint ccp) {
+        logMessage("timed out");
         connectionFailed();
     }
 
@@ -333,5 +356,9 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
      */
     private void connectionFailed() {
         peerConnectionManager.connectionAsClientFailed(serverPeerId, secondaryIP4Port, serverPeerId);
+    }
+
+    private void logMessage(String message) {
+        logger.info("{id=" + id + "} " + message);
     }
 }

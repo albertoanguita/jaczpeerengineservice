@@ -73,6 +73,12 @@ public class RegularsConnectionManager {
             lastCheckedAdditionalCountry = null;
         }
 
+        private void reset() {
+            // reset state to idle and main language, ready for next connection wish
+            stateCase = StateCase.IDLE;
+            currentCountry = null;
+        }
+
         private void checkMainCountry(CountryCode mainCountry) {
             currentCountry = mainCountry;
             mainCountryTurn = false;
@@ -103,7 +109,7 @@ public class RegularsConnectionManager {
 
     private static final long CONNECTIONS_DELAY = 5000L;
 
-    private static final long GENERAL_DELAY = 1 * CONNECTIONS_DELAY;
+    private static final long GENERAL_DELAY = 3 * CONNECTIONS_DELAY;
 
     private static final int TARGET_BATCH_SIZE = 5;
 
@@ -126,7 +132,6 @@ public class RegularsConnectionManager {
         dynamicState = new EvolvingState<>(new State(), false, new EvolvingState.Transitions<State, Boolean>() {
             @Override
             public boolean runTransition(State state, Boolean goal, EvolvingStateController<State, Boolean> controller) {
-                System.out.println("Regular evolve. State: " + state + ". Goal: " + goal + ", wish for regulars: " + peerConnectionConfig.isWishRegularConnections());
                 if (goal && peerConnectionConfig.isWishRegularConnections()) {
                     switch (state.stateCase) {
                         case IDLE:
@@ -137,20 +142,21 @@ public class RegularsConnectionManager {
                         case LOOKING_FOR_CONNECTIONS_NEED:
                             state.stateCase = StateCase.IDLE;
                             // look for a language that needs more connections (start by currentLanguage)
-                            if (findCountryNeedingMoreConnections(state, peerConnectionConfig)) {
-                                System.out.println("found country needing more connections: " + state.currentCountry);
+                            if (findCountryNeedingMoreConnections(state)) {
                                 // country found, attempt connections with it
                                 targetPeers = getTargetPeers(state.currentCountry, peerKnowledgeBase);
                                 if (targetPeers.isEmpty()) {
-                                    System.out.println("No target peers found -> ask server");
                                     // we do not have any valid regular peers for this country -> ask for more
                                     // and go back to idle (and wait some time)
-                                    peerConnectionManager.askForMoreRegularPeers(state.currentCountry);
-                                    state.stateCase = StateCase.IDLE;
+                                    if (peerConnectionManager.askForMoreRegularPeers(state.currentCountry)) {
+                                        // there are some new peers -> try to contact them
+                                        state.stateCase = StateCase.ATTEMPTING_CONNECTIONS;
+                                    } else {
+                                        state.stateCase = StateCase.IDLE;
+                                    }
                                     controller.stateHasChanged();
                                     return true;
                                 } else {
-                                    System.out.println("Some target peers found -> attempt connections");
                                     // there are target peers -> try to connect with them
                                     state.stateCase = StateCase.ATTEMPTING_CONNECTIONS;
                                     controller.stateHasChanged();
@@ -181,9 +187,7 @@ public class RegularsConnectionManager {
                 } else {
                     // everything ok, will retry soon
                     if (state.stateCase != StateCase.IDLE || state.currentCountry != null) {
-                        // reset state to idle and main language, ready for next connection wish
-                        state.stateCase = StateCase.IDLE;
-                        state.currentCountry = null;
+                        state.reset();
                         controller.stateHasChanged();
                     }
                     return true;
@@ -203,7 +207,7 @@ public class RegularsConnectionManager {
         return new TargetPeerList(peerKnowledgeBase.getRegularPeers(PeerKnowledgeBase.ConnectedQuery.DISCONNECTED, currentCountry));
     }
 
-    private boolean findCountryNeedingMoreConnections(State state, PeerConnectionConfig peerConnectionConfig) {
+    private boolean findCountryNeedingMoreConnections(State state) {
         // start checking the main country, then the additional countries
         // once the main country is fulfilled, we cycle through additional countries until we find one lacking
         // connections (this way we avoid that one with no connections blocks the others)

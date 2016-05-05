@@ -70,7 +70,7 @@ public class TransferTest {
 
         client.getPeerClient().setVisibleDownloadsTimer(1000);
         DownloadManager downloadManager = client.getPeerClient().downloadResource("files", hash, new BasicFileWriter(down1File, customInfo), new DownloadProgressNotificationHandlerImpl(), 0.1f, hash, "MD5");
-        client.getPeerClient().setMaxDesiredDownloadSpeed(250000f);
+        client.getPeerClient().setMaxDownloadSpeed(250000f);
 
         ThreadUtil.safeSleep(DOWNLOAD_LENGTH);
         Assert.assertTrue(new File(down1File).isFile());

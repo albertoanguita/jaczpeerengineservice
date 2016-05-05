@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
+import jacz.peerengineservice.util.datatransfer.TransfersConfig;
 import jacz.peerengineservice.util.datatransfer.slave.ResourceChunk;
 import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.numeric.ContinuousDegree;
@@ -220,9 +220,9 @@ class ResourcePartScheduler {
     private final MasterResourceStreamer masterResourceStreamer;
 
     /**
-     * Resource streaming manager that created this download (for retrieving the accuracy value)
+     * Interface for retrieving accuracy
      */
-    private final ResourceStreamingManager resourceStreamingManager;
+    private final TransfersConfig transfersConfig;
 
     /**
      * Active slaves that share parts of the resource being downloaded
@@ -251,9 +251,14 @@ class ResourcePartScheduler {
      */
     private ContinuousDegree streamingNeed;
 
-    ResourcePartScheduler(MasterResourceStreamer masterResourceStreamer, ResourceStreamingManager resourceStreamingManager, Long resourceSize, LongRangeList ownedPart, double streamingNeed) {
+    ResourcePartScheduler(
+            MasterResourceStreamer masterResourceStreamer,
+            TransfersConfig transfersConfig,
+            Long resourceSize,
+            LongRangeList ownedPart,
+            double streamingNeed) {
         this.masterResourceStreamer = masterResourceStreamer;
-        this.resourceStreamingManager = resourceStreamingManager;
+        this.transfersConfig = transfersConfig;
         this.resourceSize = resourceSize;
         initializeRemainingPart(ownedPart);
         assignedPart = new ResourcePart();
@@ -432,7 +437,7 @@ class ResourcePartScheduler {
                     selectedPosition = assignableSegments.getPosition(0);
                 } else {
                     // in the other case, evaluate all candidates and select the best
-                    int blockCount = calculateBlockCount(resourceStreamingManager.getAccuracy(), assignablePartSize);
+                    int blockCount = calculateBlockCount(transfersConfig.getDownloadPartSelectionAccuracy(), assignablePartSize);
 
                     // prepare the active slaves for proper evaluation. Use only those that are not sharing the complete
                     // resource. We keep count of how many slaves are sharing all the resource (speed up calculations)
