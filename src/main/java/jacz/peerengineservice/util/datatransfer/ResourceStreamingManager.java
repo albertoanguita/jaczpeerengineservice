@@ -5,6 +5,7 @@ import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.connection.ConnectedPeersMessenger;
+import jacz.peerengineservice.client.connection.peers.PeerConnectionManager;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
@@ -24,6 +25,8 @@ import jacz.util.lists.DoubleElementArrayList;
 import jacz.util.queues.event_processing.MessageHandler;
 import jacz.util.queues.event_processing.MessageProcessor;
 import jacz.util.sets.availableelements.AvailableElementsShort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -519,7 +522,7 @@ public class ResourceStreamingManager {
         }
     }
 
-//    final static Logger logger = Logger.getLogger(ResourceStreamingManager.class);
+    private final static Logger logger = LoggerFactory.getLogger(PeerConnectionManager.class);
 
     /**
      * Subchannel for both requesting slaves to other peers and for receiving requests for slaves from other peers
@@ -905,8 +908,9 @@ public class ResourceStreamingManager {
      * The method blocks until all resources are properly stopped. Downloads and uploads are stopped.
      */
     public void stop() {
-        if (alive.get()) {
-            alive.set(false);
+        logger.info("STOP ISSUED");
+        if (alive.getAndSet(false)) {
+            logger.info("STOPPING...");
             resourceTransferEventsBridge.stop();
             transferStatistics.stop();
             Collection<Future> futureCollection;
@@ -960,6 +964,7 @@ public class ResourceStreamingManager {
             }
             ManuallyRemovedElementBag.getInstance(PeerClient.MANUAL_REMOVE_BAG).destroyElement(this.getClass().getName());
             ThreadExecutor.shutdownClient(this.getClass().getName());
+            logger.info("STOPPED");
         }
     }
 

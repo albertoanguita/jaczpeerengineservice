@@ -10,10 +10,12 @@ import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.connection.*;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
+import jacz.peerengineservice.client.connection.peers.kb.PeerEntry;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.PeerRelationship;
+import jacz.storage.ActiveJDBCController;
 import jacz.util.network.IP4Port;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -882,6 +884,14 @@ public class PeerConnectionManager {
 
     public void searchFavorites() {
         favoritesConnectionManager.searchFavoritesNow();
+    }
+
+    public void clearAllPeerAddresses() {
+        peerKnowledgeBase.clearAllPeerAddresses();
+    }
+
+    public void clearAllData() {
+        peerKnowledgeBase.clearAllData();
     }
 
     public CountryCode getOwnMainCountry() {

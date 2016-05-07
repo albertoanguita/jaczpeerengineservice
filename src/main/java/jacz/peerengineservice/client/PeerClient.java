@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class is the entry point to the whole peer engine API. It contains the main methods for initializing and
@@ -98,6 +99,8 @@ public class PeerClient {
 
     private static ErrorHandler errorHandler;
 
+    private final AtomicBoolean alive;
+
     /**
      * Class constructor
      *
@@ -152,6 +155,7 @@ public class PeerClient {
         // initialize the list synchronizer utility (better here than in the client side)
         dataSynchronizer = new DataSynchronizer(this, dataAccessorContainer);
         PeerClient.errorHandler = new ErrorHandlerBridge(this, errorHandler);
+        alive = new AtomicBoolean(true);
         // add custom FSMs for list synchronizing service, in case the client uses it
         addOwnCustomFSMs(this.customFSMs);
     }
@@ -163,14 +167,16 @@ public class PeerClient {
      * The method is blocking, in the sense that when it concludes, all connections are closed, and there will be no further changes in the engine
      */
     public void stop() {
-        if (resourceStreamingManager != null) {
-            resourceStreamingManager.stop();
+        if (alive.getAndSet(false)) {
+            if (resourceStreamingManager != null) {
+                resourceStreamingManager.stop();
+            }
+            if (peerClientConnectionManager != null) {
+                peerClientConnectionManager.stop();
+            }
+            connectedPeers.stop();
+            generalEvents.stop();
         }
-        if (peerClientConnectionManager != null) {
-            peerClientConnectionManager.stop();
-        }
-        connectedPeers.stop();
-        generalEvents.stop();
     }
 
     private void addOwnCustomFSMs(Map<String, PeerFSMFactory> customFSMs) {
@@ -213,24 +219,16 @@ public class PeerClient {
         return ownPeerId;
     }
 
-    public PeerEncryption getPeerEncryption() {
-        return peerEncryption;
-    }
-
-    public synchronized PeersPersonalData getPeersPersonalData() {
-        return peersPersonalData;
-    }
-
     public synchronized int getLocalPort() {
         return peerClientConnectionManager.getLocalPort();
     }
 
-    public synchronized int getExternalPort() {
-        return peerClientConnectionManager.getExternalPort();
-    }
-
     public synchronized void setLocalPort(int port) {
         peerClientConnectionManager.setLocalPort(port);
+    }
+
+    public synchronized int getExternalPort() {
+        return peerClientConnectionManager.getExternalPort();
     }
 
     public synchronized void setExternalPort(int port) {
@@ -252,6 +250,27 @@ public class PeerClient {
     public synchronized ArrayList<ConnectedPeers.PeerConnectionData> getConnectedPeersData() {
         return connectedPeers.getConnectedPeersData();
     }
+
+    public synchronized String getOwnNick() {
+        return peersPersonalData.getOwnNick();
+    }
+
+    /**
+     * Changes our own nick and broadcasts it to the rest of peers
+     *
+     * @param newNick the new nick
+     */
+    public void setOwnNick(String newNick) {
+        if (peersPersonalData.setOwnNick(newNick)) {
+            // broadcast new nick to connected peers
+            broadcastObjectMessage(new NewNickMessage(newNick));
+        }
+    }
+
+    public synchronized String getPeerNick(PeerId peerId) {
+        return peersPersonalData.getPeerNick(peerId);
+    }
+
 
     public void updatePeerAffinity(PeerId peerId, int affinity) {
         peerClientConnectionManager.updatePeerAffinity(peerId, affinity);
@@ -308,6 +327,14 @@ public class PeerClient {
         peerClientConnectionManager.searchFavorites();
     }
 
+    public void clearAllPeerAddresses() {
+        peerClientConnectionManager.clearAllPeerAddresses();
+    }
+
+    public void clearAllData() {
+        peerClientConnectionManager.clearAllData();
+    }
+
     public boolean isWishForRegularConnections() {
         return peerClientConnectionManager.isWishForRegularConnections();
     }
@@ -354,6 +381,14 @@ public class PeerClient {
 
     public void setAdditionalCountries(List<CountryCode> additionalCountries) {
         peerClientConnectionManager.setAdditionalCountries(additionalCountries);
+    }
+
+    public void invalidateAllPeerConnectionData() {
+
+    }
+
+    public void invalidateAllPeerRelationsData() {
+
     }
 
     /**
@@ -500,7 +535,7 @@ public class PeerClient {
      *
      * @return a shallow copy of the active downloads of a store
      */
-    public List<DownloadManager> getVisibleDownloads(String store) {
+    public List<DownloadManager> getDownloads(String store) {
         return resourceStreamingManager.getDownloadsManager().getDownloads(store);
     }
 
@@ -529,8 +564,12 @@ public class PeerClient {
      *
      * @return a shallow copy of the active uploads of a store
      */
-    public List<UploadManager> getVisibleUploads(String store) {
+    public List<UploadManager> getUploads(String store) {
         return resourceStreamingManager.getUploadsManager().getUploads(store);
+    }
+
+    public List<UploadManager> getAllUploads() {
+        return resourceStreamingManager.getUploadsManager().getAllUploads();
     }
 
     /**
@@ -683,26 +722,6 @@ public class PeerClient {
      */
     public void broadcastObjectMessage(Serializable message) {
         connectedPeersMessenger.broadcastObjectRequest(message);
-    }
-
-    public synchronized String getOwnNick() {
-        return peersPersonalData.getOwnNick();
-    }
-
-    /**
-     * Changes our own nick and broadcasts it to the rest of peers
-     *
-     * @param newNick the new nick
-     */
-    public void setOwnNick(String newNick) {
-        if (peersPersonalData.setOwnNick(newNick)) {
-            // broadcast new nick to connected peers
-            broadcastObjectMessage(new NewNickMessage(newNick));
-        }
-    }
-
-    public synchronized String getPeerNick(PeerId peerId) {
-        return peersPersonalData.getPeerNick(peerId);
     }
 
     /**

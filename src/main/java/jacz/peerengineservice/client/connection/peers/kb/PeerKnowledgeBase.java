@@ -2,6 +2,7 @@ package jacz.peerengineservice.client.connection.peers.kb;
 
 import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
+import jacz.peerengineservice.client.connection.PeerAddress;
 import jacz.storage.ActiveJDBCController;
 import jacz.util.lists.tuple.Duple;
 
@@ -59,6 +60,7 @@ public class PeerKnowledgeBase {
     private void newSession() {
         try {
             ActiveJDBCController.connect(DATABASE, dbPath);
+            // todo check null
             Long nullLong = null;
             PeerEntry.updateAll(Management.LAST_CONNECTION_ATTEMPT.name + " = ?", nullLong);
             PeerEntry.update(Management.WISH_REGULAR_CONNECTIONS.name + " = ?", Management.WISH_REGULAR_CONNECTIONS.name + " = ?", Management.ConnectionWish.YES, Management.ConnectionWish.NOT_NOW);
@@ -181,11 +183,30 @@ public class PeerKnowledgeBase {
         }
     }
 
-    public static void cleanOldEntries() {
+    private void cleanOldEntries() {
         // delete those peers to which we have never had a connection
         // then delete those peers whose last session is older than a given threshold
+        // todo check null
         String nullString = null;
         PeerEntry.delete(Management.LAST_SESSION.name + " = ?", nullString);
         PeerEntry.delete(Management.LAST_SESSION.name + " < ?", new Date().getTime() - ELDERLY_THRESHOLD);
+    }
+
+    public void clearAllPeerAddresses() {
+        try {
+            ActiveJDBCController.connect(DATABASE, dbPath);
+            PeerEntry.updateAll(Management.ADDRESS.name + " = ?", PeerAddress.nullPeerAddress());
+        } finally {
+            ActiveJDBCController.disconnect();
+        }
+    }
+
+    public void clearAllData() {
+        try {
+            ActiveJDBCController.connect(DATABASE, dbPath);
+            PeerEntry.deleteAll();
+        } finally {
+            ActiveJDBCController.disconnect();
+        }
     }
 }

@@ -6,6 +6,8 @@ import jacz.util.numeric.range.LongRange;
 import jacz.util.queues.event_processing.MessageReader;
 import jacz.util.queues.event_processing.StopReadingMessages;
 
+import java.nio.file.AccessMode;
+
 /**
  * This class implements a message reader that retrieves chunks of resources for being sent to other peer. These
  * chucks are extracted according to a range queue that indicates which blocks of resource should be sent. This

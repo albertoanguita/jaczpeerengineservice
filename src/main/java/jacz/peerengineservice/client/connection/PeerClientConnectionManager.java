@@ -366,6 +366,14 @@ public class PeerClientConnectionManager implements TransfersConfig {
         peerConnectionManager.searchFavorites();
     }
 
+    public void clearAllPeerAddresses() {
+        peerConnectionManager.clearAllPeerAddresses();
+    }
+
+    public void clearAllData() {
+        peerConnectionManager.clearAllData();
+    }
+
     public boolean isWishForRegularConnections() {
         return peerConnectionManager.isWishForRegularConnections();
     }

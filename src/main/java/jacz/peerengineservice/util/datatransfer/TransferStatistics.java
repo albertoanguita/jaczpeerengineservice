@@ -1,16 +1,20 @@
 package jacz.peerengineservice.util.datatransfer;
 
+import jacz.util.concurrency.timer.Timer;
+import jacz.util.concurrency.timer.TimerAction;
 import jacz.util.date_time.SpeedRegistry;
 import jacz.util.io.serialization.localstorage.Updater;
 import jacz.util.io.serialization.localstorage.VersionedLocalStorage;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created by Alberto on 19/04/2016.
+ * todo this is disabled for better performance. When enabled, we need either a daemon or a timer writing increases
+ * in the background
  */
-public class TransferStatistics implements Updater {
+public class TransferStatistics implements Updater, TimerAction {
 
     private final static long SPEED_MILLIS_MEASURE = 3000L;
 
@@ -26,6 +30,8 @@ public class TransferStatistics implements Updater {
 
     private static final String DOWNLOADED_BYTES_GLOBAL = "downloadedBytesGlobal";
 
+    private static final long STORE_ACCUMULATED_BYTES_PERIODICITY = 5000L;
+
 
     private final SpeedRegistry uploadSpeed;
 
@@ -33,10 +39,19 @@ public class TransferStatistics implements Updater {
 
     private final VersionedLocalStorage localStorage;
 
+    private final AtomicLong accumulatedUploadedBytes;
+
+    private final AtomicLong accumulatedDownloadedBytes;
+
+    private final Timer storeAccumulatedBytesTimer;
+
     public TransferStatistics(String localStoragePath) throws IOException {
         uploadSpeed = new SpeedRegistry(SPEED_MILLIS_MEASURE, SPEED_TIME_STORED, SPEED_MONITOR_FREQUENCY);
         downloadSpeed = new SpeedRegistry(SPEED_MILLIS_MEASURE, SPEED_TIME_STORED, SPEED_MONITOR_FREQUENCY);
         localStorage = new VersionedLocalStorage(localStoragePath);
+        accumulatedUploadedBytes = new AtomicLong(0);
+        accumulatedDownloadedBytes = new AtomicLong(0);
+        storeAccumulatedBytesTimer = new Timer(STORE_ACCUMULATED_BYTES_PERIODICITY, this, this.getClass().getName() + "StoreAccumulatedBytes");
     }
 
     public static TransferStatistics createNew(String localStoragePath) throws IOException {
@@ -60,12 +75,12 @@ public class TransferStatistics implements Updater {
     }
 
     public void addUploadedBytes(long bytes) {
-        increaseField(UPLOADED_BYTES_GLOBAL, bytes);
+        accumulatedUploadedBytes.getAndAdd(bytes);
         uploadSpeed.addProgress(bytes);
     }
 
     public void addDownloadedBytes(long bytes) {
-        increaseField(DOWNLOADED_BYTES_GLOBAL, bytes);
+        accumulatedDownloadedBytes.getAndAdd(bytes);
         downloadSpeed.addProgress(bytes);
     }
 
@@ -75,10 +90,6 @@ public class TransferStatistics implements Updater {
 
     public long getDownloadedBytes() {
         return localStorage.getLong(DOWNLOADED_BYTES_GLOBAL);
-    }
-
-    private void increaseField(String key, long value) {
-        localStorage.setLong(key, localStorage.getLong(key) + value);
     }
 
     public synchronized Double[] getUploadSpeedRegistry() {
@@ -92,11 +103,20 @@ public class TransferStatistics implements Updater {
     public synchronized void stop() {
         uploadSpeed.stop();
         downloadSpeed.stop();
+        storeAccumulatedBytesTimer.kill();
     }
 
     @Override
     public String update(VersionedLocalStorage versionedLocalStorage, String storedVersion) {
         // no versions yet, cannot be invoked
+        return null;
+    }
+
+    @Override
+    public Long wakeUp(Timer timer) {
+        // store the accumulated uploaded and downloaded bytes to the local storage
+        localStorage.setLong(UPLOADED_BYTES_GLOBAL, accumulatedUploadedBytes.get());
+        localStorage.setLong(DOWNLOADED_BYTES_GLOBAL, accumulatedDownloadedBytes.get());
         return null;
     }
 }

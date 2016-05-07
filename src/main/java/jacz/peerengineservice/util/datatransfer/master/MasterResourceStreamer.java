@@ -476,7 +476,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private void writeDataInBackground(WriteDataBuffer.DataElement dataElement) {
         try {
             resourceWriter.write(dataElement.firstByte, dataElement.data);
-        } catch (IOException e) {
+        } catch (IOException | IndexOutOfBoundsException e) {
             reportErrorWriting();
         }
     }
@@ -700,12 +700,9 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         if (alive.get()) {
             // free all subchannels and report the ResourceStreamingManager that this download must be removed. We parallelize this call to avoid
             // locks
-            ThreadExecutor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    resourceStreamingManager.freeAllSubchannels(MasterResourceStreamer.this);
-                    resourceStreamingManager.removeDownload(MasterResourceStreamer.this);
-                }
+            ThreadExecutor.submit(() -> {
+                resourceStreamingManager.freeAllSubchannels(MasterResourceStreamer.this);
+                resourceStreamingManager.removeDownload(MasterResourceStreamer.this);
             });
             Collection<SlaveController> slavesToRemove = new HashSet<>(activeSlaves.values());
             for (SlaveController slaveController : slavesToRemove) {

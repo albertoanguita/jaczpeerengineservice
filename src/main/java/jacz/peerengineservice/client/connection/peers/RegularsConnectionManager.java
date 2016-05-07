@@ -6,6 +6,8 @@ import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.util.AI.evolve.EvolvingState;
 import jacz.util.AI.evolve.EvolvingStateController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -106,6 +108,7 @@ public class RegularsConnectionManager {
         }
     }
 
+    private final static Logger logger = LoggerFactory.getLogger(RegularsConnectionManager.class);
 
     private static final long CONNECTIONS_DELAY = 5000L;
 
@@ -204,6 +207,7 @@ public class RegularsConnectionManager {
     }
 
     private TargetPeerList getTargetPeers(CountryCode currentCountry, PeerKnowledgeBase peerKnowledgeBase) {
+        logger.info("Building target peer list for " + currentCountry.name());
         return new TargetPeerList(peerKnowledgeBase.getRegularPeers(PeerKnowledgeBase.ConnectedQuery.DISCONNECTED, currentCountry));
     }
 
