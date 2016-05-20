@@ -6,7 +6,9 @@ import jacz.util.io.serialization.*;
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,12 +32,23 @@ public final class PeerEncryption implements VersionedObject {
 
     private KeyPair keyPair;
 
+    private final List<String> repairedFiles;
+
     public PeerEncryption(byte[] seed) {
         this.keyPair = generateKeyPair(KEY_SIZE, seed);
+        repairedFiles = new ArrayList<>();
     }
 
     public PeerEncryption(String path, String... backupPaths) throws VersionedSerializationException, IOException {
-        VersionedObjectSerializer.deserialize(this, path, backupPaths);
+        this(path, false, backupPaths);
+    }
+
+    public PeerEncryption(String path, boolean repairIfBroken, String... backupPaths) throws VersionedSerializationException, IOException {
+        repairedFiles = VersionedObjectSerializer.deserialize(this, path, repairIfBroken, backupPaths);
+    }
+
+    public List<String> getRepairedFiles() {
+        return repairedFiles;
     }
 
     private static KeyPair generateKeyPair(int size, byte[] randomBytes) {
@@ -48,7 +61,7 @@ public final class PeerEncryption implements VersionedObject {
             keyGen.initialize(size, random);
             return keyGen.generateKeyPair();
         } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-            PeerClient.reportError(e.toString(), ALGORITHM, RAND_ALGORITHM, RAND_PROVIDER);
+            PeerClient.reportFatalError(e.toString(), ALGORITHM, RAND_ALGORITHM, RAND_PROVIDER);
             return null;
         }
     }

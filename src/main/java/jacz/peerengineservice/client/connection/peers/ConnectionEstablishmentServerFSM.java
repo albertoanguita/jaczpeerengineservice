@@ -7,7 +7,6 @@ import jacz.commengine.channel.TimedChannelFSMAction;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
-import jacz.util.concurrency.ThreadUtil;
 import jacz.util.id.AlphaNumFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +19,8 @@ import java.util.List;
  * This FSM allows negotiating with other peers who want to connect to our PeerClient. This FSM implements the server
  * part of that connection. First it receives the data of a new peer trying to connect to us, and then it answers to
  * that peer if it accepts the connection or not.
+ * <p/>
+ * todo avoid serializing objects, it might break legacy in the future. Better serialize data inside those objects and rebuild
  */
 public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<ConnectionEstablishmentServerFSM.State> {
 
@@ -188,7 +189,7 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
                 // a ping request, probably from a PortTestServer --> answer with a true and finish
                 PingRequest pingRequest = (PingRequest) message;
                 logMessage("Ping request received");
-                ccp.write(pingRequest.channel, ownPeerId);
+                ccp.write(pingRequest.channel, ownPeerId.toString());
                 return State.PING_ANSWERED;
             } else {
                 // incorrect data format received

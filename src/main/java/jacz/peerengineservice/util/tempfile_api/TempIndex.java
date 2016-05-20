@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,8 +39,6 @@ class TempIndex implements VersionedObject {
      */
     private LongRangeList data;
 
-    private final transient int deserializeTries;
-
     TempIndex(String tempDataFilePath, HashMap<String, Serializable> userDictionary) throws IOException {
         this.tempDataFilePath = tempDataFilePath;
         this.totalResourceSize = null;
@@ -47,11 +46,11 @@ class TempIndex implements VersionedObject {
         this.systemDictionary = new HashMap<>();
         this.data = new LongRangeList();
         setupDataFile(0);
-        deserializeTries = 0;
     }
 
-    public TempIndex(String path, String backupPath) throws VersionedSerializationException, IOException {
-        deserializeTries = VersionedObjectSerializer.deserialize(this, path, backupPath);
+    public TempIndex(String path, String backupPath, TempFileManager tempFileManager) throws VersionedSerializationException, IOException {
+        List<String> repairedFiles = VersionedObjectSerializer.deserialize(this, path, true, backupPath);
+        repairedFiles.forEach(tempFileManager::indexFileErrorRestoredWithBackup);
     }
 
     HashMap<String, Serializable> getUserDictionary() {
@@ -116,10 +115,6 @@ class TempIndex implements VersionedObject {
         if (range.getMin() < 0 || range.getMax() >= totalResourceSize) {
             throw new IndexOutOfBoundsException("offset and length values out of range of the resource size");
         }
-    }
-
-    public int getDeserializeTries() {
-        return deserializeTries;
     }
 
     private static LongRange generateRangeFromOffsetAndLength(long offset, int length) {

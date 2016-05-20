@@ -85,7 +85,7 @@ public class ForeignStoreShare implements NotificationEmitter, NotificationRecei
      */
     public synchronized void addResourceProvider(String resourceID, PeerId peerId) {
         if (!remoteResources.containsKey(resourceID)) {
-            remoteResources.put(resourceID, new HashSet<PeerId>());
+            remoteResources.put(resourceID, new HashSet<>());
         }
         remoteResources.get(resourceID).add(peerId);
         notificationProcessor.newEvent(resourceID);

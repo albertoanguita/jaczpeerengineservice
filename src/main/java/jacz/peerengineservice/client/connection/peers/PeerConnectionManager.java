@@ -10,12 +10,10 @@ import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.connection.*;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
-import jacz.peerengineservice.client.connection.peers.kb.PeerEntry;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.PeerRelationship;
-import jacz.storage.ActiveJDBCController;
 import jacz.util.network.IP4Port;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -767,7 +765,7 @@ public class PeerConnectionManager {
 
     public void peerError(ChannelConnectionPoint ccp, CommError error) {
         if (error.getType() == CommError.Type.WRITE_NON_SERIALIZABLE_OBJECT || error.getType() == CommError.Type.CLASS_CANNOT_BE_SERIALIZED) {
-            PeerClient.reportError("Tried to write a non-serializable object through a ccp", error);
+            PeerClient.reportFatalError("Tried to write a non-serializable object through a ccp", error);
         }
         PeerId peerId = disconnectPeer(ccp);
         if (peerId != null) {
@@ -900,6 +898,10 @@ public class PeerConnectionManager {
 
     public boolean isOwnWishForRegularConnections() {
         return peerConnectionConfig.isWishRegularConnections();
+    }
+
+    public int getPeerAffinity(PeerId peerId) {
+        return peerKnowledgeBase.getPeerEntryFacade(peerId).getAffinity();
     }
 
     public void updatePeerAffinity(PeerId peerId, int affinity) {

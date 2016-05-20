@@ -349,7 +349,7 @@ public class ServerAPI {
             return RegistrationResponse.valueOf(registrationResponseJSON.response);
         } catch (IllegalArgumentException e) {
             // unrecognized value --> log error and re-throw
-            PeerClient.reportError("Unrecognized register response", result.element2);
+            PeerClient.reportFatalError("Unrecognized register response", result.element2);
             throw e;
         }
     }
@@ -368,7 +368,7 @@ public class ServerAPI {
             return ConnectionResponse.buildConnectionResponse(connectionResponseJSON);
         } catch (IllegalArgumentException e) {
             // unrecognized values --> log error and re-throw
-            PeerClient.reportError("Unrecognized connect response", result.element2);
+            PeerClient.reportFatalError("Unrecognized connect response", result.element2);
             throw e;
         }
     }
@@ -386,7 +386,7 @@ public class ServerAPI {
             return RefreshResponse.valueOf(updateResponseJSON.response);
         } catch (IllegalArgumentException e) {
             // unrecognized value --> log error and re-throw
-            PeerClient.reportError("Unrecognized refresh response", result.element2);
+            PeerClient.reportFatalError("Unrecognized refresh response", result.element2);
             throw e;
         }
     }
@@ -404,7 +404,7 @@ public class ServerAPI {
             return DisconnectResponse.valueOf(updateResponseJSON.response);
         } catch (IllegalArgumentException e) {
             // unrecognized value --> log error and re-throw
-            PeerClient.reportError("Unrecognized disconnect response", result.element2);
+            PeerClient.reportFatalError("Unrecognized disconnect response", result.element2);
             throw e;
         }
     }
@@ -422,7 +422,7 @@ public class ServerAPI {
             return InfoResponse.buildInfoResponse(infoResponseJson);
         } catch (Exception e) {
             // unrecognized values --> log error and re-throw
-            PeerClient.reportError("Unrecognized info response", result.element2);
+            PeerClient.reportFatalError("Unrecognized info response", result.element2);
             throw new IOException("Unrecognized info response");
         }
     }
@@ -440,7 +440,7 @@ public class ServerAPI {
             return InfoResponse.buildInfoResponse(infoResponseJson);
         } catch (Exception e) {
             // unrecognized values --> log error and re-throw
-            PeerClient.reportError("Unrecognized regularPeersRequest response", result.element2);
+            PeerClient.reportFatalError("Unrecognized regularPeersRequest response", result.element2);
             throw new IOException("Unrecognized regularPeersRequest response");
         }
     }

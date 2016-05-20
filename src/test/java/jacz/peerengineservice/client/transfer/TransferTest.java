@@ -96,6 +96,13 @@ public class TransferTest {
         ThreadUtil.safeSleep(CYCLE_LENGTH);
         Assert.assertEquals(1, tempFileManager.getExistingTempFiles().size());
         tempFileWriter = new TempFileWriter(tempFileManager, tempFileManager.getExistingTempFiles().iterator().next());
+
+        // todo test
+        // delete temp files
+        ThreadUtil.safeSleep(500);
+        FileUtils.cleanDirectory(new java.io.File(tempPath));
+        ThreadUtil.safeSleep(500);
+
         downloadManager = client.getPeerClient().downloadResource("files", hash, tempFileWriter, new DownloadProgressNotificationHandlerImpl(), 0.1f, hash, "MD5");
         Assert.assertTrue(downloadManager.getStatistics().getDownloadedSizeThisResource() > 0L);
 

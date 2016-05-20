@@ -270,13 +270,13 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
                     return State.CONNECTION_DENIED;
                 default:
                     // log error
-                    PeerClient.reportError("Incorrect data received from server peer when establishing connection", state, channel, message, ccp, connectionResult);
+                    PeerClient.reportFatalError("Incorrect data received from server peer when establishing connection", state, channel, message, ccp, connectionResult);
                     return State.ERROR;
             }
         } else {
             // log error
             logMessage("Invalid connection result received from " + serverPeerId);
-            PeerClient.reportError("Incorrect data received from server peer when establishing connection", state, channel, message, ccp);
+            PeerClient.reportFatalError("Incorrect data received from server peer when establishing connection", state, channel, message, ccp);
             return State.ERROR;
         }
     }

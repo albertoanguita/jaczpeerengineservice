@@ -4,6 +4,8 @@ package jacz.peerengineservice;
 import jacz.util.stochastic.MouseToRandom;
 import org.junit.Assert;
 
+import java.util.Arrays;
+
 /**
  * Created by Alberto on 11/03/2016.
  */
@@ -22,7 +24,7 @@ public class PeerIdTest {
         byte[] randomBytes;
         for (int i = 0; i < 2; i++) {
             MouseToRandom mouseToRandom = new MouseToRandom(10, false);
-            mouseToRandom.mouseCoords(8, 1);
+            mouseToRandom.mouseCoords(18, 1);
             mouseToRandom.mouseCoords(2, 1);
             mouseToRandom.mouseCoords(5, 1);
             mouseToRandom.mouseCoords(4, 1);

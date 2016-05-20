@@ -482,6 +482,10 @@ public class PeerClientConnectionManager implements TransfersConfig {
         return concurrentChannels;
     }
 
+    public int getPeerAffinity(PeerId peerId) {
+        return peerConnectionManager.getPeerAffinity(peerId);
+    }
+
     public void updatePeerAffinity(PeerId peerId, int affinity) {
         peerConnectionManager.updatePeerAffinity(peerId, affinity);
     }

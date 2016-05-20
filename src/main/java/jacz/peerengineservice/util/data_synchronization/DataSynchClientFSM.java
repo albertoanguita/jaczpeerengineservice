@@ -7,6 +7,7 @@ import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
 import jacz.util.concurrency.task_executor.ThreadExecutor;
 import jacz.util.hash.CRC;
+import jacz.util.hash.CRCMismatchException;
 import jacz.util.hash.InvalidCRCException;
 import jacz.util.io.serialization.MutableOffset;
 import jacz.util.io.serialization.Serializer;
@@ -121,7 +122,7 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
                 } catch (ClassNotFoundException e) {
                     // invalid class found, error
-                    PeerClient.reportError(e.toString(), serverPeerId, dataAccessor.getName(), fsmID);
+                    PeerClient.reportFatalError(e.toString(), serverPeerId, dataAccessor.getName(), fsmID);
                     synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Received request object not recognized in state: " + currentState);
                     return State.ERROR;
                 }
@@ -145,7 +146,7 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
                 } catch (ClassNotFoundException e) {
                     // invalid class found, error
-                    PeerClient.reportError(e.toString(), serverPeerId, dataAccessor.getName(), fsmID);
+                    PeerClient.reportFatalError(e.toString(), serverPeerId, dataAccessor.getName(), fsmID);
                     synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Received request object not recognized in state: " + currentState);
                     return State.ERROR;
                 }
@@ -189,14 +190,14 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
                     }
                 } catch (ClassNotFoundException e) {
                     // invalid class found, error
-                    PeerClient.reportError(e.toString(), serverPeerId, dataAccessor.getName(), fsmID);
+                    PeerClient.reportFatalError(e.toString(), serverPeerId, dataAccessor.getName(), fsmID);
                     synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Received request object not recognized in state: " + currentState);
                     return State.ERROR;
                 } catch (DataAccessException e) {
-                    PeerClient.reportError("Data access error in client synch FSM, setting element", serverPeerId, dataAccessor.getName(), fsmID, elementPacket);
+                    PeerClient.reportFatalError("Data access error in client synch FSM, setting element", serverPeerId, dataAccessor.getName(), fsmID, elementPacket);
                     synchError = new SynchError(SynchError.Type.DATA_ACCESS_ERROR, "Error adding element to data accessor");
                     return State.ERROR;
-                } catch (InvalidCRCException e) {
+                } catch (CRCMismatchException e) {
                     synchError = new SynchError(SynchError.Type.TRANSMISSION_ERROR, "CRC check failed");
                     return State.ERROR;
                 }
@@ -217,7 +218,7 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
             ccp.write(outgoingChannel, new SynchRequest(dataAccessor.getName(), dataAccessorDatabaseID, dataAccessor.getLastTimestamp()));
             return State.WAITING_FOR_REQUEST_ANSWER;
         } catch (DataAccessException e) {
-            PeerClient.reportError("Data access error in client synch FSM, getting last timestamp", serverPeerId, dataAccessor.getName(), fsmID);
+            PeerClient.reportFatalError("Data access error in client synch FSM, getting last timestamp", serverPeerId, dataAccessor.getName(), fsmID);
             synchError = new SynchError(SynchError.Type.DATA_ACCESS_ERROR, "Could not access last timestamp");
             return State.ERROR;
         }
@@ -236,6 +237,9 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
 
             case ERROR:
                 DataSynchronizer.logger.info("CLIENT SYNCH ERROR. serverPeer: " + serverPeerId + ". dataAccessorName: " + dataAccessor.getName() + ". fsmID: " + fsmID + ". synchError: " + synchError);
+                if (synchError.type == SynchError.Type.ERROR_IN_PROTOCOL) {
+                    PeerClient.reportFatalError("Error in synch protocol", synchError);
+                }
                 dataAccessor.endSynchProcess(DataAccessor.Mode.CLIENT, false);
                 if (progress != null) {
                     progress.error(synchError);

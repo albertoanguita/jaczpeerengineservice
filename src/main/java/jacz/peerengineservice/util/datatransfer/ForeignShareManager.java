@@ -52,7 +52,7 @@ class ForeignShareManager implements NotificationReceiver {
     /**
      * Base notification time delay for emitting updates on changes
      */
-    private static final long RECEIVER_MILLIS = 5000;
+    private static final long RECEIVER_MILLIS = 2000;
 
     /**
      * Factor of notification time delay upon additional changes
@@ -180,12 +180,7 @@ class ForeignShareManager implements NotificationReceiver {
             for (Object message : groupedMessages) {
                 affectedResources.add((String) message);
             }
-            ThreadExecutor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    resourceStreamingManager.reportProvidersShareChanges(finalResourceStore, affectedResources);
-                }
-            });
+            ThreadExecutor.submit(() -> resourceStreamingManager.reportProvidersShareChanges(finalResourceStore, affectedResources));
         }
     }
 }

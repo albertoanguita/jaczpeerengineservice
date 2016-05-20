@@ -256,14 +256,11 @@ public class ResourceStreamingManager {
             for (String storeName : activeDownloads.keySet()) {
                 activeDownloadsCopy.put(storeName, new HashMap<>(activeDownloads.get(storeName)));
             }
-            ThreadExecutor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    for (String storeName : activeDownloadsCopy.keySet()) {
-                        Map<String, Map<String, MasterResourceStreamer>> activeDownloadsForOneStore = activeDownloadsCopy.get(storeName);
-                        for (String resourceID : activeDownloadsForOneStore.keySet()) {
-                            resourceStreamingManager.reportProvidersForOneActiveDownload(storeName, resourceID);
-                        }
+            ThreadExecutor.submit(() -> {
+                for (String storeName : activeDownloadsCopy.keySet()) {
+                    Map<String, Map<String, MasterResourceStreamer>> activeDownloadsForOneStore = activeDownloadsCopy.get(storeName);
+                    for (String resourceID : activeDownloadsForOneStore.keySet()) {
+                        resourceStreamingManager.reportProvidersForOneActiveDownload(storeName, resourceID);
                     }
                 }
             });

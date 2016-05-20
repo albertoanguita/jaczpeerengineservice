@@ -458,16 +458,16 @@ public class TempFileManager {
 
     TempIndex readIndexFile(String indexFilePath) throws IOException, VersionedSerializationException {
         try {
-            TempIndex tempIndex = new TempIndex(indexFilePath, generateBackupPath(indexFilePath));
-            if (tempIndex.getDeserializeTries() > 0) {
-                tempFileManagerEventsBridge.indexFileErrorRestoredWithBackup(indexFilePath);
-            }
-            return tempIndex;
+            return new TempIndex(indexFilePath, generateBackupPath(indexFilePath), this);
         } catch (IOException | VersionedSerializationException e) {
             // could not restore data from backup
             tempFileManagerEventsBridge.indexFileError(indexFilePath);
             throw e;
         }
+    }
+
+    void indexFileErrorRestoredWithBackup(String indexFilePath) {
+        tempFileManagerEventsBridge.indexFileErrorRestoredWithBackup(indexFilePath);
     }
 
     static void writeIndexFile(String indexFilePath, TempIndex index) throws IOException {

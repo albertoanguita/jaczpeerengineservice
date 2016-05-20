@@ -21,9 +21,9 @@ public final class PeerId implements Comparable<PeerId>, Serializable {
     private final byte[] id;
 
     public PeerId(byte[] id) {
-        if (id.length >= KEY_LENGTH) {
+        if (id.length == KEY_LENGTH) {
             // truncate the byte array (keep the first KEY_LENGTH bytes)
-            this.id = Arrays.copyOf(id, KEY_LENGTH);
+            this.id = id;
         } else {
             throw new IllegalArgumentException("Incorrect peer id. Received: " + Arrays.toString(id));
         }
@@ -50,7 +50,7 @@ public final class PeerId implements Comparable<PeerId>, Serializable {
 
     public static Duple<PeerId, PeerEncryption> generateIdAndEncryptionKeys(byte[] randomBytes) {
         PeerEncryption peerEncryption = new PeerEncryption(randomBytes);
-        return new Duple<>(new PeerId(peerEncryption.getPublicDigest()), peerEncryption);
+        return new Duple<>(PeerId.generateRandomPeerId(peerEncryption.getPublicDigest()), peerEncryption);
     }
 
     public static boolean isPeerId(String id) {

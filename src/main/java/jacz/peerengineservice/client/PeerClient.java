@@ -25,7 +25,6 @@ import jacz.util.event.notification.NotificationReceiver;
 import jacz.util.io.serialization.ObjectListWrapper;
 import jacz.util.log.ErrorFactory;
 import jacz.util.log.ErrorHandler;
-import jacz.util.log.ErrorLog;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -194,12 +193,8 @@ public class PeerClient {
 //        customFSMs.put(ElementSynchronizerServerFSM.CUSTOM_FSM_NAME, new ElementSynchronizerServerFSMFactory(getListSynchronizer()));
     }
 
-    public static void reportError(String message, Object... data) {
-        if (errorHandler != null) {
-            ErrorFactory.reportError(errorHandler, message, data);
-        } else {
-            ErrorLog.reportError(ERROR_LOG, message, data);
-        }
+    public static void reportFatalError(String message, Object... data) {
+        ErrorFactory.reportError(errorHandler, message, data);
     }
 
     public DataSynchronizer getDataSynchronizer() {
@@ -271,6 +266,9 @@ public class PeerClient {
         return peersPersonalData.getPeerNick(peerId);
     }
 
+    public int getPeerAffinity(PeerId peerId) {
+        return peerClientConnectionManager.getPeerAffinity(peerId);
+    }
 
     public void updatePeerAffinity(PeerId peerId, int affinity) {
         peerClientConnectionManager.updatePeerAffinity(peerId, affinity);
@@ -683,7 +681,7 @@ public class PeerClient {
                             String id = ccp.registerGenericFSM(customPeerFSM, "UnnamedCustomPeerFSM", assignedChannel);
                             peerFSMAction.setID(id);
                         } catch (Exception e) {
-                            reportError("Could not register FSM due to exception", requestFromPeerToPeer, assignedChannel, customFSMs, ccp);
+                            reportFatalError("Could not register FSM due to exception", requestFromPeerToPeer, assignedChannel, customFSMs, ccp);
                             ccp.write(outgoingChannel, new ObjectListWrapper(PeerFSMServerResponse.REQUEST_DENIED, null));
                         }
                     }

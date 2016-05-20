@@ -187,12 +187,12 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             return sendElementPack(ccp);
         } catch (ClassNotFoundException e) {
             // invalid class found, error
-            PeerClient.reportError(e.toString(), clientPeerId, dataAccessorName, fsmID);
+            PeerClient.reportFatalError(e.toString(), clientPeerId, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.ERROR_IN_PROTOCOL, "Invalid request format");
             ccp.write(outgoingChannel, SynchRequestAnswer.INVALID_REQUEST_FORMAT);
             return State.DENIED;
         } catch (AccessorNotFoundException e) {
-            PeerClient.reportError(e.toString(), clientPeerId, dataAccessorName, fsmID);
+            PeerClient.reportFatalError(e.toString(), clientPeerId, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.UNKNOWN_ACCESSOR, "Accessor: " + dataAccessorName);
             ccp.write(outgoingChannel, SynchRequestAnswer.UNKNOWN_DATA_ACCESSOR);
             return State.DENIED;
@@ -201,7 +201,7 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
             ccp.write(outgoingChannel, SynchRequestAnswer.SERVER_BUSY);
             return State.DENIED;
         } catch (DataAccessException e) {
-            PeerClient.reportError("Data access error in server synch FSM", clientPeerId, dataAccessorName, fsmID);
+            PeerClient.reportFatalError("Data access error in server synch FSM", clientPeerId, dataAccessorName, fsmID);
             synchError = new SynchError(SynchError.Type.DATA_ACCESS_ERROR, null);
             ccp.write(outgoingChannel, SynchRequestAnswer.SERVER_ERROR);
             return State.DENIED;
@@ -260,6 +260,9 @@ public class DataSynchServerFSM implements PeerTimedFSMAction<DataSynchServerFSM
 
             case ERROR:
                 DataSynchronizer.logger.info("SERVER SYNCH ERROR. clientPeer: " + clientPeerId + ". dataAccessorName: " + dataAccessorName + ". fsmID: " + fsmID + ". synchError: " + synchError);
+                if (synchError.type == SynchError.Type.ERROR_IN_PROTOCOL) {
+                    PeerClient.reportFatalError("Error in synch protocol", synchError);
+                }
                 if (dataAccessor != null) {
                     dataAccessor.endSynchProcess(DataAccessor.Mode.SERVER, false);
                 }

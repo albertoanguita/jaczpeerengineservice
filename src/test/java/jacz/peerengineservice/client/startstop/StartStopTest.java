@@ -32,7 +32,7 @@ public class StartStopTest {
         Client client = new Client(ownPeerId, networkConfiguration, peersPersonalData, peerRelations, peerConnectionConfig, transferStatistics, new GeneralEventsImpl(), new ConnectionEventsImpl(), new PeersEventsImpl(), new HashMap<>());
         client.startClient();
 
-        Thread.sleep(25000);
+        Thread.sleep(35000);
         Assert.assertEquals(State.NetworkTopologyState.ALL_FETCHED, client.getPeerClient().getConnectionState().getNetworkTopologyState());
         Assert.assertEquals(State.LocalServerConnectionsState.LISTENING, client.getPeerClient().getConnectionState().getLocalServerConnectionsState());
         Assert.assertEquals(State.ConnectionToServerState.CONNECTED, client.getPeerClient().getConnectionState().getConnectionToServerState());
