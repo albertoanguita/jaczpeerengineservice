@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 /**
@@ -24,12 +26,11 @@ public class BasicFileWriter extends SingleSessionResourceWriter {
     private boolean hasFailed;
 
     public BasicFileWriter(String expectedFilePath) throws IOException {
-//        this(FileUtil.getFileDirectory(expectedFilePath), FileUtil.getFileName(expectedFilePath));
-        this(new File(expectedFilePath).getParent(), FilenameUtils.getName(expectedFilePath));
+        this(new File(expectedFilePath).getParent(), Paths.get(expectedFilePath).getFileName().toString());
     }
 
     public BasicFileWriter(String expectedFilePath, HashMap<String, Serializable> userDictionary) throws IOException {
-        this(new File(expectedFilePath).getParent(), FilenameUtils.getName(expectedFilePath), userDictionary);
+        this(new File(expectedFilePath).getParent(), Paths.get(expectedFilePath).getFileName().toString(), userDictionary);
     }
 
     public BasicFileWriter(String downloadDir, String expectedFileName) throws IOException {
@@ -41,7 +42,7 @@ public class BasicFileWriter extends SingleSessionResourceWriter {
         hasFailed = false;
         String fileWithoutExtension = FilenameUtils.getBaseName(expectedFileName);
         String extension = FilenameUtils.getExtension(expectedFileName);
-        finalPath = FileGenerator.createFile(downloadDir, fileWithoutExtension, extension, " (", ")", true).element1;
+        finalPath = FileGenerator.createFile(downloadDir, fileWithoutExtension, extension, " (", ")", true);
         file = new File(finalPath);
         if (!file.isFile()) {
             try {
@@ -85,7 +86,7 @@ public class BasicFileWriter extends SingleSessionResourceWriter {
     @Override
     public void cancel() {
         try {
-            FileUtils.forceDelete(new File(finalPath));
+            Files.delete(Paths.get(finalPath));
         } catch (IOException e) {
             // ignore, do not throw this exception, it is not so important not being able to delete the meta file
         }

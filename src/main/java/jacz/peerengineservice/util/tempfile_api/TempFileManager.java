@@ -6,14 +6,13 @@ import jacz.util.concurrency.task_executor.ThreadExecutor;
 import jacz.util.files.FileGenerator;
 import jacz.util.io.serialization.VersionedObjectSerializer;
 import jacz.util.io.serialization.VersionedSerializationException;
-import jacz.util.lists.tuple.Duple;
 import jacz.util.numeric.range.LongRangeList;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -78,7 +77,7 @@ public class TempFileManager {
     /**
      * Directory where temp files are stored (ending with the path.separator character)
      */
-    private final String baseDir;
+    private final Path baseDir;
 
     private final TempFileManagerEventsBridge tempFileManagerEventsBridge;
 
@@ -116,22 +115,11 @@ public class TempFileManager {
      * @param baseDir user given base directory path
      * @return correct base directory path (end file separator included)
      */
-    private static String buildBaseDir(String baseDir) {
+    private static Path buildBaseDir(String baseDir) {
         if (!baseDir.endsWith(File.separator)) {
             baseDir = baseDir + File.separator;
         }
-        return baseDir;
-    }
-
-    /**
-     * Builds an array of two file pre-names for file name generation purposes
-     */
-    private static List<String> buildBaseFileNameList() {
-        List<String> baseFileNameList = new ArrayList<>();
-        baseFileNameList.add(TEMP_FILE_NAME_INIT);
-        baseFileNameList.add(TEMP_FILE_NAME_INIT);
-        baseFileNameList.add(TEMP_FILE_NAME_INIT);
-        return baseFileNameList;
+        return Paths.get(baseDir);
     }
 
     /**
@@ -150,7 +138,7 @@ public class TempFileManager {
      *
      * @return the base directory for placing the temporary files
      */
-    String getBaseDir() {
+    public Path getBaseDir() {
         return baseDir;
     }
 
@@ -159,27 +147,50 @@ public class TempFileManager {
      *
      * @return a set with the names of the temporary files contained in the base directory (base names, no extension)
      */
-    public synchronized Set<String> getExistingTempFiles() {
+    public synchronized Set<String> getExistingTempFiles() throws IOException {
+        // todo use nio
         Set<String> tempFiles = new HashSet<>();
         String[] extensions = new String[1];
         extensions[0] = TEMP_FILE_INDEX_NAME_END;
-        Collection<File> filesInBaseDir = FileUtils.listFiles(new File(baseDir), extensions, false);
-        for (File file : filesInBaseDir) {
-            // an index file was found -> look for its data file
-            String fineName = file.getName();
-            String tempFile = generateIndexFilePath(fineName);
-            try {
-                TempIndex tempIndex = readIndexFile(tempFile);
-                String tempDataFilePath = tempIndex.getTempDataFilePath();
-                if (new File(tempDataFilePath).isFile()) {
-                    // the data file also exists -> valid temp file
-                    tempFileManagerEventsBridge.indexFileRecovered(tempFile);
-                    tempFiles.add(fineName);
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(baseDir, "*." + TEMP_FILE_INDEX_NAME_END)) {
+            for (Path file : stream) {
+                // an index file was found -> look for its data file
+                String fileName = file.getFileName().toString();
+                String tempFile = generateIndexFilePath(fileName);
+                try {
+                    TempIndex tempIndex = readIndexFile(tempFile);
+                    String tempDataFilePath = tempIndex.getTempDataFilePath();
+                    if (new File(tempDataFilePath).isFile()) {
+                        // the data file also exists -> valid temp file
+                        tempFileManagerEventsBridge.indexFileRecovered(tempFile);
+                        tempFiles.add(fileName);
+                    }
+                } catch (IOException | VersionedSerializationException e) {
+                    // error reading the file, ignore
                 }
-            } catch (IOException | VersionedSerializationException e) {
-                // error reading the file, ignore
             }
+        } catch (DirectoryIteratorException x) {
+            throw new IOException(x);
         }
+//
+//        Collection<File> filesInBaseDir = FileUtils.listFiles(new File(baseDir.toUri()), extensions, false);
+//        for (File file : filesInBaseDir) {
+//            // an index file was found -> look for its data file
+//            String fineName = file.getName();
+//            String tempFile = generateIndexFilePath(fineName);
+//            try {
+//                TempIndex tempIndex = readIndexFile(tempFile);
+//                String tempDataFilePath = tempIndex.getTempDataFilePath();
+//                if (new File(tempDataFilePath).isFile()) {
+//                    // the data file also exists -> valid temp file
+//                    tempFileManagerEventsBridge.indexFileRecovered(tempFile);
+//                    tempFiles.add(fineName);
+//                }
+//            } catch (IOException | VersionedSerializationException e) {
+//                // error reading the file, ignore
+//            }
+//        }
         return tempFiles;
     }
 
@@ -193,17 +204,17 @@ public class TempFileManager {
      */
     public synchronized String createNewTempFile(HashMap<String, Serializable> userDictionary) throws IOException {
         // generate the file names and the actual files
-        List<Duple<String, String>> fileNames = FileGenerator.createFiles(
+        List<Path> fileNames = FileGenerator.createFiles(
                 baseDir,
-                buildBaseFileNameList(),
+                TEMP_FILE_NAME_INIT,
                 buildExtensionList(),
                 "_",
                 "",
                 false
         );
-        generateInitialIndexFile(fileNames.get(0).element2, fileNames.get(2).element2, userDictionary);
-        tempFileManagerEventsBridge.indexFileGenerated(fileNames.get(0).element2);
-        return fileNames.get(0).element2;
+        generateInitialIndexFile(fileNames.get(0).getFileName().toString(), fileNames.get(2).getFileName().toString(), userDictionary);
+        tempFileManagerEventsBridge.indexFileGenerated(fileNames.get(0).getFileName().toString());
+        return fileNames.get(0).getFileName().toString();
     }
 
     /**
@@ -334,7 +345,7 @@ public class TempFileManager {
     public synchronized void removeTempFile(String tempFileName) throws IOException {
         String dataFile = completeTempFile(tempFileName);
         try {
-            FileUtils.forceDelete(new File(dataFile));
+            Files.delete(Paths.get(dataFile));
         } catch (FileNotFoundException e) {
             // ignore
         }

@@ -8,7 +8,6 @@ import jacz.peerengineservice.client.PeerTimedFSMAction;
 import jacz.util.concurrency.task_executor.ThreadExecutor;
 import jacz.util.hash.CRC;
 import jacz.util.hash.CRCMismatchException;
-import jacz.util.hash.InvalidCRCException;
 import jacz.util.io.serialization.MutableOffset;
 import jacz.util.io.serialization.Serializer;
 import jacz.util.notification.ProgressNotificationWithError;
@@ -286,12 +285,9 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
         DataSynchronizer.logger.info("CLIENT SYNCH ERROR. serverPeer: " + serverPeerId + ". dataAccessorName: " + dataAccessor.getName() + ". fsmID: " + fsmID + ". synchError: " + new SynchError(SynchError.Type.REQUEST_DENIED, serverResponse.toString()));
         // we register at the thread executor just for submitting this task. We unregister immediately after
         ThreadExecutor.registerClient(this.getClass().getName());
-        ThreadExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                if (progress != null) {
-                    progress.error(new SynchError(SynchError.Type.REQUEST_DENIED, serverResponse.toString()));
-                }
+        ThreadExecutor.submit(() -> {
+            if (progress != null) {
+                progress.error(new SynchError(SynchError.Type.REQUEST_DENIED, serverResponse.toString()));
             }
         });
         ThreadExecutor.shutdownClient(this.getClass().getName());
