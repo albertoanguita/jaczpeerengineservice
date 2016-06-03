@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class (and all related classes in this package) are basically in charge of connecting to the friend peers.
@@ -81,6 +82,8 @@ public class PeerClientConnectionManager implements TransfersConfig {
 
     private final EvolvingState<ConnectionState, Boolean> dynamicState;
 
+    private final AtomicBoolean wishForConnection;
+
     public PeerClientConnectionManager(
             ConnectionEvents connectionEvents,
             PeerClientPrivateInterface peerClientPrivateInterface,
@@ -115,14 +118,14 @@ public class PeerClientConnectionManager implements TransfersConfig {
 
         this.connectedPeers = connectedPeers;
 
-        dynamicState = new EvolvingState<>(ConnectionState.DISCONNECTED, false, new EvolvingState.Transitions<ConnectionState, Boolean>() {
+        dynamicState = new EvolvingState<>(PeerClientConnectionManager.ConnectionState.DISCONNECTED, false, new EvolvingState.Transitions<ConnectionState, Boolean>() {
             @Override
-            public boolean runTransition(ConnectionState state, Boolean goal, EvolvingStateController<ConnectionState, Boolean> controller) {
+            public boolean runTransition(ConnectionState connectionState, Boolean goal, EvolvingStateController<ConnectionState, Boolean> controller) {
                 if (goal) {
-                    switch (state) {
+                    switch (connectionState) {
                         case DISCONNECTED:
                         case DISCONNECTING:
-                            controller.setState(ConnectionState.CONNECTING);
+                            controller.setState(PeerClientConnectionManager.ConnectionState.CONNECTING);
                             return false;
 
                         case CONNECTING:
@@ -158,16 +161,16 @@ public class PeerClientConnectionManager implements TransfersConfig {
                             peerConnectionManager.setWishForConnect(true);
 
                             // finally, set the state to connected
-                            controller.setState(ConnectionState.CONNECTED);
+                            controller.setState(PeerClientConnectionManager.ConnectionState.CONNECTED);
                             return true;
                     }
                 } else {
-                    switch (state) {
+                    switch (connectionState) {
                         case CONNECTED:
                         case CONNECTING:
                             // disconnect all services and wait for being in wished state
                             disconnectServices();
-                            controller.setState(ConnectionState.DISCONNECTING);
+                            controller.setState(PeerClientConnectionManager.ConnectionState.DISCONNECTING);
                             return false;
 
                         case DISCONNECTING:
@@ -187,7 +190,7 @@ public class PeerClientConnectionManager implements TransfersConfig {
                             }
 
                             // and set the state to disconnected
-                            controller.setState(ConnectionState.DISCONNECTED);
+                            controller.setState(PeerClientConnectionManager.ConnectionState.DISCONNECTED);
                             return true;
                     }
                 }
@@ -196,10 +199,11 @@ public class PeerClientConnectionManager implements TransfersConfig {
             }
 
             @Override
-            public boolean hasReachedGoal(ConnectionState state, Boolean goal) {
-                return goal && state == ConnectionState.CONNECTED || !goal && state == ConnectionState.DISCONNECTED;
+            public boolean hasReachedGoal(ConnectionState connectionState, Boolean goal) {
+                return goal && connectionState == PeerClientConnectionManager.ConnectionState.CONNECTED || !goal && connectionState == PeerClientConnectionManager.ConnectionState.DISCONNECTED;
             }
         }, "PeerClientConnectionManager");
+        wishForConnection = new AtomicBoolean(false);
     }
 
     public NetworkTopologyManager getNetworkTopologyManager() {
@@ -222,7 +226,7 @@ public class PeerClientConnectionManager implements TransfersConfig {
         return new PeerAddress(networkTopologyManager.getExternalAddress() + ":" + localServerManager.getActualExternalPort(), networkTopologyManager.getLocalAddress() + ":" + localServerManager.getActualLocalPort());
     }
 
-    public State getConnectionState() {
+    public jacz.peerengineservice.client.connection.ConnectionState getConnectionState() {
         return connectionEvents.getState();
     }
 
@@ -237,8 +241,13 @@ public class PeerClientConnectionManager implements TransfersConfig {
      *
      * @param enabled true to connect to the peer server, false otherwise
      */
-    public synchronized void setWishForConnection(boolean enabled) {
+    public void setWishForConnection(boolean enabled) {
+        wishForConnection.set(enabled);
         dynamicState.setGoal(enabled);
+    }
+
+    public boolean isWishForConnection() {
+        return wishForConnection.get();
     }
 
     /**

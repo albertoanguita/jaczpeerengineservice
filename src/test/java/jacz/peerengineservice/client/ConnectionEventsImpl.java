@@ -1,7 +1,7 @@
 package jacz.peerengineservice.client;
 
 import jacz.peerengineservice.client.connection.ConnectionEvents;
-import jacz.peerengineservice.client.connection.State;
+import jacz.peerengineservice.client.connection.ConnectionState;
 import jacz.util.network.IP4Port;
 
 /**
@@ -9,167 +9,164 @@ import jacz.util.network.IP4Port;
  */
 public class ConnectionEventsImpl implements ConnectionEvents {
 
-    public void init() {
+    @Override
+    public void localPortModified(ConnectionState connectionState) {
+        System.out.println("Local port modified: " + connectionState);
     }
 
     @Override
-    public void localPortModified(int port) {
-        System.out.println("Local port modified: " + port);
+    public void externalPortModified(ConnectionState connectionState) {
+        System.out.println("External port modified: " + connectionState);
     }
 
     @Override
-    public void externalPortModified(int port) {
-        System.out.println("External port modified: " + port);
-    }
-
-    @Override
-    public void initializingConnection() {
+    public void initializingConnection(ConnectionState connectionState) {
         System.out.println("Initializing connection");
     }
 
     @Override
-    public void localAddressFetched(String localAddress, State state) {
-        System.out.println("Local address fetched. Local address: " + localAddress + ". State: " + state);
+    public void localAddressFetched(ConnectionState connectionState) {
+        System.out.println("Local address fetched. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void couldNotFetchLocalAddress(State state) {
-        System.out.println("Could not fetch local address. State: " + state);
+    public void couldNotFetchLocalAddress(ConnectionState connectionState) {
+        System.out.println("Could not fetch local address. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void tryingToFetchExternalAddress(State state) {
-        System.out.println("Trying to fetch external address. State: " + state);
+    public void tryingToFetchExternalAddress(ConnectionState connectionState) {
+        System.out.println("Trying to fetch external address. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void externalAddressFetched(String externalAddress, boolean hasGateway, State state) {
-        System.out.println("External address fetched. External address: " + externalAddress + ". Has gateway: " + hasGateway + ". State: " + state);
+    public void externalAddressFetched(ConnectionState connectionState) {
+        System.out.println("External address fetched. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void couldNotFetchExternalAddress(State state) {
-        System.out.println("Could not fetch external address. State: " + state);
+    public void couldNotFetchExternalAddress(ConnectionState connectionState) {
+        System.out.println("Could not fetch external address. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void unrecognizedMessageFromServer(State state) {
-        System.out.println("Unrecognized message from server. State: " + state);
+    public void unrecognizedMessageFromServer(ConnectionState connectionState) {
+        System.out.println("Unrecognized message from server. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void tryingToConnectToServer( State state) {
-        System.out.println("Trying to connect to server. State: " + state);
+    public void tryingToConnectToServer( ConnectionState connectionState) {
+        System.out.println("Trying to connect to server. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void connectionToServerEstablished(State state) {
-        System.out.println("Connected to server. State: " + state);
+    public void connectionToServerEstablished(ConnectionState connectionState) {
+        System.out.println("Connected to server. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void registrationRequired(State state) {
-        System.out.println("Registration with server required. State: " + state);
+    public void registrationRequired(ConnectionState connectionState) {
+        System.out.println("Registration with server required. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void localServerUnreachable(State state) {
-        System.out.println("Local server unreachable. State: " + state);
+    public void localServerUnreachable(ConnectionState connectionState) {
+        System.out.println("Local server unreachable. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void unableToConnectToServer(State state) {
-        System.out.println("Unable to connect to server. State: " + state);
+    public void unableToConnectToServer(ConnectionState connectionState) {
+        System.out.println("Unable to connect to server. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void tryingToOpenLocalServer(State state) {
-        System.out.println("Trying to open Local server. State: " + state);
+    public void tryingToOpenLocalServer(ConnectionState connectionState) {
+        System.out.println("Trying to open Local server. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void localServerOpen(State state) {
-        System.out.println("Local server open. State: " + state);
+    public void localServerOpen(ConnectionState connectionState) {
+        System.out.println("Local server open. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void couldNotOpenLocalServer(State state) {
-        System.out.println("Could not open local server. State: " + state);
+    public void couldNotOpenLocalServer(ConnectionState connectionState) {
+        System.out.println("Could not open local server. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void tryingToCloseLocalServer(State state) {
-        System.out.println("Trying to close local server. State: " + state);
+    public void tryingToCloseLocalServer(ConnectionState connectionState) {
+        System.out.println("Trying to close local server. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void localServerClosed(State state) {
-        System.out.println("Local server closed. State: " + state);
+    public void localServerClosed(ConnectionState connectionState) {
+        System.out.println("Local server closed. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void tryingToCreateNATRule(State state) {
-        System.out.println("Trying to create NAT rule. State: " + state);
+    public void tryingToCreateNATRule(ConnectionState connectionState) {
+        System.out.println("Trying to create NAT rule. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void NATRuleCreated(State state) {
-        System.out.println("NAT rule created. State: " + state);
+    public void NATRuleCreated(ConnectionState connectionState) {
+        System.out.println("NAT rule created. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void couldNotFetchUPNPGateway(State state) {
-        System.out.println("Could not fetch UPNP gateway. State: " + state);
+    public void couldNotFetchUPNPGateway(ConnectionState connectionState) {
+        System.out.println("Could not fetch UPNP gateway. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void errorCreatingNATRule(State state) {
-        System.out.println("Error creating NAT rule. State: " + state);
+    public void errorCreatingNATRule(ConnectionState connectionState) {
+        System.out.println("Error creating NAT rule. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void tryingToDestroyNATRule(State state) {
-        System.out.println("Trying to destroy NAT rule. State: " + state);
+    public void tryingToDestroyNATRule(ConnectionState connectionState) {
+        System.out.println("Trying to destroy NAT rule. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void NATRuleDestroyed(State state) {
-        System.out.println("NAT rule destroyed. State: " + state);
+    public void NATRuleDestroyed(ConnectionState connectionState) {
+        System.out.println("NAT rule destroyed. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void couldNotDestroyNATRule(State state) {
-        System.out.println("Could not destroy NAT rule. State: " + state);
+    public void couldNotDestroyNATRule(ConnectionState connectionState) {
+        System.out.println("Could not destroy NAT rule. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void listeningConnectionsWithoutNATRule(State state) {
-        System.out.println("Listening connections without NAT rule. State: " + state);
+    public void listeningConnectionsWithoutNATRule(ConnectionState connectionState) {
+        System.out.println("Listening connections without NAT rule. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void disconnectedFromServer(State state) {
-        System.out.println("Disconnected from server. State: " + state);
+    public void disconnectedFromServer(ConnectionState connectionState) {
+        System.out.println("Disconnected from server. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void failedToRefreshServerConnection(State state) {
-        System.out.println("Failed to refresh server connection. State: " + state);
+    public void failedToRefreshServerConnection(ConnectionState connectionState) {
+        System.out.println("Failed to refresh server connection. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void tryingToRegisterWithServer(State state) {
-        System.out.println("Trying to register with server. State: " + state);
+    public void tryingToRegisterWithServer(ConnectionState connectionState) {
+        System.out.println("Trying to register with server. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void registrationSuccessful(State state) {
-        System.out.println("Registration with server successful. State: " + state);
+    public void registrationSuccessful(ConnectionState connectionState) {
+        System.out.println("Registration with server successful. ConnectionState: " + connectionState);
     }
 
     @Override
-    public void alreadyRegistered(State state) {
-        System.out.println("Already registered. State: " + state);
+    public void alreadyRegistered(ConnectionState connectionState) {
+        System.out.println("Already registered. ConnectionState: " + connectionState);
     }
 
     @Override
@@ -178,8 +175,8 @@ public class ConnectionEventsImpl implements ConnectionEvents {
     }
 
     @Override
-    public void localServerError(Exception e) {
-        System.out.println("Error in the peer connections listener. All connections closed. Error: " + e.getMessage());
+    public void localServerError(ConnectionState connectionState, Exception e) {
+        System.out.println("Error in the peer connections listener. All connections closed. ConnectionState: " + connectionState + ". Error: " + e.getMessage());
     }
 
 }

@@ -2,7 +2,7 @@ package jacz.peerengineservice.client.startstop;
 
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.*;
-import jacz.peerengineservice.client.connection.State;
+import jacz.peerengineservice.client.connection.ConnectionState;
 import jacz.peerengineservice.test.IntegrationTest;
 import jacz.util.lists.tuple.SixTuple;
 import org.junit.Assert;
@@ -33,13 +33,13 @@ public class StartStopTest {
         client.startClient();
 
         Thread.sleep(35000);
-        Assert.assertEquals(State.NetworkTopologyState.ALL_FETCHED, client.getPeerClient().getConnectionState().getNetworkTopologyState());
-        Assert.assertEquals(State.LocalServerConnectionsState.LISTENING, client.getPeerClient().getConnectionState().getLocalServerConnectionsState());
-        Assert.assertEquals(State.ConnectionToServerState.CONNECTED, client.getPeerClient().getConnectionState().getConnectionToServerState());
+        Assert.assertEquals(ConnectionState.NetworkTopologyState.ALL_FETCHED, client.getPeerClient().getConnectionState().getNetworkTopologyState());
+        Assert.assertEquals(ConnectionState.LocalServerConnectionsState.LISTENING, client.getPeerClient().getConnectionState().getLocalServerConnectionsState());
+        Assert.assertEquals(ConnectionState.ConnectionToServerState.CONNECTED, client.getPeerClient().getConnectionState().getConnectionToServerState());
 
         System.out.println("Client stopping...");
         client.stopClient();
         System.out.println("Client stopped! END!!!");
-        Assert.assertEquals(State.ConnectionToServerState.DISCONNECTED, client.getPeerClient().getConnectionState().getConnectionToServerState());
+        Assert.assertEquals(ConnectionState.ConnectionToServerState.DISCONNECTED, client.getPeerClient().getConnectionState().getConnectionToServerState());
     }
 }

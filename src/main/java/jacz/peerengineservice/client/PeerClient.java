@@ -230,7 +230,7 @@ public class PeerClient {
         peerClientConnectionManager.setExternalPort(port);
     }
 
-    public synchronized State getConnectionState() {
+    public synchronized ConnectionState getConnectionState() {
         return peerClientConnectionManager.getConnectionState();
     }
 

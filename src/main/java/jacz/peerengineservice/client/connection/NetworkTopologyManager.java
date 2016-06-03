@@ -86,7 +86,7 @@ public class NetworkTopologyManager {
 
     private String externalAddress;
 
-    private final EvolvingState<State.NetworkTopologyState, Boolean> dynamicState;
+    private final EvolvingState<ConnectionState.NetworkTopologyState, Boolean> dynamicState;
 
     public NetworkTopologyManager(
             PeerClientConnectionManager peerClientConnectionManager,
@@ -95,9 +95,9 @@ public class NetworkTopologyManager {
         this.connectionEvents = connectionEvents;
         localAddress = null;
         externalAddress = null;
-        dynamicState = new EvolvingState<>(State.NetworkTopologyState.NO_DATA, false, new EvolvingState.Transitions<State.NetworkTopologyState, Boolean>() {
+        dynamicState = new EvolvingState<>(ConnectionState.NetworkTopologyState.NO_DATA, false, new EvolvingState.Transitions<ConnectionState.NetworkTopologyState, Boolean>() {
             @Override
-            public boolean runTransition(State.NetworkTopologyState state, Boolean goal, EvolvingStateController<State.NetworkTopologyState, Boolean> controller) {
+            public boolean runTransition(ConnectionState.NetworkTopologyState state, Boolean goal, EvolvingStateController<ConnectionState.NetworkTopologyState, Boolean> controller) {
                 if (goal) {
                     // trying to fetch the local and external address
                     switch (state) {
@@ -118,27 +118,27 @@ public class NetworkTopologyManager {
             }
 
             @Override
-            public boolean hasReachedGoal(State.NetworkTopologyState state, Boolean goal) {
-                return goal && state == State.NetworkTopologyState.ALL_FETCHED || !goal;
+            public boolean hasReachedGoal(ConnectionState.NetworkTopologyState state, Boolean goal) {
+                return goal && state == ConnectionState.NetworkTopologyState.ALL_FETCHED || !goal;
             }
 
         }, "NetworkTopologyManager");
-        dynamicState.setEnterStateHook(State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED, new Runnable() {
+        dynamicState.setEnterStateHook(ConnectionState.NetworkTopologyState.LOCAL_ADDRESS_FETCHED, new Runnable() {
             @Override
             public void run() {
-                connectionEvents.localAddressFetched(getLocalAddress(), State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED);
+                connectionEvents.localAddressFetched(getLocalAddress(), ConnectionState.NetworkTopologyState.LOCAL_ADDRESS_FETCHED);
             }
         });
-        dynamicState.setEnterStateHook(State.NetworkTopologyState.ALL_FETCHED, new Runnable() {
+        dynamicState.setEnterStateHook(ConnectionState.NetworkTopologyState.ALL_FETCHED, new Runnable() {
             @Override
             public void run() {
-                connectionEvents.externalAddressFetched(getExternalAddress(), hasGateway(), State.NetworkTopologyState.ALL_FETCHED);
+                connectionEvents.externalAddressFetched(getExternalAddress(), hasGateway(), ConnectionState.NetworkTopologyState.ALL_FETCHED);
             }
         });
-        dynamicState.setEvolveStateTimer(State.NetworkTopologyState.NO_DATA, REPEAT_ADDRESS_FETCH);
-        dynamicState.setEvolveStateTimer(State.NetworkTopologyState.WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH, REPEAT_ADDRESS_FETCH);
-        dynamicState.setEvolveStateTimer(State.NetworkTopologyState.WAITING_FOR_NEXT_EXTERNAL_ADDRESS_FETCH, REPEAT_ADDRESS_FETCH);
-        dynamicState.setRunnableStateTimer(State.NetworkTopologyState.ALL_FETCHED, REGULAR_ADDRESS_FETCH, new Runnable() {
+        dynamicState.setEvolveStateTimer(ConnectionState.NetworkTopologyState.NO_DATA, REPEAT_ADDRESS_FETCH);
+        dynamicState.setEvolveStateTimer(ConnectionState.NetworkTopologyState.WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH, REPEAT_ADDRESS_FETCH);
+        dynamicState.setEvolveStateTimer(ConnectionState.NetworkTopologyState.WAITING_FOR_NEXT_EXTERNAL_ADDRESS_FETCH, REPEAT_ADDRESS_FETCH);
+        dynamicState.setRunnableStateTimer(ConnectionState.NetworkTopologyState.ALL_FETCHED, REGULAR_ADDRESS_FETCH, new Runnable() {
             @Override
             public void run() {
                 fetchLocalAddress(dynamicState.state(), dynamicState);
@@ -147,22 +147,22 @@ public class NetworkTopologyManager {
         dynamicState.setEvolveStateTimer(state -> true, GENERAL_REMINDER);
     }
 
-    private boolean fetchLocalAddress(State.NetworkTopologyState state, EvolvingStateController<State.NetworkTopologyState, Boolean> controller) {
-        if (state == State.NetworkTopologyState.NO_DATA) {
+    private boolean fetchLocalAddress(ConnectionState.NetworkTopologyState state, EvolvingStateController<ConnectionState.NetworkTopologyState, Boolean> controller) {
+        if (state == ConnectionState.NetworkTopologyState.NO_DATA) {
             // initial fetch
-            connectionEvents.initializingConnection();
+            connectionEvents.initializingConnection(ConnectionState.NetworkTopologyState.FETCHING_DATA);
         }
         try {
             boolean fetched = tryToFetchLocalAddress();
             if (fetched) {
-                controller.setState(State.NetworkTopologyState.LOCAL_ADDRESS_FETCHED);
+                controller.setState(ConnectionState.NetworkTopologyState.LOCAL_ADDRESS_FETCHED);
                 return false;
             } else {
                 return true;
             }
         } catch (IOException e) {
             // error fetching local address
-            controller.setState(State.NetworkTopologyState.WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH);
+            controller.setState(ConnectionState.NetworkTopologyState.WAITING_FOR_NEXT_LOCAL_ADDRESS_FETCH);
             connectionEvents.couldNotFetchLocalAddress(state);
         }
         // else -> local address has not changed, all ok
@@ -184,15 +184,15 @@ public class NetworkTopologyManager {
         }
     }
 
-    private boolean fetchExternalAddress(State.NetworkTopologyState state, EvolvingStateController<State.NetworkTopologyState, Boolean> controller) {
+    private boolean fetchExternalAddress(ConnectionState.NetworkTopologyState state, EvolvingStateController<ConnectionState.NetworkTopologyState, Boolean> controller) {
         connectionEvents.tryingToFetchExternalAddress(state);
         externalAddress = ExternalIPService.detectExternalAddress();
         if (externalAddress != null) {
             // external address successfully fetched
-            controller.setState(State.NetworkTopologyState.ALL_FETCHED);
+            controller.setState(ConnectionState.NetworkTopologyState.ALL_FETCHED);
         } else {
             // error fetching the external address (maybe there is no internet available). Retry in some time
-            controller.setState(State.NetworkTopologyState.WAITING_FOR_NEXT_EXTERNAL_ADDRESS_FETCH);
+            controller.setState(ConnectionState.NetworkTopologyState.WAITING_FOR_NEXT_EXTERNAL_ADDRESS_FETCH);
             connectionEvents.couldNotFetchExternalAddress(state);
             peerClientConnectionManager.networkProblem();
         }

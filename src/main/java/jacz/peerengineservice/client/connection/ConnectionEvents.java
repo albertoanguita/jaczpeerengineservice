@@ -7,71 +7,71 @@ import jacz.util.network.IP4Port;
  */
 public interface ConnectionEvents {
 
-    void localPortModified(int port);
+    void localPortModified(ConnectionState connectionState);
 
-    void externalPortModified(int port);
+    void externalPortModified(ConnectionState connectionState);
 
-    void initializingConnection();
+    void initializingConnection(ConnectionState connectionState);
 
-    void localAddressFetched(String localAddress, State state);
+    void localAddressFetched(ConnectionState connectionState);
 
-    void couldNotFetchLocalAddress(State state);
+    void couldNotFetchLocalAddress(ConnectionState connectionState);
 
-    void tryingToFetchExternalAddress(State state);
+    void tryingToFetchExternalAddress(ConnectionState connectionState);
 
-    void externalAddressFetched(String externalAddress, boolean hasGateway, State state);
+    void externalAddressFetched(ConnectionState connectionState);
 
-    void couldNotFetchExternalAddress(State state);
+    void couldNotFetchExternalAddress(ConnectionState connectionState);
 
-    void unrecognizedMessageFromServer(State state);
+    void unrecognizedMessageFromServer(ConnectionState connectionState);
 
-    void tryingToConnectToServer(State state);
+    void tryingToConnectToServer(ConnectionState connectionState);
 
-    void connectionToServerEstablished(State state);
+    void connectionToServerEstablished(ConnectionState connectionState);
 
-    void registrationRequired(State state);
+    void registrationRequired(ConnectionState connectionState);
 
-    void localServerUnreachable(State state);
+    void localServerUnreachable(ConnectionState connectionState);
 
-    void unableToConnectToServer(State state);
+    void unableToConnectToServer(ConnectionState connectionState);
 
-    void disconnectedFromServer(State state);
+    void disconnectedFromServer(ConnectionState connectionState);
 
-    void failedToRefreshServerConnection(State state);
+    void failedToRefreshServerConnection(ConnectionState connectionState);
 
-    void tryingToRegisterWithServer(State state);
+    void tryingToRegisterWithServer(ConnectionState connectionState);
 
-    void registrationSuccessful(State state);
+    void registrationSuccessful(ConnectionState connectionState);
 
-    void alreadyRegistered(State state);
+    void alreadyRegistered(ConnectionState connectionState);
 
-    void tryingToOpenLocalServer(State state);
+    void tryingToOpenLocalServer(ConnectionState connectionState);
 
-    void localServerOpen(State state);
+    void localServerOpen(ConnectionState connectionState);
 
-    void couldNotOpenLocalServer(State state);
+    void couldNotOpenLocalServer(ConnectionState connectionState);
 
-    void tryingToCloseLocalServer(State state);
+    void tryingToCloseLocalServer(ConnectionState connectionState);
 
-    void localServerClosed(State state);
+    void localServerClosed(ConnectionState connectionState);
 
-    void tryingToCreateNATRule(State state);
+    void tryingToCreateNATRule(ConnectionState connectionState);
 
-    void NATRuleCreated(State state);
+    void NATRuleCreated(ConnectionState connectionState);
 
-    void couldNotFetchUPNPGateway(State state);
+    void couldNotFetchUPNPGateway(ConnectionState connectionState);
 
-    void errorCreatingNATRule(State state);
+    void errorCreatingNATRule(ConnectionState connectionState);
 
-    void tryingToDestroyNATRule(State state);
+    void tryingToDestroyNATRule(ConnectionState connectionState);
 
-    void NATRuleDestroyed(State state);
+    void NATRuleDestroyed(ConnectionState connectionState);
 
-    void couldNotDestroyNATRule(State state);
+    void couldNotDestroyNATRule(ConnectionState connectionState);
 
-    void listeningConnectionsWithoutNATRule(State state);
+    void listeningConnectionsWithoutNATRule(ConnectionState connectionState);
 
     void peerCouldNotConnectToUs(Exception e, IP4Port ip4Port);
 
-    void localServerError(Exception e);
+    void localServerError(ConnectionState connectionState, Exception e);
 }
