@@ -133,11 +133,6 @@
         <version>1.4.11</version>
     </dependency>
     <dependency>
-        <groupId>jacz.storage</groupId>
-        <artifactId>activejdbc-controller</artifactId>
-        <version>0.1a</version>
-    </dependency>
-    <dependency>
         <groupId>com.neovisionaries</groupId>
         <artifactId>nv-i18n</artifactId>
         <version>1.17</version>
