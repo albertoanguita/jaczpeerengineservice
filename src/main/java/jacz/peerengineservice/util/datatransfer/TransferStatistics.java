@@ -16,11 +16,11 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class TransferStatistics implements Updater, TimerAction {
 
-    private final static long SPEED_MILLIS_MEASURE = 3000L;
+    public final static long SPEED_MILLIS_MEASURE = 3000L;
 
-    private final static long SPEED_TIME_STORED = 1800000L;
+    public final static long SPEED_TIME_STORED = 1800000L;
 
-    private final static long SPEED_MONITOR_FREQUENCY = 3000L;
+    public final static long SPEED_MONITOR_FREQUENCY = 1000L;
 
     private static final String VERSION_0_1_0 = "0.1.0";
 
