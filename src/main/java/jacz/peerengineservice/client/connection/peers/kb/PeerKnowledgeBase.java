@@ -3,7 +3,7 @@ package jacz.peerengineservice.client.connection.peers.kb;
 import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.PeerAddress;
-import jacz.storage.ActiveJDBCController;
+import jacz.util.io.serialization.activejdbcsupport.ActiveJDBCController;
 import jacz.util.lists.tuple.Duple;
 
 import java.util.ArrayList;

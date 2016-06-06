@@ -6,6 +6,8 @@ import jacz.peerengineservice.util.PeerRelationship;
 
 /**
  * Information summary about a peer
+ *
+ * todo add more info, including id
  */
 public class PeerInfo {
 
