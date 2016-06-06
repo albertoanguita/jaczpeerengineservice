@@ -39,6 +39,8 @@ public class Management {
 
     static final TableField LAST_CONNECTION_ATTEMPT = new TableField("last_connection_attempt", "INTEGER");
 
+    static final TableField LAST_RELATIONSHIP_CHANGE = new TableField("last_relationship_change", "INTEGER");
+
     static final TableField AFFINITY = new TableField("affinity", "INTEGER NOT NULL");
 
     static final TableField ADDRESS = new TableField("address", "TEXT");
@@ -82,6 +84,7 @@ public class Management {
         appendField(create, IS_CONNECTED, false);
         appendField(create, LAST_SESSION, false);
         appendField(create, LAST_CONNECTION_ATTEMPT, false);
+        appendField(create, LAST_RELATIONSHIP_CHANGE, false);
         appendField(create, AFFINITY, false);
         appendField(create, ADDRESS, true);
         db.exec(create.toString());

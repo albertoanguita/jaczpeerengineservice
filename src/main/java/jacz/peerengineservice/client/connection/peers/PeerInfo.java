@@ -1,15 +1,18 @@
 package jacz.peerengineservice.client.connection.peers;
 
 import com.neovisionaries.i18n.CountryCode;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.util.PeerRelationship;
 
+import java.util.Date;
+
 /**
  * Information summary about a peer
- *
- * todo add more info, including id
  */
 public class PeerInfo {
+
+    private final PeerId peerId;
 
     private final boolean connected;
 
@@ -21,12 +24,26 @@ public class PeerInfo {
 
     private final int affinity;
 
-    PeerInfo(PeerEntryFacade peerEntryFacade) {
+    private final Date lastConnectionDate;
+
+    private final Date lastRelationshipChangeDate;
+
+    private final String nick;
+
+    PeerInfo(PeerEntryFacade peerEntryFacade, String nick) {
+        this.peerId = peerEntryFacade.getPeerId();
         this.connected = peerEntryFacade.isConnected();
         this.relationship = PeerConnectionManager.getPeerRelationship(peerEntryFacade);
         this.wishRegularConnections = peerEntryFacade.isWishForRegularConnections();
         this.mainCountry = peerEntryFacade.getMainCountry();
         this.affinity = peerEntryFacade.getAffinity();
+        this.lastConnectionDate = peerEntryFacade.getLastSession();
+        this.lastRelationshipChangeDate = peerEntryFacade.getLastRelationshipChange();
+        this.nick = nick;
+    }
+
+    public PeerId getPeerId() {
+        return peerId;
     }
 
     public boolean isConnected() {
@@ -49,14 +66,25 @@ public class PeerInfo {
         return affinity;
     }
 
+    public Date getLastConnectionDate() {
+        return lastConnectionDate;
+    }
+
+    public Date getLastRelationshipChangeDate() {
+        return lastRelationshipChangeDate;
+    }
+
     @Override
     public String toString() {
         return "PeerInfo{" +
-                "connected=" + connected +
+                "peerId=" + peerId +
+                ", connected=" + connected +
                 ", relationship=" + relationship +
                 ", wishRegularConnections=" + wishRegularConnections +
                 ", mainCountry=" + mainCountry +
                 ", affinity=" + affinity +
+                ", lastConnectionDate=" + lastConnectionDate +
+                ", lastRelationshipChangeDate=" + lastRelationshipChangeDate +
                 '}';
     }
 }

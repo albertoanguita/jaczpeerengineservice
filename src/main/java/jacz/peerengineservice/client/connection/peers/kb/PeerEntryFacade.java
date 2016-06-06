@@ -97,6 +97,7 @@ public class PeerEntryFacade {
     public void setRelationship(Management.Relationship relationship) {
         ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
         peerEntry.setString(Management.RELATIONSHIP.name, relationship.name());
+        peerEntry.setLong(Management.LAST_RELATIONSHIP_CHANGE.name, new Date().getTime());
         peerEntry.saveIt();
         ActiveJDBCController.disconnect();
     }
@@ -174,6 +175,13 @@ public class PeerEntryFacade {
         peerEntry.setLong(Management.LAST_CONNECTION_ATTEMPT.name, new Date().getTime());
         peerEntry.saveIt();
         ActiveJDBCController.disconnect();
+    }
+
+    public Date getLastRelationshipChange() {
+        ActiveJDBCController.connect(PeerKnowledgeBase.DATABASE, dbPath);
+        Long date = peerEntry.getLong(Management.LAST_RELATIONSHIP_CHANGE.name);
+        ActiveJDBCController.disconnect();
+        return date != null ? new Date(date) : null;
     }
 
     public int getAffinity() {
