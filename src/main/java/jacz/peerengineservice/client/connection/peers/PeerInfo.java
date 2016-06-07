@@ -12,66 +12,31 @@ import java.util.Date;
  */
 public class PeerInfo {
 
-    private final PeerId peerId;
+    public final PeerId peerId;
 
-    private final boolean connected;
+    public final boolean connected;
 
-    private final PeerRelationship relationship;
+    public final PeerRelationship relationship;
 
-    private final boolean wishRegularConnections;
+    public final CountryCode mainCountry;
 
-    private final CountryCode mainCountry;
+    public final int affinity;
 
-    private final int affinity;
+    public final Date lastConnectionDate;
 
-    private final Date lastConnectionDate;
+    public final Date lastRelationshipChangeDate;
 
-    private final Date lastRelationshipChangeDate;
-
-    private final String nick;
+    public final String nick;
 
     PeerInfo(PeerEntryFacade peerEntryFacade, String nick) {
         this.peerId = peerEntryFacade.getPeerId();
         this.connected = peerEntryFacade.isConnected();
         this.relationship = PeerConnectionManager.getPeerRelationship(peerEntryFacade);
-        this.wishRegularConnections = peerEntryFacade.isWishForRegularConnections();
         this.mainCountry = peerEntryFacade.getMainCountry();
         this.affinity = peerEntryFacade.getAffinity();
         this.lastConnectionDate = peerEntryFacade.getLastSession();
         this.lastRelationshipChangeDate = peerEntryFacade.getLastRelationshipChange();
         this.nick = nick;
-    }
-
-    public PeerId getPeerId() {
-        return peerId;
-    }
-
-    public boolean isConnected() {
-        return connected;
-    }
-
-    public PeerRelationship getRelationship() {
-        return relationship;
-    }
-
-    public boolean isWishRegularConnections() {
-        return wishRegularConnections;
-    }
-
-    public CountryCode getMainCountry() {
-        return mainCountry;
-    }
-
-    public int getAffinity() {
-        return affinity;
-    }
-
-    public Date getLastConnectionDate() {
-        return lastConnectionDate;
-    }
-
-    public Date getLastRelationshipChangeDate() {
-        return lastRelationshipChangeDate;
     }
 
     @Override
@@ -80,11 +45,11 @@ public class PeerInfo {
                 "peerId=" + peerId +
                 ", connected=" + connected +
                 ", relationship=" + relationship +
-                ", wishRegularConnections=" + wishRegularConnections +
                 ", mainCountry=" + mainCountry +
                 ", affinity=" + affinity +
                 ", lastConnectionDate=" + lastConnectionDate +
                 ", lastRelationshipChangeDate=" + lastRelationshipChangeDate +
+                ", nick=" + nick +
                 '}';
     }
 }

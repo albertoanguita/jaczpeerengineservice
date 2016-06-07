@@ -27,8 +27,18 @@ public class PeersEventsImpl implements PeersEvents {
     }
 
     @Override
-    public void newPeerNick(PeerId peerId, String nick, PeerInfo peerInfo) {
-        System.out.println("Peer " + formatPeer(peerId) + " changed his nick to " + nick + ", " + peerInfo);
+    public void modifiedMainCountry(PeerId peerId, PeerInfo peerInfo) {
+        System.out.println("Modified peer main country: " + formatPeer(peerId) + ", " + peerInfo);
+    }
+
+    @Override
+    public void modifiedAffinity(PeerId peerId, PeerInfo peerInfo) {
+        System.out.println("Modified peer affinity: " + formatPeer(peerId) + ", " + peerInfo);
+    }
+
+    @Override
+    public void newPeerNick(PeerId peerId, PeerInfo peerInfo) {
+        System.out.println("Peer " + formatPeer(peerId) + " changed his nick to " + peerInfo.nick + ", " + peerInfo);
     }
 
     @Override

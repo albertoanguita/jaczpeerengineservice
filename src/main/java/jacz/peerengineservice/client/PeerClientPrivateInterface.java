@@ -32,6 +32,10 @@ public class PeerClientPrivateInterface {
         this.peerClient = peerClient;
     }
 
+    public String getPeerNick(PeerId peerId) {
+        return peerClient.getPeerNick(peerId);
+    }
+
     public void newPeerConnected(PeerId peerId, ChannelConnectionPoint ccp, PeerRelationship peerRelationship) {
         peerClient.newPeerConnected(peerId, ccp, peerRelationship);
     }

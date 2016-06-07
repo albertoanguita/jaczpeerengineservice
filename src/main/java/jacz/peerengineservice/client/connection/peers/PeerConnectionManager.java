@@ -737,7 +737,7 @@ public class PeerConnectionManager {
         connectedPeers.setConnectedPeer(peerId, ccp, clientCountryCode);
         PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
         peerEntryFacade.setConnected(true);
-        peersEvents.newPeerConnected(peerId, ccp, new PeerInfo(peerEntryFacade));
+        peersEvents.newPeerConnected(peerId, ccp, buildPeerInfo(peerId));
         resumeChannels(ccp);
     }
 
@@ -759,7 +759,7 @@ public class PeerConnectionManager {
     public void peerDisconnected(ChannelConnectionPoint ccp) {
         PeerId peerId = disconnectPeer(ccp);
         if (peerId != null) {
-            peersEvents.peerDisconnected(peerId, new PeerInfo(peerKnowledgeBase.getPeerEntryFacade(peerId)), null);
+            peersEvents.peerDisconnected(peerId, buildPeerInfo(peerId), null);
         }
     }
 
@@ -769,7 +769,7 @@ public class PeerConnectionManager {
         }
         PeerId peerId = disconnectPeer(ccp);
         if (peerId != null) {
-            peersEvents.peerDisconnected(peerId, new PeerInfo(peerKnowledgeBase.getPeerEntryFacade(peerId)), error);
+            peersEvents.peerDisconnected(peerId, buildPeerInfo(peerId), error);
         }
     }
 
@@ -842,7 +842,7 @@ public class PeerConnectionManager {
         if (peerEntryFacade.getRelationship() != Management.Relationship.FAVORITE) {
             peerEntryFacade.setRelationship(Management.Relationship.FAVORITE);
             searchFavorites();
-            peersEvents.modifiedPeerRelationship(peerId, Management.Relationship.FAVORITE, new PeerInfo(peerKnowledgeBase.getPeerEntryFacade(peerId)), true);
+            peersEvents.modifiedPeerRelationship(peerId, Management.Relationship.FAVORITE, buildPeerInfo(peerId), true);
         }
     }
 
@@ -851,7 +851,7 @@ public class PeerConnectionManager {
         if (peerEntryFacade.getRelationship() == Management.Relationship.FAVORITE) {
             peerEntryFacade.setRelationship(Management.Relationship.REGULAR);
             disconnectionsManager.checkDisconnections();
-            peersEvents.modifiedPeerRelationship(peerId, Management.Relationship.REGULAR, new PeerInfo(peerKnowledgeBase.getPeerEntryFacade(peerId)), true);
+            peersEvents.modifiedPeerRelationship(peerId, Management.Relationship.REGULAR, buildPeerInfo(peerId), true);
         }
     }
 
@@ -868,7 +868,7 @@ public class PeerConnectionManager {
         if (peerEntryFacade.getRelationship() != Management.Relationship.BLOCKED) {
             peerEntryFacade.setRelationship(Management.Relationship.BLOCKED);
             disconnectionsManager.checkDisconnections();
-            peersEvents.modifiedPeerRelationship(peerId, Management.Relationship.BLOCKED, new PeerInfo(peerKnowledgeBase.getPeerEntryFacade(peerId)), true);
+            peersEvents.modifiedPeerRelationship(peerId, Management.Relationship.BLOCKED, buildPeerInfo(peerId), true);
         }
     }
 
@@ -876,7 +876,7 @@ public class PeerConnectionManager {
         PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
         if (peerEntryFacade.getRelationship() == Management.Relationship.BLOCKED) {
             peerEntryFacade.setRelationship(Management.Relationship.REGULAR);
-            peersEvents.modifiedPeerRelationship(peerId, Management.Relationship.REGULAR, new PeerInfo(peerKnowledgeBase.getPeerEntryFacade(peerId)), true);
+            peersEvents.modifiedPeerRelationship(peerId, Management.Relationship.REGULAR, buildPeerInfo(peerId), true);
         }
     }
 
@@ -909,13 +909,13 @@ public class PeerConnectionManager {
     }
 
     public void newPeerNick(PeerId peerId, String nick) {
-        peersEvents.newPeerNick(peerId, nick, new PeerInfo(peerKnowledgeBase.getPeerEntryFacade(peerId)));
+        peersEvents.newPeerNick(peerId, buildPeerInfo(peerId));
     }
 
     public void newRelationshipToUs(PeerId peerId, Management.Relationship relationship) {
         PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerId);
         peerEntryFacade.setRelationshipToUs(relationship);
-        peersEvents.modifiedPeerRelationship(peerId, relationship, new PeerInfo(peerKnowledgeBase.getPeerEntryFacade(peerId)), false);
+        peersEvents.modifiedPeerRelationship(peerId, relationship, buildPeerInfo(peerId), false);
     }
 
     public void peerModifiedHisMainCountry(PeerId peerId, CountryCode mainCountry) {
@@ -923,5 +923,14 @@ public class PeerConnectionManager {
         peerEntryFacade.setMainCountry(mainCountry);
         connectedPeers.setConnectedPeerMainCountry(peerId, mainCountry);
         disconnectionsManager.checkDisconnections();
+        peersEvents.modifiedMainCountry(peerId, buildPeerInfo(peerId));
+    }
+
+    private PeerInfo buildPeerInfo(PeerId peerId) {
+        return buildPeerInfo(peerId, peerClientPrivateInterface.getPeerNick(peerId));
+    }
+
+    private PeerInfo buildPeerInfo(PeerId peerId, String nick) {
+        return new PeerInfo(peerKnowledgeBase.getPeerEntryFacade(peerId), nick);
     }
 }

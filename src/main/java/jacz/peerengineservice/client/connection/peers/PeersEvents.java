@@ -13,7 +13,11 @@ public interface PeersEvents {
 
     void modifiedPeerRelationship(PeerId peerId, PeerInfo peerInfo);
 
-    void newPeerNick(PeerId peerId, String nick, PeerInfo peerInfo);
+    void modifiedMainCountry(PeerId peerId, PeerInfo peerInfo);
+
+    void modifiedAffinity(PeerId peerId, PeerInfo peerInfo);
+
+    void newPeerNick(PeerId peerId, PeerInfo peerInfo);
 
     void peerDisconnected(PeerId peerId, PeerInfo peerInfo, CommError error);
 }

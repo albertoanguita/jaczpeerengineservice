@@ -3,7 +3,6 @@ package jacz.peerengineservice.client.connection.peers;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerId;
-import jacz.peerengineservice.client.GeneralEvents;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import org.slf4j.Logger;
@@ -33,7 +32,7 @@ class PeersEventsBridge {
 
     void newPeerConnected(final PeerId peerId, ChannelConnectionPoint ccp, PeerInfo peerInfo) {
         logger.info("NEW PEER CONNECTED. Peer: " + peerId + ". Info: " + peerInfo);
-        peerClientPrivateInterface.newPeerConnected(peerId, ccp, peerInfo.getRelationship());
+        peerClientPrivateInterface.newPeerConnected(peerId, ccp, peerInfo.relationship);
         sequentialTaskExecutor.submit(new Runnable() {
             @Override
             public void run() {
@@ -55,12 +54,32 @@ class PeersEventsBridge {
         });
     }
 
-    void newPeerNick(final PeerId peerId, String nick, PeerInfo peerInfo) {
-        logger.info("NEW PEER NICK. Peer: " + peerId + ". Nick: " + nick + ". Info: " + peerInfo);
+    void modifiedMainCountry(PeerId peerId, PeerInfo peerInfo) {
+        logger.info("MODIFIED MAIN COUNTRY. Peer: " + peerId + ". Info: " + peerInfo);
         sequentialTaskExecutor.submit(new Runnable() {
             @Override
             public void run() {
-                peersEvents.newPeerNick(peerId, nick, peerInfo);
+                peersEvents.modifiedMainCountry(peerId, peerInfo);
+            }
+        });
+    }
+
+    void modifiedAffinity(PeerId peerId, PeerInfo peerInfo) {
+        logger.info("MODIFIED PEER RELATIONSHIP. Peer: " + peerId + ". Info: " + peerInfo);
+        sequentialTaskExecutor.submit(new Runnable() {
+            @Override
+            public void run() {
+                peersEvents.modifiedAffinity(peerId, peerInfo);
+            }
+        });
+    }
+
+    void newPeerNick(final PeerId peerId, PeerInfo peerInfo) {
+        logger.info("NEW PEER NICK. Peer: " + peerId + ". Info: " + peerInfo);
+        sequentialTaskExecutor.submit(new Runnable() {
+            @Override
+            public void run() {
+                peersEvents.newPeerNick(peerId, peerInfo);
             }
         });
     }
