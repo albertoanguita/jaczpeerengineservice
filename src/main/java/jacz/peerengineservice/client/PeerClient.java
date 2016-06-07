@@ -257,7 +257,8 @@ public class PeerClient {
      */
     public void setOwnNick(String newNick) {
         if (peersPersonalData.setOwnNick(newNick)) {
-            // broadcast new nick to connected peers
+            // notify user and broadcast new nick to connected peers
+            generalEvents.newOwnNick(newNick);
             broadcastObjectMessage(new NewNickMessage(newNick));
         }
     }

@@ -21,6 +21,8 @@ public interface GeneralEvents {
 //
 //    void modifiedPeerRelationship(PeerId peerId, PeerRelationship peerRelationship, boolean connected);
 
+    void newOwnNick(String newNick);
+
     void newObjectMessage(PeerId peerId, Object message);
 
 //    void newPeerNick(PeerId peerId, String nick);

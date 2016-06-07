@@ -90,6 +90,17 @@ public class GeneralEventsBridge implements GeneralEvents {
 //    }
 
     @Override
+    public void newOwnNick(String newNick) {
+        logger.info("NEW OWN NICK: " + newNick);
+        sequentialTaskExecutor.submit(new Runnable() {
+            @Override
+            public void run() {
+                generalEvents.newOwnNick(newNick);
+            }
+        });
+    }
+
+    @Override
     public void newObjectMessage(final PeerId peerId, final Object message) {
         logger.info("NEW OBJECT MESSAGE. Peer: " + peerId + ". Message: " + message.toString());
         sequentialTaskExecutor.submit(new Runnable() {

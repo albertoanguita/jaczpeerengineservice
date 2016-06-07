@@ -10,6 +10,11 @@ import jacz.peerengineservice.util.PeerRelationship;
 public class GeneralEventsImpl implements GeneralEvents {
 
     @Override
+    public void newOwnNick(String newNick) {
+        System.out.println("New own nick: " + newNick);
+    }
+
+    @Override
     public void newObjectMessage(PeerId peerId, Object message) {
         System.out.println("New object message from " + formatPeer(peerId) + ": " + message);
     }
