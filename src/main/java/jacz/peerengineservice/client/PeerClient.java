@@ -8,6 +8,7 @@ import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.UnavailablePeerException;
 import jacz.peerengineservice.client.connection.*;
+import jacz.peerengineservice.client.connection.peers.PeerInfo;
 import jacz.peerengineservice.client.connection.peers.PeersEvents;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
@@ -261,6 +262,10 @@ public class PeerClient {
             generalEvents.newOwnNick(newNick);
             broadcastObjectMessage(new NewNickMessage(newNick));
         }
+    }
+
+    public PeerInfo getPeerInfo(PeerId peerId) {
+        return peerClientConnectionManager.getPeerInfo(peerId);
     }
 
     public synchronized String getPeerNick(PeerId peerId) {

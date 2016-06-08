@@ -900,6 +900,10 @@ public class PeerConnectionManager {
         return peerConnectionConfig.isWishRegularConnections();
     }
 
+    public PeerInfo getPeerInfo(PeerId peerId) {
+        return buildPeerInfo(peerId);
+    }
+
     public int getPeerAffinity(PeerId peerId) {
         return peerKnowledgeBase.getPeerEntryFacade(peerId).getAffinity();
     }

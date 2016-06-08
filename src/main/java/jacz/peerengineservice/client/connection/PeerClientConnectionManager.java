@@ -5,6 +5,7 @@ import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.connection.peers.PeerConnectionManager;
+import jacz.peerengineservice.client.connection.peers.PeerInfo;
 import jacz.peerengineservice.client.connection.peers.PeersEvents;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
@@ -489,6 +490,10 @@ public class PeerClientConnectionManager implements TransfersConfig {
         }
         concurrentChannels.add(restOfChannels);
         return concurrentChannels;
+    }
+
+    public PeerInfo getPeerInfo(PeerId peerId) {
+        return peerConnectionManager.getPeerInfo(peerId);
     }
 
     public int getPeerAffinity(PeerId peerId) {
