@@ -17,6 +17,8 @@ import java.io.Serializable;
 
 /**
  * Data synch client FSM
+ *
+ * todo catch runtime exceptions, also in server. They are not logged. Maybe it is in channel actions???
  */
 public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM.State> {
 
