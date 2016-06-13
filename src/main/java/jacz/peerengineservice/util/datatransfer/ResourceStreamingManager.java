@@ -9,6 +9,7 @@ import jacz.peerengineservice.client.connection.peers.PeerConnectionManager;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.ForeignStoreShare;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
+import jacz.peerengineservice.util.datatransfer.master.DownloadState;
 import jacz.peerengineservice.util.datatransfer.master.MasterResourceStreamer;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
@@ -40,11 +41,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * This class maintains connections with all connected peers in order to send and receive files at request. Every time
  * a new peer connects, our ResourceStreamingManager connects with the corresponding ResourceStreamingManager. They
  * will be able to ask each other for files, and inform about the transfer capabilities.
- * <p/>
+ * <p>
  * The peer client can ask the ResourceStreamingManager to download files. The ResourceStreamingManager will look
  * for peers that share that file and organize the download. A file is actually downloaded by a
  * MasterResourceStreamer, which is created by this ResourceStreamingManager class
- * <p/>
+ * <p>
  * Part selection algorithm:
  * Each download is treated in order to improve efficiency and reduce total download time. For this, there is a
  * specific algorithm that works with several parameters. In general, this algorithm tells a download process which
@@ -53,17 +54,17 @@ import java.util.concurrent.locks.ReentrantLock;
  * that it was sharing). Parts offered by a peer but being shared by other peers are penalized (the more peers that
  * share a part, the more it is penalized). Peers which have very little to offer (below a 15% of the total remaining
  * for download) impose even more penalization.
- * <p/>
+ * <p>
  * On top of all this is the streaming need of a resource: if the user
  * downloads a movie and wants to watch it on streaming, the algorithm will reward the parts that are first. For a
  * maximum value of streaming need (1.0), the part sharing penalization is almost completely forgotten. For the
  * minimum value (0.0) no care of streaming is taken.
- * <p/>
+ * <p>
  * There is an additional consideration in the part selection: noise. To avoid situations in which one peer is
  * offering a resource and n peers are taking it from him, and all peers are selecting the same part, a random noise
  * is introduced. This noise will randomize to some extent the part selection process (unless streaming need is
  * very high, or the part share penalization is to high).
- * <p/>
+ * <p>
  * Finally, the part calculation can be performed more or less accurately. The peer engine is configured on start
  * with an accuracy value for part selection which indicates the amount of parts that are evaluated. For a minimum
  * accuracy (0.0), one hundred parts are considered. For the maximum accuracy (1.0), 20000 parts are evaluated. The
@@ -158,7 +159,7 @@ public class ResourceStreamingManager {
      * This class stores and manages the currently active downloads, indexed by store and resource id. We use this
      * set to find the downloads when there is a report about change of conditions in a store and a resourceID (either
      * peers were added or removed).
-     * <p/>
+     * <p>
      * This set stores only general downloads, with no specific peer. The class is also responsible for periodically
      * notifying the resource streaming manager for the need of updating provides, regardless of any changes in stores
      */
@@ -166,7 +167,7 @@ public class ResourceStreamingManager {
 
         /**
          * Set of active downloads, indexed by store name first, and resource id second
-         * <p/>
+         * <p>
          * For each resource, a set of master resource streamers is maintained, since the same resource can be downloaded by several masters
          */
         private final Map<String, Map<String, Map<String, MasterResourceStreamer>>> activeDownloads;
@@ -198,7 +199,7 @@ public class ResourceStreamingManager {
          */
         private synchronized void addDownload(MasterResourceStreamer masterResourceStreamer) {
             String storeName = masterResourceStreamer.getStoreName();
-            String resourceID = masterResourceStreamer.getResourceID();
+            String resourceID = masterResourceStreamer.getResourceId();
             if (!activeDownloads.containsKey(storeName)) {
                 activeDownloads.put(storeName, new HashMap<>());
             }
@@ -232,7 +233,7 @@ public class ResourceStreamingManager {
          */
         private synchronized void removeDownload(MasterResourceStreamer masterResourceStreamer) {
             String storeName = masterResourceStreamer.getStoreName();
-            String resourceID = masterResourceStreamer.getResourceID();
+            String resourceID = masterResourceStreamer.getResourceId();
             try {
                 activeDownloads.get(storeName).get(resourceID).remove(masterResourceStreamer.getId());
                 if (activeDownloads.get(storeName).get(resourceID).isEmpty()) {
@@ -281,14 +282,14 @@ public class ResourceStreamingManager {
     /**
      * The incoming subchannel assignments for all our data streaming stuff. 16-bit subchannels are defined for routing the data transmission
      * messages. The class employs the MessageProcessor schema in jacz.util to handle the incoming messages.
-     * <p/>
+     * <p>
      * Each resource master streamer will generally use several channels, one for each slave. This allows him to differentiate incoming packages.
      * This allows a total of 2^16 active transfers, but this should always be enough
-     * <p/>
+     * <p>
      * This class handles the subchannel assignment, providing new subchannels upon master requests, and freeing no
      * longer used subchannels. At initialization time, we can assign a list of already occupied subchannels so they
      * are not assigned to anyone else
-     * <p/>
+     * <p>
      * This class also handles concurrent message processing for the assigned channels, delivering each incoming message to the appropriate
      * owner
      */
@@ -352,7 +353,7 @@ public class ResourceStreamingManager {
 
         /**
          * Table with assigned subchannels and their corresponding owners and message processors
-         * <p/>
+         * <p>
          * Each subchannel will define a message processor schema with only the message handler thread. We will take care of feeding
          * the processor with messages. The default queue capacity is used
          */
@@ -536,21 +537,21 @@ public class ResourceStreamingManager {
 
     /**
      * The incoming subchannel assignments, for each active master resource streamer.
-     * <p/>
+     * <p>
      * Non-persistent
      */
     private final SubchannelManager subchannelManager;
 
     /**
      * The manager of all registered resource stores
-     * <p/>
+     * <p>
      * Non-persistent
      */
     private final LocalShareManager localShareManager;
 
     /**
      * The manager for resources shared to us by other peers
-     * <p/>
+     * <p>
      * Non-persistent
      */
     private final ForeignShareManager foreignShareManager;
@@ -592,7 +593,7 @@ public class ResourceStreamingManager {
     /**
      * Whether this resource streaming manager is alive or not. If not alive, no new requests will be accepted
      * (writes, stores, downloads).
-     * <p/>
+     * <p>
      * Once it becomes inactive, it cannot be activated anymore
      */
     private final AtomicBoolean alive;
@@ -791,23 +792,32 @@ public class ResourceStreamingManager {
             String totalHashAlgorithm) throws NotAliveException {
         if (alive.get()) {
             // the download is created even if there is no matching global resource store
-            resourceTransferEventsBridge.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
-            MasterResourceStreamer masterResourceStreamer =
-                    new MasterResourceStreamer(
-                            this,
-                            transfersConfig,
-                            null,
-                            resourceStoreName,
-                            resourceID,
-                            resourceWriter,
-                            downloadProgressNotificationHandler,
-                            streamingNeed,
-                            totalHash,
-                            totalHashAlgorithm);
-            activeDownloadSet.addDownload(masterResourceStreamer);
-            reportProvidersForOneActiveDownload(resourceStoreName, resourceID);
-            downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
-            return masterResourceStreamer.getDownloadManager();
+            return createMasterResourceStreamer(
+                    null,
+                    resourceStoreName,
+                    resourceID,
+                    resourceWriter,
+                    downloadProgressNotificationHandler,
+                    streamingNeed,
+                    totalHash,
+                    totalHashAlgorithm, () -> resourceTransferEventsBridge.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm));
+//            resourceTransferEventsBridge.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
+//            MasterResourceStreamer masterResourceStreamer =
+//                    new MasterResourceStreamer(
+//                            this,
+//                            transfersConfig,
+//                            null,
+//                            resourceStoreName,
+//                            resourceID,
+//                            resourceWriter,
+//                            downloadProgressNotificationHandler,
+//                            streamingNeed,
+//                            totalHash,
+//                            totalHashAlgorithm);
+//            activeDownloadSet.addDownload(masterResourceStreamer);
+//            reportProvidersForOneActiveDownload(resourceStoreName, resourceID);
+//            downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
+//            return masterResourceStreamer.getDownloadManager();
         } else {
             throw new NotAliveException();
         }
@@ -841,26 +851,67 @@ public class ResourceStreamingManager {
             String totalHash,
             String totalHashAlgorithm) throws NotAliveException {
         if (alive.get()) {
-            resourceTransferEventsBridge.peerDownloadInitiated(serverPeerId, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
-            MasterResourceStreamer masterResourceStreamer =
-                    new MasterResourceStreamer(
-                            this,
-                            transfersConfig,
-                            serverPeerId,
-                            resourceStoreName,
-                            resourceID,
-                            resourceWriter,
-                            downloadProgressNotificationHandler,
-                            streamingNeed,
-                            totalHash,
-                            totalHashAlgorithm);
-            activeDownloadSet.addDownload(masterResourceStreamer);
-            reportResourceProviderForPeerSpecificDownload(serverPeerId, masterResourceStreamer);
-            downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
-            return masterResourceStreamer.getDownloadManager();
+            return createMasterResourceStreamer(
+                    serverPeerId,
+                    resourceStoreName,
+                    resourceID,
+                    resourceWriter,
+                    downloadProgressNotificationHandler,
+                    streamingNeed,
+                    totalHash,
+                    totalHashAlgorithm, () -> resourceTransferEventsBridge.peerDownloadInitiated(serverPeerId, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm));
+//            resourceTransferEventsBridge.peerDownloadInitiated(serverPeerId, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
+//            MasterResourceStreamer masterResourceStreamer =
+//                    new MasterResourceStreamer(
+//                            this,
+//                            transfersConfig,
+//                            serverPeerId,
+//                            resourceStoreName,
+//                            resourceID,
+//                            resourceWriter,
+//                            downloadProgressNotificationHandler,
+//                            streamingNeed,
+//                            totalHash,
+//                            totalHashAlgorithm);
+//            activeDownloadSet.addDownload(masterResourceStreamer);
+//            reportResourceProviderForPeerSpecificDownload(serverPeerId, masterResourceStreamer);
+//            downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
+//            return masterResourceStreamer.getDownloadManager();
         } else {
             throw new NotAliveException();
         }
+    }
+
+    private DownloadManager createMasterResourceStreamer(
+            PeerId serverPeerId,
+            String resourceStoreName,
+            String resourceID,
+            ResourceWriter resourceWriter,
+            DownloadProgressNotificationHandler downloadProgressNotificationHandler,
+            double streamingNeed,
+            String totalHash,
+            String totalHashAlgorithm,
+            Runnable reportAction) {
+        MasterResourceStreamer masterResourceStreamer =
+                new MasterResourceStreamer(
+                        this,
+                        transfersConfig,
+                        serverPeerId,
+                        resourceStoreName,
+                        resourceID,
+                        resourceWriter,
+                        downloadProgressNotificationHandler,
+                        streamingNeed,
+                        totalHash,
+                        totalHashAlgorithm);
+        if (masterResourceStreamer.getState() != DownloadState.STOPPED) {
+            // the download is active
+            activeDownloadSet.addDownload(masterResourceStreamer);
+            reportResourceProviderForPeerSpecificDownload(serverPeerId, masterResourceStreamer);
+            downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
+            reportAction.run();
+        }
+        return masterResourceStreamer.getDownloadManager();
     }
 
 //    public synchronized Float getMaxDesiredDownloadSpeed() {
@@ -901,7 +952,7 @@ public class ResourceStreamingManager {
     /**
      * This method tells the resource streaming manager to invoke the stop() method on all active downloads. It does
      * not close any other resources, and subsequent downloads can be invoked
-     * <p/>
+     * <p>
      * The method blocks until all resources are properly stopped. Downloads and uploads are stopped.
      */
     public void stop() {
@@ -921,7 +972,7 @@ public class ResourceStreamingManager {
                     Future future = ThreadExecutor.submit(new Runnable() {
                         @Override
                         public void run() {
-                            downloadManager.stop();
+                            downloadManager.stopDueToFinishedSession();
                         }
                     });
                     futureCollection.add(future);

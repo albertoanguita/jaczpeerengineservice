@@ -53,6 +53,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         }
     }
 
+    private static final String RESOURCE_WRITER_STATE_FIELD = "MASTER_RESOURCE_STREAMER@STATE";
+
     private static final String RESOURCE_WRITER_STREAMING_NEED_FIELD = "MASTER_RESOURCE_STREAMER@STREAMING_NEED";
 
     private static final String RESOURCE_WRITER_PRIORITY_FIELD = "MASTER_RESOURCE_STREAMER@PRIORITY_NEED";
@@ -105,7 +107,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     /**
      * ID of the resource being downloaded (usually a hash)
      */
-    private final String resourceID;
+    private final String resourceId;
 
     /**
      * Size of the resource being downloaded (null means unknown)
@@ -173,7 +175,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             TransfersConfig transfersConfig,
             PeerId specificPeerDownload,
             String storeName,
-            String resourceID,
+            String resourceId,
             ResourceWriter resourceWriter,
             DownloadProgressNotificationHandler downloadProgressNotificationHandler,
             double streamingNeed,
@@ -184,7 +186,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         this.transfersConfig = transfersConfig;
         this.specificPeerDownload = specificPeerDownload;
         this.storeName = storeName;
-        this.resourceID = resourceID;
+        this.resourceId = resourceId;
         this.resourceWriter = resourceWriter;
         writeDataBuffer = new WriteDataBuffer();
         writeDaemon = new Daemon(new WriteDaemon(resourceStreamingManager));
@@ -197,9 +199,10 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             availableSegments = resourceWriter.getAvailableSegments();
             Map<String, Serializable> downloadParameters = resourceWriter.getSystemDictionary();
             if (downloadParameters != null && downloadParameters.containsKey(RESOURCE_WRITER_STREAMING_NEED_FIELD) && downloadParameters.containsKey(RESOURCE_WRITER_PRIORITY_FIELD)) {
-                // the resource writer had download parameters stored (from previous uses) -> ignore the given ones and use this
+                // the resource writer had download parameters stored (from previous uses) -> ignore the given ones and use these
                 streamingNeed = (Double) downloadParameters.get(RESOURCE_WRITER_STREAMING_NEED_FIELD);
                 priority = (float) downloadParameters.get(RESOURCE_WRITER_PRIORITY_FIELD);
+                state = (DownloadState) downloadParameters.get(RESOURCE_WRITER_STATE_FIELD);
             } else {
                 // the resource writer had no download parameters stored, so this is the first time this resource writer is used
                 // use the given streaming need and, additionally, store it in the resource writer
@@ -208,30 +211,45 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
 
                 // in addition, write some information that can be used by the user: store name, resource id and hash info
                 resourceWriter.setSystemField(RESOURCE_WRITER_STORE_NAME_FIELD, storeName);
-                resourceWriter.setSystemField(RESOURCE_WRITER_RESOURCE_ID_FIELD, resourceID);
+                resourceWriter.setSystemField(RESOURCE_WRITER_RESOURCE_ID_FIELD, resourceId);
                 resourceWriter.setSystemField(RESOURCE_WRITER_TOTAL_HASH_FIELD, totalHash);
                 resourceWriter.setSystemField(RESOURCE_WRITER_HASH_ALGORITHM_FIELD, totalHashAlgorithm);
+                setState(DownloadState.RUNNING, true);
             }
         } catch (IOException e) {
             error = true;
         }
         downloadManager = new DownloadManager(this);
-        downloadReports = new DownloadReports(downloadManager, resourceID, storeName, downloadProgressNotificationHandler);
-        try {
-            resourceDownloadStatistics = new ResourceDownloadStatistics(resourceWriter);
-            downloadReports.initializeWriting(resourceWriter);
-        } catch (IOException e) {
-            error = true;
-        }
+        downloadReports = new DownloadReports(downloadManager, resourceId, storeName, downloadProgressNotificationHandler);
         resourcePartScheduler = new ResourcePartScheduler(this, transfersConfig, resourceSize, availableSegments, streamingNeed);
         this.totalHash = totalHash;
         this.totalHashAlgorithm = totalHashAlgorithm;
-        active = new AtomicBoolean(true);
-        alive = new AtomicBoolean(true);
-        state = DownloadState.RUNNING;
+        active = new AtomicBoolean(state == DownloadState.RUNNING);
+        alive = new AtomicBoolean(state != DownloadState.STOPPED);
+        if (alive.get()) {
+            try {
+                resourceDownloadStatistics = new ResourceDownloadStatistics(resourceWriter);
+                downloadReports.initializeWriting(resourceWriter);
+            } catch (IOException e) {
+                error = true;
+            }
+        }
+        //state = DownloadState.RUNNING;
         ThreadExecutor.registerClient(this.getClass().getName());
         if (error) {
             reportErrorWriting();
+        }
+    }
+
+    private void setState(DownloadState downloadState, boolean writeThrough) {
+        this.state = downloadState;
+        if (writeThrough) {
+            try {
+                resourceWriter.setSystemField(RESOURCE_WRITER_STATE_FIELD, downloadState);
+            } catch (IOException e) {
+                // error writing the state in the resource writer -> cancel download and report error
+                reportErrorWriting();
+            }
         }
     }
 
@@ -250,7 +268,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     @Override
     public String toString() {
         return "MasterResourceStreamer{" +
-                "resId=" + resourceID +
+                "resId=" + resourceId +
                 '}';
     }
 
@@ -258,8 +276,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         return storeName;
     }
 
-    public String getResourceID() {
-        return resourceID;
+    public String getResourceId() {
+        return resourceId;
     }
 
     public synchronized Long getResourceSize() {
@@ -335,7 +353,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         // link. A corresponding slave controller is created for the new resource link
         Short subchannel = resourceStreamingManager.requestIncomingSubchannel(this);
         if (subchannel != null) {
-            ResourceLink resourceLink = resourceProvider.requestResource(storeName, resourceID, subchannel);
+            ResourceLink resourceLink = resourceProvider.requestResource(storeName, resourceId, subchannel);
             addSlave(resourceLink, resourceProvider, subchannel);
         }
     }
@@ -505,7 +523,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 resourceDownloadStatistics.downloadComplete(resourceSize);
                 resourceDownloadStatistics.stop();
                 downloadReports.reportCompleted(resourceWriter);
-                state = DownloadState.COMPLETED;
+                setState(DownloadState.COMPLETED, true);
             } catch (IOException e) {
                 reportErrorWriting();
             } finally {
@@ -575,7 +593,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         if (alive.get() && active.get()) {
             active.set(false);
             downloadReports.reportPaused();
-            state = DownloadState.PAUSED;
+            setState(DownloadState.PAUSED, true);
             for (SlaveController slaveController : activeSlaves.values()) {
                 slaveController.pause();
             }
@@ -589,7 +607,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         if (alive.get() && !active.get()) {
             active.set(true);
             downloadReports.reportResumed();
-            state = DownloadState.RUNNING;
+            setState(DownloadState.RUNNING, true);
             for (SlaveController slaveController : activeSlaves.values()) {
                 slaveController.resume();
             }
@@ -605,7 +623,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 flushWriteData();
                 resourceWriter.cancel();
                 downloadReports.reportCancelled(cancellationReason);
-                state = DownloadState.CANCELLED;
+                setState(DownloadState.CANCELLED, false);
             } finally {
                 freeAssignedResources();
             }
@@ -615,14 +633,14 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     /**
      * The user stops the download
      */
-    synchronized void stop() {
+    synchronized void stop(boolean writeStateThrough) {
         if (alive.get()) {
             try {
                 flushWriteData();
                 resourceWriter.stop();
                 resourceDownloadStatistics.stopSession();
                 downloadReports.reportStopped();
-                state = DownloadState.STOPPED;
+                setState(DownloadState.STOPPED, writeStateThrough);
             } catch (IOException e) {
                 // error saving the download session -> cancel the download
                 cancel(DownloadProgressNotificationHandler.CancellationReason.IO_FAILURE);

@@ -37,7 +37,7 @@ Tareas del PeerClient solo (sin transferencia de ficheros)
 - busqueda de peers en servidores por nombre?
 - Intentos automáticos de conexión a peers que no nos tienen aceptados
 - multiples servidores
-- public/private key, pid 128 bits (resourceID del public). Codificado en código de 5 bits por carácter (dígitos más 22 letras)
+- public/private key, pid 128 bits (resourceId del public). Codificado en código de 5 bits por carácter (dígitos más 22 letras)
   Verificación de identidad en servidores
 - Puerto abierto solo necesario en uno de los peers (el servidor decide a quién mandar la info).
 

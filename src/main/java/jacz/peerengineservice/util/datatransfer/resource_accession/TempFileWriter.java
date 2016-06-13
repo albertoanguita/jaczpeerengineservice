@@ -29,7 +29,7 @@ public class TempFileWriter implements ResourceWriter {
      * @throws IOException
      */
     public TempFileWriter(TempFileManager tempFileManager) throws IOException {
-        this(tempFileManager, new HashMap<String, Serializable>());
+        this(tempFileManager, new HashMap<>());
     }
 
     /**

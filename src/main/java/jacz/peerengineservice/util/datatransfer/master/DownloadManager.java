@@ -34,7 +34,11 @@ public class DownloadManager {
      * for later resuming. If already stopped or cancelled, this has no effect
      */
     public void stop() {
-        masterResourceStreamer.stop();
+        masterResourceStreamer.stop(true);
+    }
+
+    public void stopDueToFinishedSession() {
+        masterResourceStreamer.stop(false);
     }
 
     /**
@@ -69,7 +73,7 @@ public class DownloadManager {
     }
 
     public String getResourceID() {
-        return masterResourceStreamer.getResourceID();
+        return masterResourceStreamer.getResourceId();
     }
 
     public String getStoreName() {
