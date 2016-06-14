@@ -90,6 +90,8 @@ class ForeignShareManager implements NotificationReceiver {
      */
     private final AtomicBoolean alive;
 
+    private final String threadExecutorClientId;
+
     /**
      * Class constructor
      *
@@ -101,7 +103,7 @@ class ForeignShareManager implements NotificationReceiver {
         receiverID = AlphaNumFactory.getStaticId();
         this.resourceStreamingManager = resourceStreamingManager;
         alive = new AtomicBoolean(true);
-        ThreadExecutor.registerClient(this.getClass().getName());
+        threadExecutorClientId = ThreadExecutor.registerClient(this.getClass().getName());
     }
 
     /**
@@ -159,7 +161,7 @@ class ForeignShareManager implements NotificationReceiver {
             for (String store : new ArrayList<>(storeShares.keySet())) {
                 removeStore(store);
             }
-            ThreadExecutor.shutdownClient(this.getClass().getName());
+            ThreadExecutor.shutdownClient(threadExecutorClientId);
         }
     }
 

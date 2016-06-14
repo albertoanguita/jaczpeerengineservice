@@ -147,6 +147,8 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
      */
     private final AtomicBoolean alive;
 
+    private final String threadExecutorClientId;
+
     SlaveController(MasterResourceStreamer masterResourceStreamer, boolean sizeIsKnown, ResourceLink resourceLink, ResourceProvider resourceProvider, short subchannel, long requestLifeMillis, ResourcePartScheduler resourcePartScheduler, boolean active) {
         id = AlphaNumFactory.getStaticId();
         this.masterResourceStreamer = masterResourceStreamer;
@@ -165,7 +167,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
         this.resourcePartScheduler.addSlave(this);
         this.active = new AtomicBoolean(active);
         alive = new AtomicBoolean(true);
-        ThreadExecutor.registerClient(this.getClass().getName());
+        threadExecutorClientId = ThreadExecutor.registerClient(this.getClass().getName());
     }
 
     String getId() {
@@ -372,15 +374,14 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     }
 
     private synchronized void stop() {
-        if (alive.get()) {
-            alive.set(false);
+        if (alive.getAndSet(false)) {
             stopTimeoutTimer();
             stopResourceLinkTimeoutTimer();
             stopRequestAssignationTimer();
             stopRequestAvailableSegmentsTimer();
             stopResourceSegmentQueueWithMonitoring();
             resourcePartScheduler.removeSlave(this);
-            ThreadExecutor.shutdownClient(this.getClass().getName());
+            ThreadExecutor.shutdownClient(threadExecutorClientId);
         }
     }
 
@@ -516,6 +517,7 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     }
 
     public synchronized void finishExecution() {
+        System.out.println("Slave finish exec");
         stop();
     }
 

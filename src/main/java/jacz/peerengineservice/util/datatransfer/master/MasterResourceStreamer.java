@@ -169,6 +169,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      */
     private DownloadState state;
 
+    private final String threadExecutorClientId;
+
 
     public MasterResourceStreamer(
             ResourceStreamingManager resourceStreamingManager,
@@ -235,7 +237,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             }
         }
         //state = DownloadState.RUNNING;
-        ThreadExecutor.registerClient(this.getClass().getName());
+        threadExecutorClientId = ThreadExecutor.registerClient(this.getClass().getName());
         if (error) {
             reportErrorWriting();
         }
@@ -361,12 +363,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private synchronized void addSlave(ResourceLink resourceLink, ResourceProvider resourceProvider, short subchannel) {
         final SlaveController slaveController = new SlaveController(this, resourceSize != null, resourceLink, resourceProvider, subchannel, resourceLink.recommendedMillisForRequest(), resourcePartScheduler, active.get());
         activeSlaves.put(subchannel, slaveController);
-        ThreadExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceStreamingManager.getDownloadPriorityManager().addRegulatedResource(MasterResourceStreamer.this, slaveController);
-            }
-        });
+        ThreadExecutor.submit(() -> resourceStreamingManager.getDownloadPriorityManager().addRegulatedResource(MasterResourceStreamer.this, slaveController));
     }
 
     /**
@@ -376,26 +373,19 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @param mustReportSlave boolean variable indicating if the slave must be notified about his removal
      */
     synchronized void removeSlave(final short subchannel, boolean mustReportSlave) {
+        System.out.println("Removing slave at " + subchannel);
         // remove provider from active providers list and free subchannel
         if (activeSlaves.containsKey(subchannel)) {
             if (mustReportSlave) {
                 activeSlaves.get(subchannel).getResourceLink().die();
             }
             final SlaveController slaveController = activeSlaves.remove(subchannel);
-            ThreadExecutor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    slaveController.finishExecution();
-                }
-            });
+            System.out.println("slave: " + slaveController);
+            ThreadExecutor.submit(slaveController::finishExecution);
             resourceStreamingManager.freeSubchannel(subchannel);
-            ThreadExecutor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    resourceStreamingManager.getDownloadPriorityManager().removeRegulatedResource(MasterResourceStreamer.this, slaveController);
-                }
-            });
+            ThreadExecutor.submit(() -> resourceStreamingManager.getDownloadPriorityManager().removeRegulatedResource(MasterResourceStreamer.this, slaveController));
         }
+        System.out.println("Finished removing slave at " + subchannel);
     }
 
     /**
@@ -502,6 +492,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private void flushWriteData() {
         writeDaemon.stateChange();
         writeDaemon.blockUntilStateIsSolved();
+        writeDaemon.stop();
     }
 
     synchronized void reportDownloadedSegment(ResourceProvider resourceProvider, LongRange downloadedSegment) {
@@ -727,7 +718,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 removeSlave(slaveController.getSubchannel(), true);
             }
             downloadReports.stop();
-            ThreadExecutor.shutdownClient(this.getClass().getName());
+            ThreadExecutor.shutdownClient(threadExecutorClientId);
             alive.set(false);
         }
     }

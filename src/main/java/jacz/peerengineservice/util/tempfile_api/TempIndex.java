@@ -8,6 +8,8 @@ import jacz.util.numeric.range.LongRangeList;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +28,7 @@ class TempIndex implements VersionedObject {
 
     private final static String CURRENT_VERSION = VERSION_0_1;
 
-    private String tempDataFilePath;
+    private Path tempDataFilePath;
 
     private Long totalResourceSize;
 
@@ -39,7 +41,7 @@ class TempIndex implements VersionedObject {
      */
     private LongRangeList data;
 
-    TempIndex(String tempDataFilePath, HashMap<String, Serializable> userDictionary) throws IOException {
+    TempIndex(Path tempDataFilePath, HashMap<String, Serializable> userDictionary) throws IOException {
         this.tempDataFilePath = tempDataFilePath;
         this.totalResourceSize = null;
         this.userDictionary = userDictionary;
@@ -66,7 +68,7 @@ class TempIndex implements VersionedObject {
     }
 
     String getTempDataFilePath() {
-        return tempDataFilePath;
+        return tempDataFilePath.toString();
     }
 
     Long getTotalResourceSize() {
@@ -83,7 +85,7 @@ class TempIndex implements VersionedObject {
     }
 
     private void setupDataFile(long fileSize) throws IOException {
-        RandomAccessFile f = new RandomAccessFile(tempDataFilePath, "rws");
+        RandomAccessFile f = new RandomAccessFile(tempDataFilePath.toFile(), "rws");
         f.setLength(fileSize);
         f.close();
     }
@@ -93,7 +95,7 @@ class TempIndex implements VersionedObject {
         checkCorrectRange(range);
         if (data.contains(range)) {
             // the requested range is valid -> read the data and return it
-            return RandomAccess.read(tempDataFilePath, offset, length);
+            return RandomAccess.read(tempDataFilePath.toFile(), offset, length);
         } else {
             throw new IndexOutOfBoundsException("The requested range " + range + " is not valid for this temp file");
         }
@@ -104,7 +106,7 @@ class TempIndex implements VersionedObject {
         checkCorrectRange(range);
         LongRangeList inputRangeSet = new LongRangeList(range);
         inputRangeSet.remove(data);
-        RandomAccess.write(tempDataFilePath, offset, bytesToWrite);
+        RandomAccess.write(tempDataFilePath.toFile(), offset, bytesToWrite);
         data.add(range);
     }
 
@@ -129,7 +131,7 @@ class TempIndex implements VersionedObject {
     @Override
     public Map<String, Serializable> serialize() {
         Map<String, Serializable> map = new HashMap<>();
-        map.put("tempDataFilePath", tempDataFilePath);
+        map.put("tempDataFilePath", tempDataFilePath.toString());
         map.put("totalResourceSize", totalResourceSize);
         map.put("userDictionary", userDictionary);
         map.put("systemDictionary", systemDictionary);
@@ -140,7 +142,7 @@ class TempIndex implements VersionedObject {
     @Override
     public void deserialize(String version, Map<String, Object> attributes, VersionStack parentVersions) throws UnrecognizedVersionException {
         if (version.equals(CURRENT_VERSION)) {
-            tempDataFilePath = (String) attributes.get("tempDataFilePath");
+            tempDataFilePath = Paths.get((String) attributes.get("tempDataFilePath"));
             totalResourceSize = (Long) attributes.get("totalResourceSize");
             userDictionary = (HashMap<String, Serializable>) attributes.get("userDictionary");
             systemDictionary = (HashMap<String, Serializable>) attributes.get("systemDictionary");

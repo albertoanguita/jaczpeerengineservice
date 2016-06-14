@@ -286,12 +286,12 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
     public void errorRequestingFSM(final PeerFSMServerResponse serverResponse) {
         DataSynchronizer.logger.info("CLIENT SYNCH ERROR. serverPeer: " + serverPeerId + ". dataAccessorName: " + dataAccessor.getName() + ". fsmID: " + fsmID + ". synchError: " + new SynchError(SynchError.Type.REQUEST_DENIED, serverResponse.toString()));
         // we register at the thread executor just for submitting this task. We unregister immediately after
-        ThreadExecutor.registerClient(this.getClass().getName());
+        String threadExecutorId = ThreadExecutor.registerClient(this.getClass().getName() + "(" + dataAccessor.getName() + ")");
         ThreadExecutor.submit(() -> {
             if (progress != null) {
                 progress.error(new SynchError(SynchError.Type.REQUEST_DENIED, serverResponse.toString()));
             }
         });
-        ThreadExecutor.shutdownClient(this.getClass().getName());
+        ThreadExecutor.shutdownClient(threadExecutorId);
     }
 }

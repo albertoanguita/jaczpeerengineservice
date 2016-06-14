@@ -95,6 +95,8 @@ public class TempFileManager {
 
     private final AtomicBoolean alive;
 
+    private final String threadExecutorClientId;
+
     /**
      * Constructor of the temporary file manager. A path to an existing directory is received. All files will be
      * created inside that directory. External changes on that dir should be avoided while on use
@@ -106,7 +108,7 @@ public class TempFileManager {
         this.tempFileManagerEventsBridge = new TempFileManagerEventsBridge(tempFileManagerEvents);
         concurrencyControllers = new HashMap<>();
         alive = new AtomicBoolean(true);
-        ThreadExecutor.registerClient(this.getClass().getName());
+        threadExecutorClientId = ThreadExecutor.registerClient(this.getClass().getName());
     }
 
     /**
@@ -116,9 +118,6 @@ public class TempFileManager {
      * @return correct base directory path (end file separator included)
      */
     private static Path buildBaseDir(String baseDir) {
-        if (!baseDir.endsWith(File.separator)) {
-            baseDir = baseDir + File.separator;
-        }
         return Paths.get(baseDir);
     }
 
@@ -225,8 +224,8 @@ public class TempFileManager {
      * @throws IOException error creating the files
      */
     private void generateInitialIndexFile(String indexFileName, String dataFileName, HashMap<String, Serializable> userDictionary) throws IOException {
-        TempIndex index = new TempIndex(baseDir + dataFileName, userDictionary);
-        writeIndexFile(baseDir + indexFileName, index);
+        TempIndex index = new TempIndex(baseDir.resolve(dataFileName), userDictionary);
+        writeIndexFile(baseDir.resolve(indexFileName).toString(), index);
     }
 
     /**
@@ -464,7 +463,7 @@ public class TempFileManager {
     }
 
     private String generateIndexFilePath(String tempFileName) {
-        return baseDir + tempFileName;
+        return baseDir.resolve(tempFileName).toString();
     }
 
     TempIndex readIndexFile(String indexFilePath) throws IOException, VersionedSerializationException {
@@ -493,7 +492,10 @@ public class TempFileManager {
         if (alive.get()) {
             alive.set(false);
             tempFileManagerEventsBridge.stop();
-            ThreadExecutor.shutdownClient(this.getClass().getName());
+            ThreadExecutor.shutdownClient(threadExecutorClientId);
+            for (ConcurrencyController concurrencyController : concurrencyControllers.values()) {
+                concurrencyController.stopAndWaitForFinalization(true);
+            }
         }
     }
 }

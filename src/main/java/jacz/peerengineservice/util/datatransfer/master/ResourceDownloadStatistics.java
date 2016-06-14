@@ -76,9 +76,7 @@ public class ResourceDownloadStatistics {
     }
 
     synchronized void stopSession() throws IOException {
-        for (ProviderStatistics providerStatistics : providers.values()) {
-            providerStatistics.stop();
-        }
+        stop();
         resourceWriter.setSystemField(RESOURCE_WRITER_CREATION_DATE_FIELD, creationDate);
         resourceWriter.setSystemField(RESOURCE_WRITER_DOWNLOADED_PART_FIELD, downloadedPart);
     }

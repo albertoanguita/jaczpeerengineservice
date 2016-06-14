@@ -27,11 +27,13 @@ public abstract class TransfersManager<T> implements TimerAction {
 
     private final AtomicBoolean alive;
 
+    private final String threadExecutorClientId;
+
     public TransfersManager(String threadName) {
         activeTransfers = new HashMap<>();
         timer = new Timer(1, this, false, threadName);
         alive = new AtomicBoolean(true);
-        ThreadExecutor.registerClient(this.getClass().getName());
+        threadExecutorClientId = ThreadExecutor.registerClient(this.getClass().getName());
     }
 
     /**
@@ -106,7 +108,7 @@ public abstract class TransfersManager<T> implements TimerAction {
         if (alive.get()) {
             alive.set(false);
             timer.kill();
-            ThreadExecutor.shutdownClient(this.getClass().getName());
+            ThreadExecutor.shutdownClient(threadExecutorClientId);
         }
     }
 
