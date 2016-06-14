@@ -329,7 +329,7 @@ public class TempFileManager {
         }
         // the concurrency controller is no longer needed, remove it
         synchronized (this) {
-            concurrencyControllers.remove(tempFileName);
+            concurrencyControllers.remove(tempFileName).stopAndWaitForFinalization(true);
         }
         return completerTask.getFinalPath();
     }
