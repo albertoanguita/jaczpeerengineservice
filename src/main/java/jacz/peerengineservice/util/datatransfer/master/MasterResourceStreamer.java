@@ -613,6 +613,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             try {
                 flushWriteData();
                 resourceWriter.cancel();
+                resourceDownloadStatistics.stop();
                 downloadReports.reportCancelled(cancellationReason);
                 setState(DownloadState.CANCELLED, false);
             } finally {
