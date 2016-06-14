@@ -80,7 +80,7 @@ public class DownloadManager {
         return masterResourceStreamer.getStoreName();
     }
 
-    public synchronized Long getLength() {
+    public Long getLength() {
         return masterResourceStreamer.getResourceSize();
     }
 
