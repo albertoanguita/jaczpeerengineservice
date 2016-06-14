@@ -915,7 +915,6 @@ public class ResourceStreamingManager {
         if (masterResourceStreamer.getState() != DownloadState.STOPPED) {
             // the download is active
             activeDownloadSet.addDownload(masterResourceStreamer);
-            reportResourceProviderForPeerSpecificDownload(serverPeerId, masterResourceStreamer);
             downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
             reportAction.run();
         }
