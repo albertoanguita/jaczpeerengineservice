@@ -16,12 +16,15 @@ public class NetworkConfiguration implements Updater {
 
     /**
      * Port for listening to incoming connections from other peers. 0 means that the API chooses a local port
-     * (recommended)
+     * (recommended). Otherwise it should be between 1024 adn 65535
      */
     private static final String LOCAL_PORT = "localPort";
 
     /**
-     * External port, for gateway configuration
+     * External port, for gateway configuration. The system will try to open a NAT rule in this port in the
+     * gateway device. Must be always between 1024 and 65535
+     *
+     * If there is no gateway, it is not used at all
      */
     private static final String EXTERNAL_PORT = "externalPort";
 
