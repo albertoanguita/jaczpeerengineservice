@@ -122,6 +122,12 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private final ResourceWriter resourceWriter;
 
     /**
+     * The resource writer is alive (not cancelled). The resource writer can only be cancelled once,
+     * and we control it with this flag
+     */
+    private final AtomicBoolean resourceWriterAlive;
+
+    /**
      * Buffer of data to be written
      */
     private final WriteDataBuffer writeDataBuffer;
@@ -232,6 +238,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         this.storeName = storeName;
         this.resourceId = resourceId;
         this.resourceWriter = resourceWriter;
+        this.resourceWriterAlive = new AtomicBoolean(true);
         writeDataBuffer = new WriteDataBuffer();
         writeDaemon = new Daemon(new WriteDaemon(resourceStreamingManager));
         activeSlaves = new HashMap<>();
@@ -674,7 +681,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * The user cancels the download
      */
     synchronized void cancel(DownloadProgressNotificationHandler.CancellationReason cancellationReason) {
-        if (alive.get()) {
+        if (resourceWriterAlive.getAndSet(false)) {
             try {
                 flushWriteData();
                 resourceWriter.cancel();
@@ -772,7 +779,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * Remove all slaves and free all resources (subchannels). The download dies
      */
     private synchronized void freeAssignedResources() {
-        if (alive.get()) {
+        if (alive.getAndSet(false)) {
             // free all subchannels and report the ResourceStreamingManager that this download must be removed. We parallelize this call to avoid
             // locks
             ThreadExecutor.submit(() -> {
@@ -785,7 +792,6 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             }
             downloadReports.stop();
             ThreadExecutor.shutdownClient(threadExecutorClientId);
-            alive.set(false);
         }
     }
 
