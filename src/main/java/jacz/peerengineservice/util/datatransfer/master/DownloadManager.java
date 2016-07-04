@@ -3,6 +3,7 @@ package jacz.peerengineservice.util.datatransfer.master;
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
+import jacz.util.id.AlphaNumFactory;
 
 /**
  * This class gives the client the ability to control a single download. It also contains the statistics about the
@@ -10,11 +11,17 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWrite
  */
 public class DownloadManager {
 
+    /**
+     * Unique identifier of this download manager
+     */
+    private final String id;
+
     private MasterResourceStreamer masterResourceStreamer;
 
     private final ResourceStreamingManager resourceStreamingManager;
 
     public DownloadManager(MasterResourceStreamer masterResourceStreamer, ResourceStreamingManager resourceStreamingManager) {
+        id = AlphaNumFactory.getStaticId();
         this.masterResourceStreamer = masterResourceStreamer;
         this.resourceStreamingManager = resourceStreamingManager;
     }
@@ -91,7 +98,7 @@ public class DownloadManager {
     }
 
     public String getId() {
-        return masterResourceStreamer.getId();
+        return id;
     }
 
     public DownloadState getState() {
