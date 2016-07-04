@@ -1,6 +1,5 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
@@ -41,7 +40,7 @@ public class DownloadManager {
             // then, create a new download and steal its master resource streamer
             masterResourceStreamer.setState(DownloadState.RUNNING, true);
             MasterResourceStreamer newMasterResourceStreamer = new MasterResourceStreamer(masterResourceStreamer, this);
-            resourceStreamingManager.activateMasterResourceStreamer(masterResourceStreamer, () -> {});
+            resourceStreamingManager.activateMasterResourceStreamer(newMasterResourceStreamer, () -> {});
         }
     }
 
