@@ -60,7 +60,18 @@ public class DownloadManager {
      * Cancels the download. All achieved progress is deleted. If already stopped or cancelled, this has no effect
      */
     public void cancel() {
-        masterResourceStreamer.cancel(DownloadProgressNotificationHandler.CancellationReason.USER);
+        if (masterResourceStreamer.getState() != DownloadState.STOPPED) {
+            masterResourceStreamer.cancel(DownloadProgressNotificationHandler.CancellationReason.USER);
+        } else {
+            // the master resource streamer has been stopped -> all resources are already closed and we cannot
+            // cancel directly. In this case, the download manager itself cancels the resource and duly notifies
+            // the client
+            masterResourceStreamer.setState(DownloadState.CANCELLED, false);
+            masterResourceStreamer.getResourceWriter().cancel();
+            DownloadReports downloadReports = new DownloadReports(this, masterResourceStreamer.getResourceId(), masterResourceStreamer.getStoreName(), masterResourceStreamer.getDownloadProgressNotificationHandler());
+            downloadReports.reportCancelled(DownloadProgressNotificationHandler.CancellationReason.USER);
+            downloadReports.stop();
+        }
     }
 
     public double getStreamingNeed() {

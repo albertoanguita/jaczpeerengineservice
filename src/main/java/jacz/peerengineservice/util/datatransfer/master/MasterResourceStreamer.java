@@ -122,12 +122,6 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     private final ResourceWriter resourceWriter;
 
     /**
-     * The resource writer is alive (not cancelled). The resource writer can only be cancelled once,
-     * and we control it with this flag
-     */
-    private final AtomicBoolean resourceWriterAlive;
-
-    /**
      * Buffer of data to be written
      */
     private final WriteDataBuffer writeDataBuffer;
@@ -230,7 +224,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm,
-            DownloadManager downloadManager) {
+            DownloadManager downloadManager
+    ) {
         id = AlphaNumFactory.getStaticId();
         this.resourceStreamingManager = resourceStreamingManager;
         this.transfersConfig = transfersConfig;
@@ -238,7 +233,6 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         this.storeName = storeName;
         this.resourceId = resourceId;
         this.resourceWriter = resourceWriter;
-        this.resourceWriterAlive = new AtomicBoolean(true);
         writeDataBuffer = new WriteDataBuffer();
         writeDaemon = new Daemon(new WriteDaemon(resourceStreamingManager));
         activeSlaves = new HashMap<>();
@@ -289,7 +283,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                     // this is a new download -> report start
                     downloadReports.initializeWriting();
                 } else {
-                    // this is an existing stopped download that was resumed -> report resume
+                    // this is an existing stopped download that was resumed -> report file resumed
                     downloadReports.reportResumed();
                 }
             } catch (IOException e) {
@@ -301,6 +295,10 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         if (error) {
             reportErrorWriting();
         }
+    }
+
+    private void initializeWritingReport() throws IOException {
+        downloadReports.initializeWriting();
     }
 
     void setState(DownloadState downloadState, boolean writeThrough) {
@@ -681,7 +679,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * The user cancels the download
      */
     synchronized void cancel(DownloadProgressNotificationHandler.CancellationReason cancellationReason) {
-        if (resourceWriterAlive.getAndSet(false)) {
+        if (alive.get()) {
             try {
                 flushWriteData();
                 resourceWriter.cancel();
