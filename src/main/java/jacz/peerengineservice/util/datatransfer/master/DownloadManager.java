@@ -1,6 +1,8 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
+import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
+import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 
 /**
@@ -11,8 +13,11 @@ public class DownloadManager {
 
     private final MasterResourceStreamer masterResourceStreamer;
 
-    public DownloadManager(MasterResourceStreamer masterResourceStreamer) {
+    private final ResourceStreamingManager resourceStreamingManager;
+
+    public DownloadManager(MasterResourceStreamer masterResourceStreamer, ResourceStreamingManager resourceStreamingManager) {
         this.masterResourceStreamer = masterResourceStreamer;
+        this.resourceStreamingManager = resourceStreamingManager;
     }
 
     /**
@@ -26,7 +31,18 @@ public class DownloadManager {
      * Resumes a paused download. If already resumed, then this has no effect
      */
     public void resume() {
-        masterResourceStreamer.resume();
+        if (masterResourceStreamer.getState() != DownloadState.STOPPED) {
+            // the download can be normally resumed
+            masterResourceStreamer.resume();
+        } else {
+            // the download is stopped -> the master resource streamer is not alive
+            // we must create a new download for this resource
+            // first, reactivate the resource writer by changing its state
+            // then, create a new download and steal its master resource streamer
+            masterResourceStreamer.setState(DownloadState.RUNNING, true);
+            MasterResourceStreamer newMasterResourceStreamer = new MasterResourceStreamer(masterResourceStreamer, this);
+            resourceStreamingManager.activateMasterResourceStreamer(masterResourceStreamer, () -> {});
+        }
     }
 
     /**

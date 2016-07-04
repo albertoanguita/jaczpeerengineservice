@@ -89,6 +89,8 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      */
     private DownloadManager downloadManager;
 
+    private final DownloadProgressNotificationHandler downloadProgressNotificationHandler;
+
     /**
      * Download reports object for sending events to the client
      */
@@ -171,7 +173,6 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
 
     private final String threadExecutorClientId;
 
-
     public MasterResourceStreamer(
             ResourceStreamingManager resourceStreamingManager,
             TransfersConfig transfersConfig,
@@ -183,6 +184,47 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             double streamingNeed,
             String totalHash,
             String totalHashAlgorithm) {
+        this(
+                resourceStreamingManager,
+                transfersConfig,
+                specificPeerDownload,
+                storeName,
+                resourceId,
+                resourceWriter,
+                downloadProgressNotificationHandler,
+                streamingNeed,
+                totalHash,
+                totalHashAlgorithm,
+                null);
+    }
+
+    public MasterResourceStreamer(MasterResourceStreamer oldMasterResourceStreamer, DownloadManager downloadManager) {
+        this(
+                oldMasterResourceStreamer.resourceStreamingManager,
+                oldMasterResourceStreamer.transfersConfig,
+                oldMasterResourceStreamer.specificPeerDownload,
+                oldMasterResourceStreamer.storeName,
+                oldMasterResourceStreamer.resourceId,
+                oldMasterResourceStreamer.resourceWriter,
+                oldMasterResourceStreamer.downloadProgressNotificationHandler,
+                0d,
+                oldMasterResourceStreamer.totalHash,
+                oldMasterResourceStreamer.totalHashAlgorithm,
+                downloadManager);
+    }
+
+    public MasterResourceStreamer(
+            ResourceStreamingManager resourceStreamingManager,
+            TransfersConfig transfersConfig,
+            PeerId specificPeerDownload,
+            String storeName,
+            String resourceId,
+            ResourceWriter resourceWriter,
+            DownloadProgressNotificationHandler downloadProgressNotificationHandler,
+            double streamingNeed,
+            String totalHash,
+            String totalHashAlgorithm,
+            DownloadManager downloadManager) {
         id = AlphaNumFactory.getStaticId();
         this.resourceStreamingManager = resourceStreamingManager;
         this.transfersConfig = transfersConfig;
@@ -221,8 +263,13 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         } catch (IOException e) {
             error = true;
         }
-        downloadManager = new DownloadManager(this);
-        downloadReports = new DownloadReports(downloadManager, resourceId, storeName, downloadProgressNotificationHandler);
+        if (downloadManager == null) {
+            this.downloadManager = new DownloadManager(this, resourceStreamingManager);
+        } else {
+            this.downloadManager = downloadManager;
+        }
+        this.downloadProgressNotificationHandler = downloadProgressNotificationHandler;
+        downloadReports = new DownloadReports(this.downloadManager, resourceId, storeName, downloadProgressNotificationHandler);
         resourcePartScheduler = new ResourcePartScheduler(this, transfersConfig, resourceSize, availableSegments, streamingNeed);
         this.totalHash = totalHash;
         this.totalHashAlgorithm = totalHashAlgorithm;
@@ -231,7 +278,13 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         if (alive.get()) {
             try {
                 resourceDownloadStatistics = new ResourceDownloadStatistics(resourceWriter);
-                downloadReports.initializeWriting(resourceWriter);
+                if (downloadManager == null) {
+                    // this is a new download -> report start
+                    downloadReports.initializeWriting();
+                } else {
+                    // this is an existing stopped download that was resumed -> report resume
+                    downloadReports.reportResumed();
+                }
             } catch (IOException e) {
                 error = true;
             }
@@ -243,7 +296,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         }
     }
 
-    private void setState(DownloadState downloadState, boolean writeThrough) {
+    void setState(DownloadState downloadState, boolean writeThrough) {
         this.state = downloadState;
         if (writeThrough) {
             try {
@@ -292,6 +345,18 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
 
     public synchronized DownloadState getState() {
         return state;
+    }
+
+    DownloadProgressNotificationHandler getDownloadProgressNotificationHandler() {
+        return downloadProgressNotificationHandler;
+    }
+
+    String getTotalHash() {
+        return totalHash;
+    }
+
+    String getTotalHashAlgorithm() {
+        return totalHashAlgorithm;
     }
 
     public ResourceDownloadStatistics getStatistics() {

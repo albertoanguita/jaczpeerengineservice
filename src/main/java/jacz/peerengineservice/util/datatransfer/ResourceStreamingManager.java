@@ -807,23 +807,6 @@ public class ResourceStreamingManager {
                     totalHash,
                     totalHashAlgorithm, () -> resourceTransferEventsBridge.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm));
             return masterAndDM.element2;
-//            resourceTransferEventsBridge.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
-//            MasterResourceStreamer masterResourceStreamer =
-//                    new MasterResourceStreamer(
-//                            this,
-//                            transfersConfig,
-//                            null,
-//                            resourceStoreName,
-//                            resourceID,
-//                            resourceWriter,
-//                            downloadProgressNotificationHandler,
-//                            streamingNeed,
-//                            totalHash,
-//                            totalHashAlgorithm);
-//            activeDownloadSet.addDownload(masterResourceStreamer);
-//            reportProvidersForOneActiveDownload(resourceStoreName, resourceID);
-//            downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
-//            return masterResourceStreamer.getDownloadManager();
         } else {
             throw new NotAliveException();
         }
@@ -868,23 +851,6 @@ public class ResourceStreamingManager {
                     totalHashAlgorithm, () -> resourceTransferEventsBridge.peerDownloadInitiated(serverPeerId, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm));
             reportResourceProviderForPeerSpecificDownload(serverPeerId, masterAndDM.element1);
             return masterAndDM.element2;
-//            resourceTransferEventsBridge.peerDownloadInitiated(serverPeerId, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
-//            MasterResourceStreamer masterResourceStreamer =
-//                    new MasterResourceStreamer(
-//                            this,
-//                            transfersConfig,
-//                            serverPeerId,
-//                            resourceStoreName,
-//                            resourceID,
-//                            resourceWriter,
-//                            downloadProgressNotificationHandler,
-//                            streamingNeed,
-//                            totalHash,
-//                            totalHashAlgorithm);
-//            activeDownloadSet.addDownload(masterResourceStreamer);
-//            reportResourceProviderForPeerSpecificDownload(serverPeerId, masterResourceStreamer);
-//            downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
-//            return masterResourceStreamer.getDownloadManager();
         } else {
             throw new NotAliveException();
         }
@@ -912,13 +878,17 @@ public class ResourceStreamingManager {
                         streamingNeed,
                         totalHash,
                         totalHashAlgorithm);
+        activateMasterResourceStreamer(masterResourceStreamer, reportAction);
+        return new Duple<>(masterResourceStreamer, masterResourceStreamer.getDownloadManager());
+    }
+
+    public void activateMasterResourceStreamer(MasterResourceStreamer masterResourceStreamer, Runnable reportAction) {
         if (masterResourceStreamer.getState() != DownloadState.STOPPED) {
             // the download is active
             activeDownloadSet.addDownload(masterResourceStreamer);
-            downloadsManager.addDownload(resourceStoreName, masterResourceStreamer.getDownloadManager());
+            downloadsManager.addDownload(masterResourceStreamer.getStoreName(), masterResourceStreamer.getDownloadManager());
             reportAction.run();
         }
-        return new Duple<>(masterResourceStreamer, masterResourceStreamer.getDownloadManager());
     }
 
 //    public synchronized Float getMaxDesiredDownloadSpeed() {

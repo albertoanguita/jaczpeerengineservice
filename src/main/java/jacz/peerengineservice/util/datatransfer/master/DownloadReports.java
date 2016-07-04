@@ -32,7 +32,7 @@ class DownloadReports {
         sequentialTaskExecutor = Executors.newSingleThreadExecutor();
     }
 
-    public void initializeWriting(ResourceWriter resourceWriter) throws IOException {
+    public void initializeWriting() throws IOException {
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.submit(new Runnable() {
                 @Override
