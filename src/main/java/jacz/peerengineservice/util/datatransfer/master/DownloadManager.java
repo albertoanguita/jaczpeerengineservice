@@ -10,7 +10,7 @@ import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWrite
  */
 public class DownloadManager {
 
-    private final MasterResourceStreamer masterResourceStreamer;
+    private MasterResourceStreamer masterResourceStreamer;
 
     private final ResourceStreamingManager resourceStreamingManager;
 
@@ -39,8 +39,8 @@ public class DownloadManager {
             // first, reactivate the resource writer by changing its state
             // then, create a new download and steal its master resource streamer
             masterResourceStreamer.setState(DownloadState.RUNNING, true);
-            MasterResourceStreamer newMasterResourceStreamer = new MasterResourceStreamer(masterResourceStreamer, this);
-            resourceStreamingManager.activateMasterResourceStreamer(newMasterResourceStreamer, () -> {});
+            masterResourceStreamer = new MasterResourceStreamer(masterResourceStreamer, this);
+            resourceStreamingManager.activateMasterResourceStreamer(masterResourceStreamer, () -> {});
         }
     }
 
