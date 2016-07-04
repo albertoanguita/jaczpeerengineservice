@@ -1005,6 +1005,7 @@ public class ResourceStreamingManager {
                 ResourceProvider peerResourceProvider = generateResourceProvider(peerId);
                 resourceProviders.add(peerResourceProvider);
             }
+            // report the new providers to the client
         }
         if (resourceProviders != null) {
             for (MasterResourceStreamer masterResourceStreamer : activeDownloadSet.getDownload(resourceStoreName, resourceID)) {

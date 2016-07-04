@@ -2,6 +2,8 @@ package jacz.peerengineservice.util.datatransfer;
 
 import jacz.peerengineservice.PeerId;
 
+import java.util.Set;
+
 /**
  * Events related to resource transfers (download/upload requests, important download/upload events, file store changes,
  * etc) that are notified to clients
@@ -19,6 +21,8 @@ public interface ResourceTransferEvents {
     void removeLocalGeneralResourceStore();
 
     void removeForeignResourceStore(String name);
+
+    void updateResourceProviders(String resourceId, Set<PeerId> providers);
 
     void globalDownloadInitiated(String resourceStoreName, String resourceID, double streamingNeed, String totalHash, String totalHashAlgorithm);
 

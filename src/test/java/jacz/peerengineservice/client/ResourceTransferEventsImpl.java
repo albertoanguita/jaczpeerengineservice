@@ -5,6 +5,8 @@ import jacz.peerengineservice.util.datatransfer.*;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
 
+import java.util.Set;
+
 /**
  * Created by Alberto on 12/04/2016.
  */
@@ -38,6 +40,11 @@ public class ResourceTransferEventsImpl implements ResourceTransferEvents {
     @Override
     public void removeForeignResourceStore(String name) {
         System.out.println("Remove foreign resource store: " + name);
+    }
+
+    @Override
+    public void updateResourceProviders(String resourceId, Set<PeerId> providers) {
+        System.out.println("Update resource providers. Resource id: " + resourceId);
     }
 
     @Override
