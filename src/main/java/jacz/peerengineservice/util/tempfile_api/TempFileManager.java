@@ -329,7 +329,7 @@ public class TempFileManager {
         }
         // the concurrency controller is no longer needed, remove it
         synchronized (this) {
-            concurrencyControllers.remove(tempFileName).stopAndWaitForFinalization(true);
+            concurrencyControllers.remove(tempFileName).stopAndWaitForFinalization();
         }
         return completerTask.getFinalPath();
     }
@@ -494,7 +494,7 @@ public class TempFileManager {
             tempFileManagerEventsBridge.stop();
             ThreadExecutor.shutdownClient(threadExecutorClientId);
             for (ConcurrencyController concurrencyController : concurrencyControllers.values()) {
-                concurrencyController.stopAndWaitForFinalization(true);
+                concurrencyController.stopAndWaitForFinalization();
             }
         }
     }
