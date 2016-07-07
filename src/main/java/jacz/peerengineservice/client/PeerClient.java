@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class PeerClient {
 
-    public static final String VERSION = "0.1.0";
+    public static final String API_VERSION = "0.1.0";
 
     public static final String OWN_CUSTOM_PREFIX = "@@@";
 
