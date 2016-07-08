@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.data_synchronization;
 
 import jacz.peerengineservice.PeerId;
-import jacz.util.notification.ProgressNotificationWithError;
+import org.aanguita.jacuzzi.notification.ProgressNotificationWithError;
 
 import java.io.Serializable;
 import java.util.List;

@@ -2,10 +2,10 @@ package jacz.peerengineservice.util;
 
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
-import jacz.util.event.notification.NotificationEmitter;
-import jacz.util.event.notification.NotificationProcessor;
-import jacz.util.event.notification.NotificationReceiver;
-import jacz.util.id.AlphaNumFactory;
+import org.aanguita.jacuzzi.event.notification.NotificationEmitter;
+import org.aanguita.jacuzzi.event.notification.NotificationProcessor;
+import org.aanguita.jacuzzi.event.notification.NotificationReceiver;
+import org.aanguita.jacuzzi.id.AlphaNumFactory;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.*;

@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client;
 
-import jacz.util.log.ErrorHandler;
+import org.aanguita.jacuzzi.log.ErrorHandler;
 
 /**
  * Bridge fatal for error events. Stops the peer client.

@@ -1,9 +1,9 @@
 package jacz.peerengineservice.util.tempfile_api;
 
-import jacz.util.files.RandomAccess;
-import jacz.util.io.serialization.*;
-import jacz.util.numeric.range.LongRange;
-import jacz.util.numeric.range.LongRangeList;
+import org.aanguita.jacuzzi.files.RandomAccess;
+import org.aanguita.jacuzzi.io.serialization.*;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.LongRangeList;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;

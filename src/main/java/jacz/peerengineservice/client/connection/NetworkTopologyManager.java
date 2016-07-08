@@ -1,10 +1,10 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.util.AI.evolve.EvolvingState;
-import jacz.util.AI.evolve.EvolvingStateController;
-import jacz.util.io.http.HttpClient;
-import jacz.util.lists.tuple.Duple;
-import jacz.util.numeric.NumericUtil;
+import org.aanguita.jacuzzi.AI.evolve.EvolvingState;
+import org.aanguita.jacuzzi.AI.evolve.EvolvingStateController;
+import org.aanguita.jacuzzi.io.http.HttpClient;
+import org.aanguita.jacuzzi.lists.tuple.Duple;
+import org.aanguita.jacuzzi.numeric.NumericUtil;
 
 import java.io.IOException;
 import java.net.Socket;

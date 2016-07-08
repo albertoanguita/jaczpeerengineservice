@@ -3,8 +3,8 @@ package jacz.peerengineservice.client.personaldata;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.*;
 import jacz.peerengineservice.test.IntegrationTest;
-import jacz.util.concurrency.ThreadUtil;
-import jacz.util.lists.tuple.SixTuple;
+import org.aanguita.jacuzzi.concurrency.ThreadUtil;
+import org.aanguita.jacuzzi.lists.tuple.SixTuple;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 

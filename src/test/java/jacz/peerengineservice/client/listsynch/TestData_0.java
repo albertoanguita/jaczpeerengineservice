@@ -4,7 +4,7 @@ import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.data_synchronization.DataAccessException;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.data_synchronization.SynchError;
-import jacz.util.notification.ProgressNotificationWithError;
+import org.aanguita.jacuzzi.notification.ProgressNotificationWithError;
 
 import java.io.Serializable;
 import java.util.*;

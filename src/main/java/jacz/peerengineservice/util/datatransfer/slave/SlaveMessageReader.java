@@ -1,10 +1,10 @@
 package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceReader;
-import jacz.util.date_time.PerformRegularAction;
-import jacz.util.numeric.range.LongRange;
-import jacz.util.queues.event_processing.MessageReader;
-import jacz.util.queues.event_processing.StopReadingMessages;
+import org.aanguita.jacuzzi.date_time.PerformRegularAction;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
+import org.aanguita.jacuzzi.queues.event_processing.MessageReader;
+import org.aanguita.jacuzzi.queues.event_processing.StopReadingMessages;
 
 import java.nio.file.AccessMode;
 

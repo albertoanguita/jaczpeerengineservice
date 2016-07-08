@@ -6,7 +6,7 @@ import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.master.ProviderStatistics;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
-import jacz.util.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
 
 /**
  * Simple download progress notification handler

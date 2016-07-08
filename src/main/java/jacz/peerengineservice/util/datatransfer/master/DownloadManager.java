@@ -3,7 +3,7 @@ package jacz.peerengineservice.util.datatransfer.master;
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
-import jacz.util.id.AlphaNumFactory;
+import org.aanguita.jacuzzi.id.AlphaNumFactory;
 
 /**
  * This class gives the client the ability to control a single download. It also contains the statistics about the

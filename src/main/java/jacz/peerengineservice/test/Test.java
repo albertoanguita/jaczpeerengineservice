@@ -1,6 +1,6 @@
 package jacz.peerengineservice.test;
 
-import jacz.util.concurrency.ThreadUtil;
+import org.aanguita.jacuzzi.concurrency.ThreadUtil;
 
 /**
  * Created by Alberto on 13/10/2015.

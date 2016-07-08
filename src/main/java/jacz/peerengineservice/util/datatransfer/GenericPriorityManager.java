@@ -1,8 +1,8 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.util.AI.resource_distribution.PriorityResourceDistribution;
-import jacz.util.concurrency.timer.TimerAction;
-import jacz.util.concurrency.timer.Timer;
+import org.aanguita.jacuzzi.AI.resource_distribution.PriorityResourceDistribution;
+import org.aanguita.jacuzzi.concurrency.timer.TimerAction;
+import org.aanguita.jacuzzi.concurrency.timer.Timer;
 
 import java.util.HashMap;
 import java.util.HashSet;

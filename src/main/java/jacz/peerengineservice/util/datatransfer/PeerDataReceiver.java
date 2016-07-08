@@ -2,6 +2,7 @@ package jacz.peerengineservice.util.datatransfer;
 
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.channel.ChannelFSMAction;
+import jacz.peerengineservice.client.PeerClient;
 
 /**
  * This class handles both incoming packages to a channel assigned for data streaming purposes (by defining an FSM
@@ -66,5 +67,11 @@ class PeerDataReceiver implements ChannelFSMAction<PeerDataReceiver.DataTransfer
     @Override
     public void disconnected(ChannelConnectionPoint ccp) {
         // ignore
+    }
+
+    @Override
+    public void raisedUnhandledException(Exception e, ChannelConnectionPoint ccp) {
+        // this class raised an exception
+        PeerClient.reportFatalError("Unhandled exception in PeerDataReceiver", e);
     }
 }

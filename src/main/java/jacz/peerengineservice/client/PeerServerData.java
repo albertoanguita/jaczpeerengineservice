@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client;
 
-import jacz.util.network.IP4Port;
+import org.aanguita.jacuzzi.network.IP4Port;
 
 /**
  * Data about a peer server. This includes connection data (ip, port) and last known metadata (server name, server capacity, status)

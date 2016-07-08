@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.tempfile_api;
 
-import jacz.util.numeric.range.LongRangeList;
+import org.aanguita.jacuzzi.numeric.range.LongRangeList;
 
 import java.io.IOException;
 

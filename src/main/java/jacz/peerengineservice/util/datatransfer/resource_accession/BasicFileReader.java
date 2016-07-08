@@ -1,9 +1,9 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.files.RandomAccess;
-import jacz.util.io.serialization.Serializer;
-import jacz.util.numeric.range.LongRange;
-import jacz.util.numeric.range.LongRangeList;
+import org.aanguita.jacuzzi.files.RandomAccess;
+import org.aanguita.jacuzzi.io.serialization.Serializer;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.LongRangeList;
 
 import java.io.File;
 import java.io.FileNotFoundException;

@@ -1,9 +1,9 @@
 package jacz.peerengineservice.util.datatransfer;
 
 import jacz.peerengineservice.util.ForeignStoreShare;
-import jacz.util.concurrency.task_executor.ThreadExecutor;
-import jacz.util.event.notification.NotificationReceiver;
-import jacz.util.id.AlphaNumFactory;
+import org.aanguita.jacuzzi.concurrency.task_executor.ThreadExecutor;
+import org.aanguita.jacuzzi.event.notification.NotificationReceiver;
+import org.aanguita.jacuzzi.id.AlphaNumFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;

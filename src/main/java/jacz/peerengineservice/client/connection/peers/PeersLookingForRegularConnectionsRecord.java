@@ -3,7 +3,7 @@ package jacz.peerengineservice.client.connection.peers;
 import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.PeerAddress;
-import jacz.util.queues.TimedQueue;
+import org.aanguita.jacuzzi.queues.TimedQueue;
 
 import java.io.Serializable;
 import java.util.List;

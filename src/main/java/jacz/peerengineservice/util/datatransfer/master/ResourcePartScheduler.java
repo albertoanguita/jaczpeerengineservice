@@ -2,12 +2,12 @@ package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.util.datatransfer.TransfersConfig;
 import jacz.peerengineservice.util.datatransfer.slave.ResourceChunk;
-import jacz.util.io.serialization.ObjectListWrapper;
-import jacz.util.numeric.ContinuousDegree;
-import jacz.util.numeric.NumericUtil;
-import jacz.util.numeric.range.LongRange;
-import jacz.util.numeric.range.LongRangeList;
-import jacz.util.stochastic.StochasticUtil;
+import org.aanguita.jacuzzi.io.serialization.ObjectListWrapper;
+import org.aanguita.jacuzzi.numeric.ContinuousDegree;
+import org.aanguita.jacuzzi.numeric.NumericUtil;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.LongRangeList;
+import org.aanguita.jacuzzi.stochastic.StochasticUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;

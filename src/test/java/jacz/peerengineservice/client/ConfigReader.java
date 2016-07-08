@@ -7,9 +7,9 @@ import jacz.peerengineservice.client.connection.peers.PeerConnectionConfig;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.peerengineservice.util.datatransfer.TransferStatistics;
-import jacz.util.io.serialization.StrCast;
-import jacz.util.io.xml.XMLReader;
-import jacz.util.lists.tuple.SixTuple;
+import org.aanguita.jacuzzi.io.serialization.StrCast;
+import org.aanguita.jacuzzi.io.xml.XMLReader;
+import org.aanguita.jacuzzi.lists.tuple.SixTuple;
 import org.apache.commons.io.FileUtils;
 
 import javax.xml.stream.XMLStreamException;

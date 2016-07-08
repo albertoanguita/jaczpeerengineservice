@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.util.AI.resource_distribution.PriorityResourceDistribution;
+import org.aanguita.jacuzzi.AI.resource_distribution.PriorityResourceDistribution;
 
 /**
  * We regulate resources to achieve stakeholder equality. We must try to set the specified priorities

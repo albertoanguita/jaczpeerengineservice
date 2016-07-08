@@ -7,7 +7,7 @@ import jacz.commengine.channel.TimedChannelFSMAction;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
-import jacz.util.id.AlphaNumFactory;
+import org.aanguita.jacuzzi.id.AlphaNumFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -275,6 +275,13 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
     public void disconnected(ChannelConnectionPoint ccp) {
         logMessage("disconnected");
         // ignore
+    }
+
+    @Override
+    public void raisedUnhandledException(Exception e, ChannelConnectionPoint ccp) {
+        logMessage("unhandled exception");
+        e.printStackTrace();
+        ccp.disconnect();
     }
 
     @Override

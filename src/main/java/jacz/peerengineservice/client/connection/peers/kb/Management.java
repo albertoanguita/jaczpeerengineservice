@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client.connection.peers.kb;
 
-import jacz.util.io.serialization.activejdbcsupport.ActiveJDBCController;
+import org.aanguita.jacuzzi.io.serialization.activejdbcsupport.ActiveJDBCController;
 import org.javalite.activejdbc.DB;
 
 /**

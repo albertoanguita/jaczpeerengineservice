@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.data_synchronization;
 
-import jacz.util.notification.ProgressNotificationWithError;
+import org.aanguita.jacuzzi.notification.ProgressNotificationWithError;
 
 /**
  * A dummy implementation of the progress monitor

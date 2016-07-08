@@ -9,8 +9,8 @@ import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.util.ChannelConstants;
-import jacz.util.id.AlphaNumFactory;
-import jacz.util.network.IP4Port;
+import org.aanguita.jacuzzi.id.AlphaNumFactory;
+import org.aanguita.jacuzzi.network.IP4Port;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -329,8 +329,7 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
             case CONNECTION_DENIED:
             case ERROR:
                 logMessage("connection failed");
-                connectionFailed();
-                ccp.disconnect();
+                connectionFailed(ccp);
                 return true;
 
             default:
@@ -341,21 +340,28 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
     @Override
     public void disconnected(ChannelConnectionPoint ccp) {
         logMessage("disconnected");
-        connectionFailed();
+        connectionFailed(ccp);
+    }
+
+    @Override
+    public void raisedUnhandledException(Exception e, ChannelConnectionPoint ccp) {
+        logMessage("unhandled exception");
+        e.printStackTrace();
+        connectionFailed(ccp);
     }
 
 
     @Override
     public void timedOut(State state, ChannelConnectionPoint ccp) {
         logMessage("timed out");
-        connectionFailed();
+        connectionFailed(ccp);
     }
 
     /**
      * Reports the PeerClientConnectionManager that this connection is no longer ongoing
      */
-    private void connectionFailed() {
-        peerConnectionManager.connectionAsClientFailed(serverPeerId, secondaryIP4Port, serverPeerId);
+    private void connectionFailed(ChannelConnectionPoint ccp) {
+        peerConnectionManager.connectionAsClientFailed(serverPeerId, secondaryIP4Port, serverPeerId, ccp);
     }
 
     private void logMessage(String message) {

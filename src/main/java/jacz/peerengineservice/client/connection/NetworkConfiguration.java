@@ -1,7 +1,7 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.util.io.serialization.localstorage.Updater;
-import jacz.util.io.serialization.localstorage.VersionedLocalStorage;
+import org.aanguita.jacuzzi.io.serialization.localstorage.Updater;
+import org.aanguita.jacuzzi.io.serialization.localstorage.VersionedLocalStorage;
 
 import java.io.IOException;
 

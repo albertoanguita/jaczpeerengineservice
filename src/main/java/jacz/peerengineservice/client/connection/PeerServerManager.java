@@ -1,8 +1,8 @@
 package jacz.peerengineservice.client.connection;
 
 import jacz.peerengineservice.PeerId;
-import jacz.util.AI.evolve.EvolvingState;
-import jacz.util.AI.evolve.EvolvingStateController;
+import org.aanguita.jacuzzi.AI.evolve.EvolvingState;
+import org.aanguita.jacuzzi.AI.evolve.EvolvingStateController;
 
 import java.io.IOException;
 

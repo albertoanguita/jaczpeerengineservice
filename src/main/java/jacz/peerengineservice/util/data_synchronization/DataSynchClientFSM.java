@@ -5,13 +5,13 @@ import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
-import jacz.util.concurrency.task_executor.ThreadExecutor;
-import jacz.util.hash.CRC;
-import jacz.util.hash.CRCMismatchException;
-import jacz.util.io.serialization.MutableOffset;
-import jacz.util.io.serialization.Serializer;
-import jacz.util.notification.ProgressNotificationWithError;
-import jacz.util.numeric.NumericUtil;
+import org.aanguita.jacuzzi.concurrency.task_executor.ThreadExecutor;
+import org.aanguita.jacuzzi.hash.CRC;
+import org.aanguita.jacuzzi.hash.CRCMismatchException;
+import org.aanguita.jacuzzi.io.serialization.MutableOffset;
+import org.aanguita.jacuzzi.io.serialization.Serializer;
+import org.aanguita.jacuzzi.notification.ProgressNotificationWithError;
+import org.aanguita.jacuzzi.numeric.NumericUtil;
 
 import java.io.Serializable;
 
@@ -266,6 +266,13 @@ public class DataSynchClientFSM implements PeerTimedFSMAction<DataSynchClientFSM
         if (progress != null) {
             progress.error(new SynchError(SynchError.Type.DISCONNECTED, null));
         }
+    }
+
+    @Override
+    public void raisedUnhandledException(Exception e, ChannelConnectionPoint ccp) {
+        DataSynchronizer.logger.info("CLIENT SYNCH EXCEPTION. serverPeer: " + serverPeerId + ". dataAccessorName: " + dataAccessor.getName() + ". fsmID: " + fsmID);
+        e.printStackTrace();
+        // todo hand this exception to the client
     }
 
     @Override

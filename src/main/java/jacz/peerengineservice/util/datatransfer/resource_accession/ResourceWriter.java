@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.numeric.range.LongRangeList;
+import org.aanguita.jacuzzi.numeric.range.LongRangeList;
 
 import java.io.IOException;
 import java.io.Serializable;

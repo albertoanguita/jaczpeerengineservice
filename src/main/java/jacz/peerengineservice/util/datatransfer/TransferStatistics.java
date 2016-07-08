@@ -1,10 +1,10 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.util.concurrency.timer.Timer;
-import jacz.util.concurrency.timer.TimerAction;
-import jacz.util.date_time.SpeedRegistry;
-import jacz.util.io.serialization.localstorage.Updater;
-import jacz.util.io.serialization.localstorage.VersionedLocalStorage;
+import org.aanguita.jacuzzi.concurrency.timer.Timer;
+import org.aanguita.jacuzzi.concurrency.timer.TimerAction;
+import org.aanguita.jacuzzi.date_time.SpeedRegistry;
+import org.aanguita.jacuzzi.io.serialization.localstorage.Updater;
+import org.aanguita.jacuzzi.io.serialization.localstorage.VersionedLocalStorage;
 
 import java.io.IOException;
 import java.util.Date;

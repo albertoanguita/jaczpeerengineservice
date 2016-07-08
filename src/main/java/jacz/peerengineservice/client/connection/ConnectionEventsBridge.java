@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.util.network.IP4Port;
+import org.aanguita.jacuzzi.network.IP4Port;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

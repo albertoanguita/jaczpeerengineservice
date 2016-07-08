@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer.test;
 
-import jacz.util.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 
 /**

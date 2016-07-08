@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.tempfile_api;
 
-import jacz.util.io.serialization.VersionedSerializationException;
+import org.aanguita.jacuzzi.io.serialization.VersionedSerializationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

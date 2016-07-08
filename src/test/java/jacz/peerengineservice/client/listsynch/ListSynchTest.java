@@ -5,9 +5,9 @@ import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.*;
 import jacz.peerengineservice.test.IntegrationTest;
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
-import jacz.util.concurrency.ThreadUtil;
-import jacz.util.lists.tuple.SixTuple;
-import jacz.util.lists.tuple.Triple;
+import org.aanguita.jacuzzi.concurrency.ThreadUtil;
+import org.aanguita.jacuzzi.lists.tuple.SixTuple;
+import org.aanguita.jacuzzi.lists.tuple.Triple;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 

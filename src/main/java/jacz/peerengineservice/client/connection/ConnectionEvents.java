@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.util.network.IP4Port;
+import org.aanguita.jacuzzi.network.IP4Port;
 
 /**
  * Events related to connection with server or connection with other peers

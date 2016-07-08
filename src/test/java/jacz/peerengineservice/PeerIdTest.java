@@ -1,7 +1,7 @@
 package jacz.peerengineservice;
 
 
-import jacz.util.stochastic.MouseToRandom;
+import org.aanguita.jacuzzi.stochastic.MouseToRandom;
 import org.junit.Assert;
 
 import java.util.Arrays;

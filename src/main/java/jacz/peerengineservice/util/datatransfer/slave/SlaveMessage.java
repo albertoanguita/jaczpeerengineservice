@@ -1,10 +1,10 @@
 package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
-import jacz.util.io.serialization.MutableOffset;
-import jacz.util.io.serialization.Serializer;
-import jacz.util.numeric.range.LongRange;
-import jacz.util.numeric.range.Range;
+import org.aanguita.jacuzzi.io.serialization.MutableOffset;
+import org.aanguita.jacuzzi.io.serialization.Serializer;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.Range;
 
 /**
  * Internal representation of a message received from a slave. It also contains static methods to create

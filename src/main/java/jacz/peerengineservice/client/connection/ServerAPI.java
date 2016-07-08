@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
-import jacz.util.io.http.HttpClient;
-import jacz.util.lists.tuple.Duple;
+import org.aanguita.jacuzzi.io.http.HttpClient;
+import org.aanguita.jacuzzi.lists.tuple.Duple;
 
 import java.io.IOException;
 import java.util.ArrayList;

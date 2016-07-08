@@ -1,8 +1,8 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
 import jacz.peerengineservice.PeerId;
-import jacz.util.date_time.SpeedMonitor;
-import jacz.util.numeric.range.LongRange;
+import org.aanguita.jacuzzi.date_time.SpeedMonitor;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
 
 /**
  * Statistics for a single provider in a specific download process. This element is accessible through the statistics object of the DownloadManager,

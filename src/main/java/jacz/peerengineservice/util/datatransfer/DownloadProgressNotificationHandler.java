@@ -4,7 +4,7 @@ import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.master.ProviderStatistics;
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
-import jacz.util.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 
 /**

@@ -14,7 +14,7 @@ import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.PeerRelationship;
-import jacz.util.network.IP4Port;
+import org.aanguita.jacuzzi.network.IP4Port;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -604,9 +604,9 @@ public class PeerConnectionManager {
         // - wrong server peer id
         // - wrong serverWishRegularConnections
         // - wrong server main country
-        return (!jacz.util.objects.Util.equals(connectionRequest.serverPeerId, ownPeerId)
-                || !jacz.util.objects.Util.equals(connectionRequest.serverWishRegularConnections, peerConnectionConfig.isWishRegularConnections())
-                || !jacz.util.objects.Util.equals(connectionRequest.serverMainCountry, peerConnectionConfig.getMainCountry())
+        return (!org.aanguita.jacuzzi.objects.Util.equals(connectionRequest.serverPeerId, ownPeerId)
+                || !org.aanguita.jacuzzi.objects.Util.equals(connectionRequest.serverWishRegularConnections, peerConnectionConfig.isWishRegularConnections())
+                || !org.aanguita.jacuzzi.objects.Util.equals(connectionRequest.serverMainCountry, peerConnectionConfig.getMainCountry())
         );
     }
 
@@ -673,9 +673,10 @@ public class PeerConnectionManager {
      *
      * @param peerId the ID of the friend whose ongoing connection process has finished
      */
-    void connectionAsClientFailed(PeerId peerId, IP4Port secondaryIP4Port, PeerId serverPeerId) {
+    void connectionAsClientFailed(PeerId peerId, IP4Port secondaryIP4Port, PeerId serverPeerId, ChannelConnectionPoint ccp) {
         // if the connection was not successful, disconnect from the other peer (only for client role)
         ongoingClientConnections.remove(peerId);
+        ccp.disconnect();
         // if there is a secondary address available, try it
         if (secondaryIP4Port != null) {
             try {

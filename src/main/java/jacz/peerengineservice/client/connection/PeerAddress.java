@@ -1,7 +1,7 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.util.io.serialization.StrCast;
-import jacz.util.network.IP4Port;
+import org.aanguita.jacuzzi.io.serialization.StrCast;
+import org.aanguita.jacuzzi.network.IP4Port;
 
 import java.io.IOException;
 import java.io.Serializable;

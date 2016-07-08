@@ -3,6 +3,7 @@ package jacz.peerengineservice.client.connection;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.channel.ChannelFSMAction;
 import jacz.peerengineservice.PeerId;
+import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 
 /**
@@ -86,5 +87,10 @@ public class PeerRequestDispatcherFSM implements ChannelFSMAction<PeerRequestDis
     @Override
     public void disconnected(ChannelConnectionPoint ccp) {
         // ignore
+    }
+
+    @Override
+    public void raisedUnhandledException(Exception e, ChannelConnectionPoint ccp) {
+        PeerClient.reportFatalError("Unhandled exception in peer request dispatcher FSM", e);
     }
 }

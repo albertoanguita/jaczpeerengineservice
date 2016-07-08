@@ -1,8 +1,8 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
 import jacz.peerengineservice.util.tempfile_api.TempFileManager;
-import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.RangeList;
+import org.aanguita.jacuzzi.numeric.range.LongRangeList;
+import org.aanguita.jacuzzi.numeric.range.RangeList;
 
 import java.io.IOException;
 

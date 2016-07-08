@@ -1,10 +1,10 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.util.numeric.NumericUtil;
-import jacz.util.numeric.range.LongRange;
-import jacz.util.numeric.range.LongRangeList;
-import jacz.util.numeric.range.Range;
-import jacz.util.numeric.range.RangeList;
+import org.aanguita.jacuzzi.numeric.NumericUtil;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.LongRangeList;
+import org.aanguita.jacuzzi.numeric.range.Range;
+import org.aanguita.jacuzzi.numeric.range.RangeList;
 
 import java.util.Collection;
 import java.util.List;

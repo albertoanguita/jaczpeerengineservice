@@ -6,9 +6,9 @@ import jacz.peerengineservice.client.connection.ConnectedPeers;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
-import jacz.util.AI.evolve.EvolvingState;
-import jacz.util.AI.evolve.EvolvingStateController;
-import jacz.util.AI.evolve.StateCondition;
+import org.aanguita.jacuzzi.AI.evolve.EvolvingState;
+import org.aanguita.jacuzzi.AI.evolve.EvolvingStateController;
+import org.aanguita.jacuzzi.AI.evolve.StateCondition;
 
 import java.util.HashMap;
 import java.util.HashSet;

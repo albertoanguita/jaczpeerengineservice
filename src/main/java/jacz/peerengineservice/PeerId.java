@@ -1,8 +1,8 @@
 package jacz.peerengineservice;
 
-import jacz.util.hash.SHA_256;
-import jacz.util.io.SixBitSerializer;
-import jacz.util.lists.tuple.Duple;
+import org.aanguita.jacuzzi.hash.SHA_256;
+import org.aanguita.jacuzzi.io.SixBitSerializer;
+import org.aanguita.jacuzzi.lists.tuple.Duple;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;

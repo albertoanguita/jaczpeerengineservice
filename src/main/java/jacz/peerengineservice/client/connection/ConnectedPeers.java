@@ -3,13 +3,13 @@ package jacz.peerengineservice.client.connection;
 import com.neovisionaries.i18n.CountryCode;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.PeerId;
-import jacz.util.event.notification.NotificationEmitter;
-import jacz.util.event.notification.NotificationProcessor;
-import jacz.util.event.notification.NotificationReceiver;
-import jacz.util.lists.tuple.Duple;
-import jacz.util.maps.DoubleKeyMap;
-import jacz.util.maps.ObjectCount;
-import jacz.util.sets.availableelements.AvailableElementsByte;
+import org.aanguita.jacuzzi.event.notification.NotificationEmitter;
+import org.aanguita.jacuzzi.event.notification.NotificationProcessor;
+import org.aanguita.jacuzzi.event.notification.NotificationReceiver;
+import org.aanguita.jacuzzi.lists.tuple.Duple;
+import org.aanguita.jacuzzi.maps.DoubleKeyMap;
+import org.aanguita.jacuzzi.maps.ObjectCount;
+import org.aanguita.jacuzzi.sets.availableelements.AvailableElementsByte;
 
 import java.util.*;
 

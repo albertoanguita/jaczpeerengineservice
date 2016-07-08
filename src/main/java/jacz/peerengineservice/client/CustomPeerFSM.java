@@ -4,7 +4,7 @@ import jacz.peerengineservice.client.connection.RequestFromPeerToPeer;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.commengine.channel.ChannelConnectionPoint;
 import jacz.commengine.channel.ChannelFSMAction;
-import jacz.util.io.serialization.ObjectListWrapper;
+import org.aanguita.jacuzzi.io.serialization.ObjectListWrapper;
 
 /**
  * A custom FSM for dynamic set up in the peer engine. The client must simply implement the PeerFSMAction interface,
@@ -160,5 +160,10 @@ public class CustomPeerFSM<T> implements ChannelFSMAction<T> {
     @Override
     public void disconnected(ChannelConnectionPoint ccp) {
         internalFSM.disconnected(ccp);
+    }
+
+    @Override
+    public void raisedUnhandledException(Exception e, ChannelConnectionPoint ccp) {
+        internalFSM.raisedUnhandledException(e, ccp);
     }
 }

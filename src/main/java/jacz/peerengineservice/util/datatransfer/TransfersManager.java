@@ -1,8 +1,8 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.util.concurrency.task_executor.ThreadExecutor;
-import jacz.util.concurrency.timer.Timer;
-import jacz.util.concurrency.timer.TimerAction;
+import org.aanguita.jacuzzi.concurrency.task_executor.ThreadExecutor;
+import org.aanguita.jacuzzi.concurrency.timer.Timer;
+import org.aanguita.jacuzzi.concurrency.timer.TimerAction;
 
 import java.util.ArrayList;
 import java.util.HashMap;

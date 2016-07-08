@@ -3,8 +3,8 @@ package jacz.peerengineservice.client.regulars;
 import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.*;
-import jacz.util.concurrency.ThreadUtil;
-import jacz.util.lists.tuple.SixTuple;
+import org.aanguita.jacuzzi.concurrency.ThreadUtil;
+import org.aanguita.jacuzzi.lists.tuple.SixTuple;
 import org.junit.Assert;
 
 import java.util.ArrayList;

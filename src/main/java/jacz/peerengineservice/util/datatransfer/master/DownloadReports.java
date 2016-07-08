@@ -3,7 +3,7 @@ package jacz.peerengineservice.util.datatransfer.master;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.DownloadProgressNotificationHandler;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
-import jacz.util.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;

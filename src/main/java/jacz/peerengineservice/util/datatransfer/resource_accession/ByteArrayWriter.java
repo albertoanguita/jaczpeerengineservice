@@ -1,9 +1,9 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
-import jacz.util.io.serialization.MutableOffset;
-import jacz.util.io.serialization.Serializer;
-import jacz.util.numeric.range.LongRangeList;
+import org.aanguita.jacuzzi.io.serialization.MutableOffset;
+import org.aanguita.jacuzzi.io.serialization.Serializer;
+import org.aanguita.jacuzzi.numeric.range.LongRangeList;
 
 import java.io.IOException;
 import java.io.Serializable;

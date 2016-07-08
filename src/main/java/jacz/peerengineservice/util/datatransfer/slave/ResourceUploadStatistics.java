@@ -2,8 +2,8 @@ package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.util.datatransfer.master.ResourcePart;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceProvider;
-import jacz.util.date_time.SpeedMonitor;
-import jacz.util.numeric.range.LongRange;
+import org.aanguita.jacuzzi.date_time.SpeedMonitor;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
 
 import java.util.Date;
 import java.util.GregorianCalendar;

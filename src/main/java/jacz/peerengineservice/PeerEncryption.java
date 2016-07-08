@@ -1,7 +1,7 @@
 package jacz.peerengineservice;
 
 import jacz.peerengineservice.client.PeerClient;
-import jacz.util.io.serialization.*;
+import org.aanguita.jacuzzi.io.serialization.*;
 
 import java.io.IOException;
 import java.io.Serializable;

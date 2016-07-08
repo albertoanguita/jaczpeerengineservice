@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.util.AI.resource_distribution.PriorityResourceDistribution;
+import org.aanguita.jacuzzi.AI.resource_distribution.PriorityResourceDistribution;
 
 /**
  * We look for specified priorities among stakeholders (if uploads, all same priority)

@@ -6,10 +6,10 @@ import jacz.commengine.clientserver.server.ServerModule;
 import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.PeerConnectionManager;
-import jacz.util.AI.evolve.EvolvingState;
-import jacz.util.AI.evolve.EvolvingStateController;
-import jacz.util.network.IP4Port;
-import jacz.util.numeric.NumericUtil;
+import org.aanguita.jacuzzi.AI.evolve.EvolvingState;
+import org.aanguita.jacuzzi.AI.evolve.EvolvingStateController;
+import org.aanguita.jacuzzi.network.IP4Port;
+import org.aanguita.jacuzzi.numeric.NumericUtil;
 import org.bitlet.weupnp.GatewayDevice;
 
 import java.io.IOException;

@@ -2,11 +2,11 @@ package jacz.peerengineservice.util.datatransfer.resource_accession;
 
 import jacz.peerengineservice.util.data_synchronization.DataAccessor;
 import jacz.peerengineservice.util.data_synchronization.SynchError;
-import jacz.util.io.buffer.BufferStream;
-import jacz.util.io.buffer.ReadBuffer;
-import jacz.util.notification.ProgressNotificationWithError;
-import jacz.util.numeric.range.LongRange;
-import jacz.util.numeric.range.LongRangeList;
+import org.aanguita.jacuzzi.io.buffer.BufferStream;
+import org.aanguita.jacuzzi.io.buffer.ReadBuffer;
+import org.aanguita.jacuzzi.notification.ProgressNotificationWithError;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.LongRangeList;
 
 import java.io.IOException;
 import java.util.List;

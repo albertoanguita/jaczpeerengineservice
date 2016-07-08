@@ -1,8 +1,8 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.util.io.serialization.MutableOffset;
-import jacz.util.io.serialization.Serializer;
-import jacz.util.numeric.range.LongRange;
+import org.aanguita.jacuzzi.io.serialization.MutableOffset;
+import org.aanguita.jacuzzi.io.serialization.Serializer;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
 
 /**
  * Messages created by a Master for a Slave

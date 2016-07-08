@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.datatransfer.resource_accession;
 
-import jacz.util.numeric.range.LongRange;
-import jacz.util.numeric.range.Range;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.Range;
 
 import java.util.Arrays;
 

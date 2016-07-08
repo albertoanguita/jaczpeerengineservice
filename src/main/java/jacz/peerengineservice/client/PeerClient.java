@@ -22,10 +22,10 @@ import jacz.peerengineservice.util.datatransfer.*;
 import jacz.peerengineservice.util.datatransfer.master.DownloadManager;
 import jacz.peerengineservice.util.datatransfer.resource_accession.ResourceWriter;
 import jacz.peerengineservice.util.datatransfer.slave.UploadManager;
-import jacz.util.event.notification.NotificationReceiver;
-import jacz.util.io.serialization.ObjectListWrapper;
-import jacz.util.log.ErrorFactory;
-import jacz.util.log.ErrorHandler;
+import org.aanguita.jacuzzi.event.notification.NotificationReceiver;
+import org.aanguita.jacuzzi.io.serialization.ObjectListWrapper;
+import org.aanguita.jacuzzi.log.ErrorFactory;
+import org.aanguita.jacuzzi.log.ErrorHandler;
 
 import java.io.IOException;
 import java.io.Serializable;

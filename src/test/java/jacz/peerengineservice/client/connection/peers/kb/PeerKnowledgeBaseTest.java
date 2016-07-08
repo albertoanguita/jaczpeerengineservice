@@ -3,8 +3,8 @@ package jacz.peerengineservice.client.connection.peers.kb;
 import com.neovisionaries.i18n.CountryCode;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.PeerAddress;
-import jacz.util.concurrency.ThreadUtil;
-import jacz.util.network.IP4Port;
+import org.aanguita.jacuzzi.concurrency.ThreadUtil;
+import org.aanguita.jacuzzi.network.IP4Port;
 import org.junit.Assert;
 
 import java.util.Date;

@@ -2,9 +2,9 @@ package jacz.peerengineservice.util.datatransfer.slave;
 
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.util.datatransfer.ResourceStreamingManager;
-import jacz.util.date_time.PerformRegularAction;
-import jacz.util.date_time.SpeedLimiter;
-import jacz.util.queues.event_processing.MessageHandler;
+import org.aanguita.jacuzzi.date_time.PerformRegularAction;
+import org.aanguita.jacuzzi.date_time.SpeedLimiter;
+import org.aanguita.jacuzzi.queues.event_processing.MessageHandler;
 
 /**
  *

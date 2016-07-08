@@ -11,9 +11,9 @@ import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;
 import jacz.peerengineservice.util.PeerRelationship;
 import jacz.peerengineservice.util.datatransfer.TransfersConfig;
-import jacz.util.AI.evolve.EvolvingState;
-import jacz.util.AI.evolve.EvolvingStateController;
-import jacz.util.concurrency.ThreadUtil;
+import org.aanguita.jacuzzi.AI.evolve.EvolvingState;
+import org.aanguita.jacuzzi.AI.evolve.EvolvingStateController;
+import org.aanguita.jacuzzi.concurrency.ThreadUtil;
 
 import java.io.IOException;
 import java.util.HashSet;

@@ -1,12 +1,12 @@
 package jacz.peerengineservice.util.tempfile_api;
 
-import jacz.util.concurrency.concurrency_controller.ConcurrencyController;
-import jacz.util.concurrency.concurrency_controller.ConcurrencyControllerReadWrite;
-import jacz.util.concurrency.task_executor.ThreadExecutor;
-import jacz.util.files.FileGenerator;
-import jacz.util.io.serialization.VersionedObjectSerializer;
-import jacz.util.io.serialization.VersionedSerializationException;
-import jacz.util.numeric.range.LongRangeList;
+import org.aanguita.jacuzzi.concurrency.concurrency_controller.ConcurrencyController;
+import org.aanguita.jacuzzi.concurrency.concurrency_controller.ConcurrencyControllerReadWrite;
+import org.aanguita.jacuzzi.concurrency.task_executor.ThreadExecutor;
+import org.aanguita.jacuzzi.files.FileGenerator;
+import org.aanguita.jacuzzi.io.serialization.VersionedObjectSerializer;
+import org.aanguita.jacuzzi.io.serialization.VersionedSerializationException;
+import org.aanguita.jacuzzi.numeric.range.LongRangeList;
 
 import java.io.File;
 import java.io.FileNotFoundException;

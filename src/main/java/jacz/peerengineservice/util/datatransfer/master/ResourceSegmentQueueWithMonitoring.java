@@ -1,9 +1,9 @@
 package jacz.peerengineservice.util.datatransfer.master;
 
-import jacz.util.date_time.RemainingTimeAction;
-import jacz.util.date_time.SpeedMonitorWithRemainingTime;
-import jacz.util.numeric.range.LongRange;
-import jacz.util.numeric.range.LongRangeQueue;
+import org.aanguita.jacuzzi.date_time.RemainingTimeAction;
+import org.aanguita.jacuzzi.date_time.SpeedMonitorWithRemainingTime;
+import org.aanguita.jacuzzi.numeric.range.LongRange;
+import org.aanguita.jacuzzi.numeric.range.LongRangeQueue;
 
 import java.util.List;
 
