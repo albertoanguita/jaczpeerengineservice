@@ -79,6 +79,11 @@ public class AskFilesFSM implements PeerTimedFSMAction<AskFilesFSM.State> {
     }
 
     @Override
+    public void raisedUnhandledException(Exception e, ChannelConnectionPoint ccp) {
+        e.printStackTrace();
+    }
+
+    @Override
     public void timedOut(State state) {
         System.out.println("Ask files FSM timed out!!!");
     }

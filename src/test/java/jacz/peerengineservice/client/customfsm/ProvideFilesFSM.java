@@ -77,6 +77,11 @@ public class ProvideFilesFSM implements PeerTimedFSMAction<ProvideFilesFSM.State
         // ignore
     }
 
+    @Override
+    public void raisedUnhandledException(Exception e, ChannelConnectionPoint ccp) {
+        e.printStackTrace();
+    }
+
     //@Override
 
     public void timedOut(State state) {
