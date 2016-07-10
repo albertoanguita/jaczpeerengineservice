@@ -183,9 +183,10 @@ public interface DownloadProgressNotificationHandler {
      * @param resourceID      id of the corresponding downloaded resource
      * @param storeName       name of the resource store from which the resource is being downloaded
      * @param reason          reason of this cancellation
+     * @param e               if the cancellation was due to an IO_FAILURE, e provides the exception raised
      * @param downloadManager download manager associated to this download
      */
-    void cancelled(String resourceID, String storeName, CancellationReason reason, DownloadManager downloadManager);
+    void cancelled(String resourceID, String storeName, CancellationReason reason, Exception e, DownloadManager downloadManager);
 
     /**
      * This is invoked when the download process was stopped by the user (with the intention of backing up the

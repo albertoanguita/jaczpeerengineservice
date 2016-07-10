@@ -238,7 +238,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         activeSlaves = new HashMap<>();
         LongRangeList availableSegments = null;
         priority = DEFAULT_PRIORITY;
-        boolean error = false;
+        Exception initialWriteException = null;
         try {
             resourceSize = resourceWriter.getSize();
             availableSegments = resourceWriter.getAvailableSegments();
@@ -262,7 +262,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 setState(DownloadState.RUNNING, true);
             }
         } catch (IOException e) {
-            error = true;
+            initialWriteException = e;
         }
         if (downloadManager == null) {
             this.downloadManager = new DownloadManager(this, resourceStreamingManager);
@@ -287,13 +287,13 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                     downloadReports.reportResumed();
                 }
             } catch (IOException e) {
-                error = true;
+                initialWriteException = e;
             }
         }
         //state = DownloadState.RUNNING;
         threadExecutorClientId = ThreadExecutor.registerClient(this.getClass().getName());
-        if (error) {
-            reportErrorWriting();
+        if (initialWriteException != null) {
+            reportErrorWriting(initialWriteException);
         }
     }
 
@@ -308,7 +308,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 resourceWriter.setSystemField(RESOURCE_WRITER_STATE_FIELD, downloadState);
             } catch (IOException e) {
                 // error writing the state in the resource writer -> cancel download and report error
-                reportErrorWriting();
+                reportErrorWriting(e);
             }
         }
     }
@@ -527,7 +527,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
             try {
                 resourceWriter.init(resourceSize);
             } catch (IOException e) {
-                reportErrorWriting();
+                reportErrorWriting(e);
             }
             resourcePartScheduler.reportResourceSize(size);
             for (SlaveController slaveController : activeSlaves.values()) {
@@ -555,7 +555,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
         try {
             resourceWriter.write(dataElement.firstByte, dataElement.data);
         } catch (IOException | IndexOutOfBoundsException e) {
-            reportErrorWriting();
+            reportErrorWriting(e);
         }
     }
 
@@ -586,7 +586,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 downloadReports.reportCompleted(resourceWriter);
                 setState(DownloadState.COMPLETED, true);
             } catch (IOException e) {
-                reportErrorWriting();
+                reportErrorWriting(e);
             } finally {
                 freeAssignedResources();
             }
@@ -641,9 +641,9 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     /**
      * There was an error writing the resource
      */
-    private synchronized void reportErrorWriting() {
+    private synchronized void reportErrorWriting(Exception e) {
         if (alive.get()) {
-            cancel(DownloadProgressNotificationHandler.CancellationReason.IO_FAILURE);
+            cancel(DownloadProgressNotificationHandler.CancellationReason.IO_FAILURE, e);
         }
     }
 
@@ -678,13 +678,13 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
     /**
      * The user cancels the download
      */
-    synchronized void cancel(DownloadProgressNotificationHandler.CancellationReason cancellationReason) {
+    synchronized void cancel(DownloadProgressNotificationHandler.CancellationReason cancellationReason, Exception e) {
         if (alive.get()) {
             try {
                 flushWriteData();
                 resourceWriter.cancel();
                 resourceDownloadStatistics.stop();
-                downloadReports.reportCancelled(cancellationReason);
+                downloadReports.reportCancelled(cancellationReason, e);
                 setState(DownloadState.CANCELLED, false);
             } finally {
                 freeAssignedResources();
@@ -705,7 +705,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 setState(DownloadState.STOPPED, writeStateThrough);
             } catch (IOException e) {
                 // error saving the download session -> cancel the download
-                cancel(DownloadProgressNotificationHandler.CancellationReason.IO_FAILURE);
+                cancel(DownloadProgressNotificationHandler.CancellationReason.IO_FAILURE, e);
             } finally {
                 freeAssignedResources();
             }
@@ -742,7 +742,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 resourceWriter.setSystemField(RESOURCE_WRITER_PRIORITY_FIELD, priority);
             } catch (IOException e) {
                 // error writing the streaming need in the resource writer -> cancel download and report error
-                reportErrorWriting();
+                reportErrorWriting(e);
             }
         }
     }
@@ -768,7 +768,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 resourceWriter.setSystemField(RESOURCE_WRITER_STREAMING_NEED_FIELD, streamingNeed);
             } catch (IOException e) {
                 // error writing the streaming need in the resource writer -> cancel download and report error
-                reportErrorWriting();
+                reportErrorWriting(e);
             }
         }
     }

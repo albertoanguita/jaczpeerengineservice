@@ -175,12 +175,12 @@ class DownloadReports {
         }
     }
 
-    void reportCancelled(final DownloadProgressNotificationHandler.CancellationReason reason) {
+    void reportCancelled(final DownloadProgressNotificationHandler.CancellationReason reason, Exception e) {
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.submit(new Runnable() {
                 @Override
                 public void run() {
-                    downloadProgressNotificationHandler.cancelled(resourceID, storeName, reason, downloadManager);
+                    downloadProgressNotificationHandler.cancelled(resourceID, storeName, reason, e, downloadManager);
                 }
             });
         }

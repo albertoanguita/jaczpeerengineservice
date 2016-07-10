@@ -94,8 +94,11 @@ public class DownloadProgressNotificationHandlerImpl implements DownloadProgress
     }
 
     @Override
-    public void cancelled(String resourceID, String storeName, CancellationReason reason, DownloadManager downloadManager) {
+    public void cancelled(String resourceID, String storeName, CancellationReason reason, Exception e, DownloadManager downloadManager) {
         System.out.println("download cancelled for resource " + resourceID + ". Reason: " + reason);
+        if (e != null) {
+            e.printStackTrace();
+        }
     }
 
     @Override

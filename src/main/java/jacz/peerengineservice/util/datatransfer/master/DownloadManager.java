@@ -68,7 +68,7 @@ public class DownloadManager {
      */
     public void cancel() {
         if (masterResourceStreamer.getState() != DownloadState.STOPPED) {
-            masterResourceStreamer.cancel(DownloadProgressNotificationHandler.CancellationReason.USER);
+            masterResourceStreamer.cancel(DownloadProgressNotificationHandler.CancellationReason.USER, null);
         } else {
             // the master resource streamer has been stopped -> all resources are already closed and we cannot
             // cancel directly. In this case, the download manager itself cancels the resource and duly notifies
@@ -76,7 +76,7 @@ public class DownloadManager {
             masterResourceStreamer.setState(DownloadState.CANCELLED, false);
             masterResourceStreamer.getResourceWriter().cancel();
             DownloadReports downloadReports = new DownloadReports(this, masterResourceStreamer.getResourceId(), masterResourceStreamer.getStoreName(), masterResourceStreamer.getDownloadProgressNotificationHandler());
-            downloadReports.reportCancelled(DownloadProgressNotificationHandler.CancellationReason.USER);
+            downloadReports.reportCancelled(DownloadProgressNotificationHandler.CancellationReason.USER, null);
             downloadReports.stop();
         }
     }
