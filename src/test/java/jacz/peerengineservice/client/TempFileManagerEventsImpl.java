@@ -23,7 +23,8 @@ public class TempFileManagerEventsImpl implements TempFileManagerEvents {
     }
 
     @Override
-    public void indexFileError(String indexFilePath) {
+    public void indexFileError(String indexFilePath, Exception e) {
         System.out.println("Index file error: " + indexFilePath);
+        e.printStackTrace();
     }
 }

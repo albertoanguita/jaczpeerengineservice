@@ -11,5 +11,5 @@ public interface TempFileManagerEvents {
 
     void indexFileErrorRestoredWithBackup(String indexFilePath);
 
-    void indexFileError(String indexFilePath);
+    void indexFileError(String indexFilePath, Exception e);
 }

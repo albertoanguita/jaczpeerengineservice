@@ -57,12 +57,12 @@ public class TempFileManagerEventsBridge implements TempFileManagerEvents {
     }
 
     @Override
-    public void indexFileError(final String indexFilePath) {
+    public void indexFileError(final String indexFilePath, Exception e) {
         logger.info("INDEX FILE ERROR. indexFilePath: " + indexFilePath);
         sequentialTaskExecutor.submit(new Runnable() {
             @Override
             public void run() {
-                tempFileManagerEvents.indexFileError(indexFilePath);
+                tempFileManagerEvents.indexFileError(indexFilePath, e);
             }
         });
     }
