@@ -188,11 +188,7 @@ public class RegularsConnectionManager {
                                 targetPeers = getTargetPeers(state.currentCountry, peerKnowledgeBase);
                                 if (targetPeers.size() < SMALL_TARGET_LIST) {
                                     // we have ver few valid regular peers for this country -> ask for more
-                                    // and go back to idle (and wait some time)
                                     peerConnectionManager.askForMoreRegularPeers(state.currentCountry);
-                                    state.stateCase = StateCase.IDLE;
-                                    controller.stateHasChanged();
-                                    return true;
                                 }
                                 if (!targetPeers.isEmpty()) {
                                     // there are target peers -> try to connect with them
