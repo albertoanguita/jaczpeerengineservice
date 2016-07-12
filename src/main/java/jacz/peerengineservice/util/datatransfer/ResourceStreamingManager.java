@@ -886,7 +886,7 @@ public class ResourceStreamingManager {
         if (masterResourceStreamer.getState() != DownloadState.STOPPED) {
             // the download is active
             activeDownloadSet.addDownload(masterResourceStreamer);
-            downloadsManager.addDownload(masterResourceStreamer.getStoreName(), masterResourceStreamer.getDownloadManager());
+            downloadsManager.addDownload(masterResourceStreamer.getStoreName(), masterResourceStreamer.getId(), masterResourceStreamer.getDownloadManager());
             reportAction.run();
         }
     }
@@ -1063,7 +1063,7 @@ public class ResourceStreamingManager {
                 resourceTransferEventsBridge.approveResourceRequest(request, response);
                 slave.initialize(response.getResourceReader(), request.getRequestingPeer(), incomingSubchannel, request.getSubchannel());
                 uploadPriorityManager.addRegulatedResource(new RemotePeerStakeholder(request.getRequestingPeer()), slave);
-                uploadsManager.addUpload(request.getStoreName(), uploadManager);
+                uploadsManager.addUpload(request.getStoreName(), slave.getId(), uploadManager);
             } else {
                 // no subchannels available for this slave (the slave will eventually timeout and die,no need to notify him)
                 resourceTransferEventsBridge.denyUnavailableSubchannelResourceRequest(request, response);

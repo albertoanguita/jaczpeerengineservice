@@ -33,8 +33,8 @@ public class DownloadsManager extends TransfersManager<DownloadManager> {
      *
      * @param downloadManager manager for the new download. We use its id for indexing the download
      */
-    synchronized void addDownload(String store, DownloadManager downloadManager) {
-        addTransfer(store, downloadManager.getId(), downloadManager);
+    synchronized void addDownload(String store, String id, DownloadManager downloadManager) {
+        addTransfer(store, id, downloadManager);
     }
 
     /**

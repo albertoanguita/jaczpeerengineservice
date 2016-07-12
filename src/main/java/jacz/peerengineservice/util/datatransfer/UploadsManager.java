@@ -25,7 +25,7 @@ public class UploadsManager extends TransfersManager<UploadManager> {
      * @param store                 resource store corresponding to this upload
      * @param uploadManager manager for the slave that is added
      */
-    synchronized void addUpload(String store, UploadManager uploadManager) {
+    synchronized void addUpload(String store, String id, UploadManager uploadManager) {
         addTransfer(store, uploadManager.getId(), uploadManager);
     }
 
