@@ -296,7 +296,7 @@ public class SlaveResourceStreamer extends GenericPriorityManagerRegulatedResour
                 resourceStreamingManager.write(otherPeer, outgoingChannel, SlaveMessage.generateDiedMessage(), false);
             }
             stopProcessor();
-            timeoutTimer.kill();
+            timeoutTimer.stop();
             resourceStreamingManager.reportDeadSlaveResourceStreamer(this);
             resourceUploadStatistics.stop();
             alive = false;

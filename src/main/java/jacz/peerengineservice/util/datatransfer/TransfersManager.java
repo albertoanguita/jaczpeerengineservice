@@ -107,7 +107,7 @@ public abstract class TransfersManager<T> implements TimerAction {
     synchronized void stop() {
         if (alive.get()) {
             alive.set(false);
-            timer.kill();
+            timer.stop();
             ThreadExecutor.shutdownClient(threadExecutorClientId);
         }
     }

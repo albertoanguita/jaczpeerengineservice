@@ -471,7 +471,7 @@ public class TempFileManager {
             return new TempIndex(indexFilePath, generateBackupPath(indexFilePath), this);
         } catch (IOException | VersionedSerializationException e) {
             // could not restore data from backup
-            tempFileManagerEventsBridge.indexFileError(indexFilePath);
+            tempFileManagerEventsBridge.indexFileError(indexFilePath, e);
             throw e;
         }
     }

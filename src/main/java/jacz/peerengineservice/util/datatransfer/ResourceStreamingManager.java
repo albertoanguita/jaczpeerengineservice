@@ -275,7 +275,7 @@ public class ResourceStreamingManager {
         public synchronized void stop() {
             if (alive.get()) {
                 alive.set(false);
-                generalProviderUpdateTimer.kill();
+                generalProviderUpdateTimer.stop();
                 ThreadExecutor.shutdownClient(threadExecutorClientId);
             }
         }

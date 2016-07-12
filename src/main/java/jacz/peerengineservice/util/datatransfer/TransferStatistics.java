@@ -103,7 +103,7 @@ public class TransferStatistics implements Updater, TimerAction {
     public synchronized void stop() {
         uploadSpeed.stop();
         downloadSpeed.stop();
-        storeAccumulatedBytesTimer.kill();
+        storeAccumulatedBytesTimer.stop();
     }
 
     @Override

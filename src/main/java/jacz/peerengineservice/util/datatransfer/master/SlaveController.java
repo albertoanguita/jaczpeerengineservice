@@ -386,21 +386,21 @@ public class SlaveController extends GenericPriorityManagerRegulatedResource imp
     }
 
     private synchronized void stopTimeoutTimer() {
-        timeoutTimer.kill();
+        timeoutTimer.stop();
     }
 
     private synchronized void stopResourceLinkTimeoutTimer() {
-        resourceLinkTimeoutTimer.kill();
+        resourceLinkTimeoutTimer.stop();
     }
 
     private synchronized void stopRequestAssignationTimer() {
         if (requestAssignationTimer != null) {
-            requestAssignationTimer.kill();
+            requestAssignationTimer.stop();
         }
     }
 
     private synchronized void stopRequestAvailableSegmentsTimer() {
-        requestAvailableSegmentsTimer.kill();
+        requestAvailableSegmentsTimer.stop();
     }
 
     private synchronized void stopResourceSegmentQueueWithMonitoring() {

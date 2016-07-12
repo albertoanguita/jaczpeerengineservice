@@ -96,6 +96,6 @@ public class GenericPriorityManager implements TimerAction {
     }
 
     synchronized void stop() {
-        timer.kill();
+        timer.stop();
     }
 }
