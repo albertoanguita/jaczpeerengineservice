@@ -279,14 +279,16 @@ public class ConnectionEventsBridge {
         sequentialTaskExecutor.submit(() -> connectionEvents.peerCouldNotConnectToUs(e, ip4Port));
     }
 
-    public void localServerError(final Exception e) {
+    public synchronized void localServerError(final Exception e) {
         // todo include wish for connection in connection state
         logger.info("LOCAL SERVER ERROR. Exception: " + e.getMessage());
         peerClientConnectionManager.setWishForConnection(false);
-        sequentialTaskExecutor.submit(() -> connectionEvents.localServerError(buildState(), e));
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> connectionEvents.localServerError(buildState(), e));
+        }
     }
 
-    public void stop() {
+    public synchronized void stop() {
         sequentialTaskExecutor.shutdown();
     }
 }
