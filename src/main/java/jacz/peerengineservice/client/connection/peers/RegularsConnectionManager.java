@@ -209,7 +209,11 @@ public class RegularsConnectionManager {
                             // available target peers
                             if (haveEnoughConnections(state.currentCountry) || targetPeers.isEmpty()) {
                                 // go to idle and try another country
-                                peerConnectionManager.askForSpecificPeersInfo(peersRequiringMoreInfoBag.getPeers());
+                                logger.info(peersRequiringMoreInfoBag.getPeers().size() + " peers have invalid address");
+                                if (!peersRequiringMoreInfoBag.getPeers().isEmpty()) {
+                                    logger.info("Requesting info to the server for those peers");
+                                    peerConnectionManager.askForSpecificPeersInfo(peersRequiringMoreInfoBag.getPeers());
+                                }
                                 moveToIdle(state);
                                 controller.stateHasChanged();
                                 return false;
