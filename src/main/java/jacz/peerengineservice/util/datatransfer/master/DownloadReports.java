@@ -20,7 +20,7 @@ class DownloadReports {
 
     private final String storeName;
 
-    private DownloadProgressNotificationHandler downloadProgressNotificationHandler;
+    private final DownloadProgressNotificationHandler downloadProgressNotificationHandler;
 
     private final ExecutorService sequentialTaskExecutor;
 
@@ -33,109 +33,108 @@ class DownloadReports {
     }
 
     public void initializeWriting() throws IOException {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.started(resourceID, storeName, downloadManager));
         }
     }
 
     synchronized void reportResourceSize(final long size) {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.resourceSize(resourceID, storeName, downloadManager, size));
         }
     }
 
     synchronized void addProvider(ProviderStatistics providerStatistics, PeerId peerId) {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.providerAdded(resourceID, storeName, providerStatistics, downloadManager, peerId));
         }
     }
 
     synchronized void removeProvider(ProviderStatistics providerStatistics, PeerId peerId) {
-        if (downloadProgressNotificationHandler != null && providerStatistics != null) {
+        if (!sequentialTaskExecutor.isShutdown() && providerStatistics != null) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.providerRemoved(resourceID, storeName, providerStatistics, downloadManager, peerId));
         }
     }
 
     synchronized void reportSharedPart(ProviderStatistics providerStatistics, final ResourcePart resourcePart) {
-        if (downloadProgressNotificationHandler != null && providerStatistics != null) {
+        if (!sequentialTaskExecutor.isShutdown() && providerStatistics != null) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.providerReportedSharedPart(resourceID, storeName, providerStatistics, downloadManager, resourcePart));
         }
     }
 
     synchronized void reportAssignedSegment(ProviderStatistics providerStatistics, final LongRange segment) {
-        if (downloadProgressNotificationHandler != null && providerStatistics != null) {
+        if (!sequentialTaskExecutor.isShutdown() && providerStatistics != null) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.providerWasAssignedSegment(resourceID, storeName, providerStatistics, downloadManager, segment));
         }
     }
 
     synchronized void reportClearedAssignation(ProviderStatistics providerStatistics) {
-        if (downloadProgressNotificationHandler != null && providerStatistics != null) {
+        if (!sequentialTaskExecutor.isShutdown() && providerStatistics != null) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.providerWasClearedAssignation(resourceID, storeName, providerStatistics, downloadManager));
         }
     }
 
     synchronized void reportDownloadedSegment(final LongRange segment) {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.downloadedSegment(resourceID, storeName, segment, downloadManager));
         }
     }
 
     synchronized void reportCheckingTotalHash(final int percentage) {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.checkingTotalHash(resourceID, storeName, percentage, downloadManager));
         }
     }
 
     synchronized void reportCorrectTotalHash() {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.successTotalHash(resourceID, storeName, downloadManager));
         }
     }
 
     synchronized void reportFailedTotalHash() {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.failedTotalHash(resourceID, storeName, downloadManager));
         }
     }
 
     synchronized void reportInvalidTotalHashAlgorithm(final String hashAlgorithm) {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.invalidTotalHashAlgorithm(resourceID, storeName, hashAlgorithm, downloadManager));
         }
     }
 
     synchronized void reportCompleted(final ResourceWriter resourceWriter) {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.completed(resourceID, storeName, resourceWriter, downloadManager));
         }
     }
 
     synchronized void reportCancelled(final DownloadProgressNotificationHandler.CancellationReason reason, Exception e) {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.cancelled(resourceID, storeName, reason, e, downloadManager));
         }
     }
 
     synchronized void reportPaused() {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.paused(resourceID, storeName, downloadManager));
         }
     }
 
     synchronized void reportResumed() {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.resumed(resourceID, storeName, downloadManager));
         }
     }
 
     synchronized void reportStopped() throws IOException {
-        if (downloadProgressNotificationHandler != null) {
+        if (!sequentialTaskExecutor.isShutdown()) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.stopped(resourceID, storeName, downloadManager));
         }
     }
 
     synchronized void stop() {
         sequentialTaskExecutor.shutdown();
-        downloadProgressNotificationHandler = null;
     }
 }
