@@ -188,11 +188,13 @@ public class RegularsConnectionManager {
                                 targetPeers = getTargetPeers(state.currentCountry, peerKnowledgeBase);
                                 if (targetPeers.size() < SMALL_TARGET_LIST) {
                                     // we have ver few valid regular peers for this country -> ask for more
+                                    logger.info("Requesting more regular peers to the server...");
                                     peerConnectionManager.askForMoreRegularPeers(state.currentCountry);
                                 }
                                 if (!targetPeers.isEmpty()) {
                                     // there are target peers -> try to connect with them
                                     peersRequiringMoreInfoBag.clear();
+                                    logger.info("Start attempting connections to target peers");
                                     state.stateCase = StateCase.ATTEMPTING_CONNECTIONS;
                                     controller.stateHasChanged();
                                     return false;
@@ -200,12 +202,14 @@ public class RegularsConnectionManager {
                                     // there are no target peers as of now -> go back to idle
                                     state.stateCase = StateCase.IDLE;
                                     controller.stateHasChanged();
+                                    logger.info("No target peers, going back to idle");
                                     return true;
                                 }
                             } else {
                                 // all languages have enough connections -> go back to idle and wait
                                 moveToIdle(state);
                                 controller.stateHasChanged();
+                                logger.info("All countries have enough connections, waiting...");
                                 return true;
                             }
                         case ATTEMPTING_CONNECTIONS:
@@ -213,6 +217,7 @@ public class RegularsConnectionManager {
                             // available target peers
                             if (haveEnoughConnections(state.currentCountry) || targetPeers.isEmpty()) {
                                 // go to idle and try another country
+                                logger.info("No more connection attempts needed");
                                 logger.info(peersRequiringMoreInfoBag.getPeers().size() + " peers have invalid address");
                                 if (!peersRequiringMoreInfoBag.getPeers().isEmpty()) {
                                     logger.info("Requesting info to the server for those peers");
@@ -223,6 +228,7 @@ public class RegularsConnectionManager {
                                 return false;
                             } else {
                                 // try a new batch of connections to the target peers and wait some time
+                                logger.info("Keep attempting connections...");
                                 attemptMoreConnections();
                                 return true;
                             }
@@ -251,8 +257,8 @@ public class RegularsConnectionManager {
     private TargetPeerList getTargetPeers(CountryCode currentCountry, PeerKnowledgeBase peerKnowledgeBase) {
         logger.info("Building target peer list for " + currentCountry.name());
         List<PeerEntryFacade> targetPeers = peerKnowledgeBase.getRegularPeers(PeerKnowledgeBase.ConnectedQuery.DISCONNECTED, currentCountry);
-
-        return new TargetPeerList(peerKnowledgeBase.getRegularPeers(PeerKnowledgeBase.ConnectedQuery.DISCONNECTED, currentCountry));
+        logger.info("Built target list with " + targetPeers.size() + " peers");
+        return new TargetPeerList(targetPeers);
     }
 
     private boolean findCountryNeedingMoreConnections(State state) {
