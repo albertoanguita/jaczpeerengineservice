@@ -116,7 +116,7 @@ class DownloadReports {
         }
     }
 
-    void reportPaused() {
+    synchronized void reportPaused() {
         if (downloadProgressNotificationHandler != null) {
             sequentialTaskExecutor.submit(() -> downloadProgressNotificationHandler.paused(resourceID, storeName, downloadManager));
         }
