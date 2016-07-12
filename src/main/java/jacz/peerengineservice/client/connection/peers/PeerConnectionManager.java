@@ -287,11 +287,11 @@ public class PeerConnectionManager {
         return peerEntryFacade.getLastConnectionAttempt() != null && peerEntryFacade.getLastConnectionAttempt().getTime() + OLD_CONNECTION_THRESHOLD < System.currentTimeMillis();
     }
 
-    synchronized void askForFavoritePeersInfo(List<PeerId> needInfoFavorites) {
-        if (!needInfoFavorites.isEmpty()) {
+    synchronized void askForSpecificPeersInfo(List<PeerId> requiredPeers) {
+        if (!requiredPeers.isEmpty()) {
             // request peers data to the server
             try {
-                ServerAPI.InfoResponse infoResponse = ServerAPI.info(serverURL, new ServerAPI.InfoRequest(needInfoFavorites));
+                ServerAPI.InfoResponse infoResponse = ServerAPI.info(serverURL, new ServerAPI.InfoRequest(requiredPeers));
                 digestServerInfoResponse(infoResponse);
             } catch (IOException | ServerAccessException e) {
                 // error connecting with the server -> will retry later

@@ -1,6 +1,7 @@
 package jacz.peerengineservice.client.connection.peers;
 
 import com.neovisionaries.i18n.CountryCode;
+import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.ConnectedPeers;
 import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
@@ -9,9 +10,7 @@ import org.aanguita.jacuzzi.AI.evolve.EvolvingStateController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Handles connections to regular peers
@@ -49,6 +48,32 @@ public class RegularsConnectionManager {
                 targets.add(targetPeers.remove(0));
             }
             return targets;
+        }
+    }
+
+    private class PeersRequiringMoreInfoBag {
+
+        private final int maxCapacity;
+
+        private final List<PeerId> peers;
+
+        public PeersRequiringMoreInfoBag(int maxCapacity) {
+            this.maxCapacity = maxCapacity;
+            peers = new ArrayList<>();
+        }
+
+        public void clear() {
+            peers.clear();
+        }
+
+        public void addPeer(PeerEntryFacade targetPeer) {
+            if (peers.size() < maxCapacity) {
+                peers.add(targetPeer.getPeerId());
+            }
+        }
+
+        public List<PeerId> getPeers() {
+            return peers;
         }
     }
 
@@ -116,6 +141,10 @@ public class RegularsConnectionManager {
 
     private static final int TARGET_BATCH_SIZE = 5;
 
+    private static final int PEERS_REQUIRING_MORE_INFO_BAG_SIZE = 15;
+
+
+
 
 
     private final PeerConnectionManager peerConnectionManager;
@@ -126,12 +155,15 @@ public class RegularsConnectionManager {
 
     private TargetPeerList targetPeers;
 
+    private final PeersRequiringMoreInfoBag peersRequiringMoreInfoBag;
+
     private final EvolvingState<State, Boolean> dynamicState;
 
     public RegularsConnectionManager(PeerConnectionManager peerConnectionManager, PeerKnowledgeBase peerKnowledgeBase, ConnectedPeers connectedPeers, PeerConnectionConfig peerConnectionConfig) {
         this.peerConnectionManager = peerConnectionManager;
         this.connectedPeers = connectedPeers;
         this.peerConnectionConfig = peerConnectionConfig;
+        peersRequiringMoreInfoBag = new PeersRequiringMoreInfoBag(PEERS_REQUIRING_MORE_INFO_BAG_SIZE);
         dynamicState = new EvolvingState<>(new State(), false, new EvolvingState.Transitions<State, Boolean>() {
             @Override
             public boolean runTransition(State state, Boolean goal, EvolvingStateController<State, Boolean> controller) {
@@ -161,6 +193,7 @@ public class RegularsConnectionManager {
                                     return true;
                                 } else {
                                     // there are target peers -> try to connect with them
+                                    peersRequiringMoreInfoBag.clear();
                                     state.stateCase = StateCase.ATTEMPTING_CONNECTIONS;
                                     controller.stateHasChanged();
                                     return false;
@@ -176,6 +209,7 @@ public class RegularsConnectionManager {
                             // available target peers
                             if (haveEnoughConnections(state.currentCountry) || targetPeers.isEmpty()) {
                                 // go to idle and try another country
+                                peerConnectionManager.askForSpecificPeersInfo(peersRequiringMoreInfoBag.getPeers());
                                 moveToIdle(state);
                                 controller.stateHasChanged();
                                 return false;
@@ -208,6 +242,8 @@ public class RegularsConnectionManager {
 
     private TargetPeerList getTargetPeers(CountryCode currentCountry, PeerKnowledgeBase peerKnowledgeBase) {
         logger.info("Building target peer list for " + currentCountry.name());
+        List<PeerEntryFacade> targetPeers = peerKnowledgeBase.getRegularPeers(PeerKnowledgeBase.ConnectedQuery.DISCONNECTED, currentCountry);
+
         return new TargetPeerList(peerKnowledgeBase.getRegularPeers(PeerKnowledgeBase.ConnectedQuery.DISCONNECTED, currentCountry));
     }
 
@@ -283,6 +319,11 @@ public class RegularsConnectionManager {
     private void attemptMoreConnections() {
         for (PeerEntryFacade target : targetPeers.retrieveTargetBatch(remainingConnections(dynamicState.state().currentCountry))) {
             peerConnectionManager.attemptConnection(target);
+            if (target.getPeerAddress().isNull()) {
+                // the target peer has now an invalid peer address (maybe it was already invalid). Add it to the bag of
+                // target peers for which ask for more info to the server once we finish attempting connections
+                peersRequiringMoreInfoBag.addPeer(target);
+            }
         }
     }
 

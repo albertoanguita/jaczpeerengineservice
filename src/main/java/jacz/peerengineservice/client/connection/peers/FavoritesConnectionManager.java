@@ -58,7 +58,7 @@ public class FavoritesConnectionManager {
      */
     private void searchFriends() {
         // check if there are disconnected favorite peers of which we do not have address info
-        peerConnectionManager.askForFavoritePeersInfo(buildNeedInfoFavoriteList());
+        peerConnectionManager.askForSpecificPeersInfo(buildNeedInfoFavoriteList());
     }
 
     private List<PeerId> buildNeedInfoFavoriteList() {
