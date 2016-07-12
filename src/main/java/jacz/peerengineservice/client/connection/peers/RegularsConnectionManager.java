@@ -42,6 +42,10 @@ public class RegularsConnectionManager {
             return targetPeers.isEmpty();
         }
 
+        public int size() {
+            return targetPeers.size();
+        }
+
         public List<PeerEntryFacade> retrieveTargetBatch(int maxSize) {
             List<PeerEntryFacade> targets = new ArrayList<>();
             while (!targetPeers.isEmpty() && targets.size() < TARGET_BATCH_SIZE && targets.size() < maxSize) {
@@ -139,6 +143,8 @@ public class RegularsConnectionManager {
 
     private static final long GENERAL_DELAY = 3 * CONNECTIONS_DELAY;
 
+    private static final int SMALL_TARGET_LIST = 50;
+
     private static final int TARGET_BATCH_SIZE = 5;
 
     private static final int PEERS_REQUIRING_MORE_INFO_BAG_SIZE = 15;
@@ -180,23 +186,25 @@ public class RegularsConnectionManager {
                             if (findCountryNeedingMoreConnections(state)) {
                                 // country found, attempt connections with it
                                 targetPeers = getTargetPeers(state.currentCountry, peerKnowledgeBase);
-                                if (targetPeers.isEmpty()) {
-                                    // we do not have any valid regular peers for this country -> ask for more
+                                if (targetPeers.size() < SMALL_TARGET_LIST) {
+                                    // we have ver few valid regular peers for this country -> ask for more
                                     // and go back to idle (and wait some time)
-                                    if (peerConnectionManager.askForMoreRegularPeers(state.currentCountry)) {
-                                        // there are some new peers -> try to contact them
-                                        state.stateCase = StateCase.ATTEMPTING_CONNECTIONS;
-                                    } else {
-                                        state.stateCase = StateCase.IDLE;
-                                    }
+                                    peerConnectionManager.askForMoreRegularPeers(state.currentCountry);
+                                    state.stateCase = StateCase.IDLE;
                                     controller.stateHasChanged();
                                     return true;
-                                } else {
+                                }
+                                if (!targetPeers.isEmpty()) {
                                     // there are target peers -> try to connect with them
                                     peersRequiringMoreInfoBag.clear();
                                     state.stateCase = StateCase.ATTEMPTING_CONNECTIONS;
                                     controller.stateHasChanged();
                                     return false;
+                                } else {
+                                    // there are no target peers as of now -> go back to idle
+                                    state.stateCase = StateCase.IDLE;
+                                    controller.stateHasChanged();
+                                    return true;
                                 }
                             } else {
                                 // all languages have enough connections -> go back to idle and wait
