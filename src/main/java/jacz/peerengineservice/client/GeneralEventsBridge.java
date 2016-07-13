@@ -90,25 +90,19 @@ public class GeneralEventsBridge implements GeneralEvents {
 //    }
 
     @Override
-    public void newOwnNick(String newNick) {
+    public synchronized void newOwnNick(String newNick) {
         logger.info("NEW OWN NICK: " + newNick);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                generalEvents.newOwnNick(newNick);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> generalEvents.newOwnNick(newNick));
+        }
     }
 
     @Override
-    public void newObjectMessage(final PeerId peerId, final Object message) {
+    public synchronized void newObjectMessage(final PeerId peerId, final Object message) {
         logger.info("NEW OBJECT MESSAGE. Peer: " + peerId + ". Message: " + message.toString());
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                generalEvents.newObjectMessage(peerId, message);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> generalEvents.newObjectMessage(peerId, message));
+        }
     }
 
 //    @Override
@@ -134,14 +128,9 @@ public class GeneralEventsBridge implements GeneralEvents {
 //    }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
         logger.info("STOP");
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                generalEvents.stop();
-            }
-        });
+        sequentialTaskExecutor.submit(generalEvents::stop);
         sequentialTaskExecutor.shutdown();
     }
 
