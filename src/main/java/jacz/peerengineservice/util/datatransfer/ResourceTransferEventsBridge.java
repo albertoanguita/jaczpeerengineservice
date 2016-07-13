@@ -4,7 +4,6 @@ import jacz.peerengineservice.PeerId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,188 +27,142 @@ public class ResourceTransferEventsBridge implements ResourceTransferEvents {
     }
 
     @Override
-    public void addLocalResourceStore(final String name) {
+    public synchronized void addLocalResourceStore(final String name) {
         logger.info("ADD LOCAL RESOURCE STORE. Name: " + name);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.addLocalResourceStore(name);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.addLocalResourceStore(name));
+        }
     }
 
     @Override
-    public void setLocalGeneralResourceStore() {
+    public synchronized void setLocalGeneralResourceStore() {
         logger.info("SET LOCAL GENERAL RESOURCE STORE");
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.setLocalGeneralResourceStore();
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(resourceTransferEvents::setLocalGeneralResourceStore);
+        }
     }
 
     @Override
-    public void addForeignResourceStore(final String name) {
+    public synchronized void addForeignResourceStore(final String name) {
         logger.info("ADD FOREIGN RESOURCE STORE. Name: " + name);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.addForeignResourceStore(name);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.addForeignResourceStore(name));
+        }
     }
 
     @Override
-    public void removeLocalResourceStore(final String name) {
+    public synchronized void removeLocalResourceStore(final String name) {
         logger.info("REMOVE LOCAL RESOURCE STORE. Name: " + name);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.removeLocalResourceStore(name);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.removeLocalResourceStore(name));
+        }
     }
 
     @Override
-    public void removeLocalGeneralResourceStore() {
+    public synchronized void removeLocalGeneralResourceStore() {
         logger.info("REMOVE LOCAL GENERAL RESOURCE STORE");
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.removeLocalGeneralResourceStore();
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(resourceTransferEvents::removeLocalGeneralResourceStore);
+        }
     }
 
     @Override
-    public void removeForeignResourceStore(final String name) {
+    public synchronized void removeForeignResourceStore(final String name) {
         logger.info("REMOVE FOREIGN RESOURCE STORE. Name: " + name);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.removeForeignResourceStore(name);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.removeForeignResourceStore(name));
+        }
     }
 
     @Override
-    public void updateResourceProviders(String resourceId, Set<PeerId> providers) {
+    public synchronized void updateResourceProviders(String resourceId, Set<PeerId> providers) {
         logger.info("UPDATE RESOURCE PROVIDERS. Resource id: " + resourceId);
-        sequentialTaskExecutor.submit(() -> resourceTransferEvents.updateResourceProviders(resourceId, providers));
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.updateResourceProviders(resourceId, providers));
+        }
     }
 
     @Override
-    public void globalDownloadInitiated(final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
+    public synchronized void globalDownloadInitiated(final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
         logger.info("GLOBAL DOWNLOAD INITIATED: " + "resourceStoreName: " + resourceStoreName + ". resourceID: " + resourceID + ". streamingNeed: " + streamingNeed + ". totalHash: " + totalHash + ". totalHashAlgorithm: " + totalHashAlgorithm);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.globalDownloadInitiated(resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm));
+        }
     }
 
     @Override
-    public void peerDownloadInitiated(final PeerId serverPeerId, final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
+    public synchronized void peerDownloadInitiated(final PeerId serverPeerId, final String resourceStoreName, final String resourceID, final double streamingNeed, final String totalHash, final String totalHashAlgorithm) {
         logger.info("PEER DOWNLOAD INITIATED: " + "serverPeerId: " + serverPeerId + ". resourceStoreName: " + resourceStoreName + ". resourceID: " + resourceID + ". streamingNeed: " + streamingNeed + ". totalHash: " + totalHash + ". totalHashAlgorithm: " + totalHashAlgorithm);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.peerDownloadInitiated(serverPeerId, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.peerDownloadInitiated(serverPeerId, resourceStoreName, resourceID, streamingNeed, totalHash, totalHashAlgorithm));
+        }
     }
 
     @Override
-    public void setMaxDesiredDownloadSpeed(final Float totalMaxDesiredSpeed) {
+    public synchronized void setMaxDesiredDownloadSpeed(final Float totalMaxDesiredSpeed) {
         logger.info("SET MAX DESIRED DOWNLOAD SPEED. totalMaxDesiredSpeed: " + totalMaxDesiredSpeed);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.setMaxDesiredDownloadSpeed(totalMaxDesiredSpeed);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.setMaxDesiredDownloadSpeed(totalMaxDesiredSpeed));
+        }
     }
 
     @Override
-    public void setMaxDesiredUploadSpeed(final Float totalMaxDesiredSpeed) {
+    public synchronized void setMaxDesiredUploadSpeed(final Float totalMaxDesiredSpeed) {
         logger.info("SET MAX DESIRED UPLOAD SPEED. totalMaxDesiredSpeed: " + totalMaxDesiredSpeed);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.setMaxDesiredUploadSpeed(totalMaxDesiredSpeed);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.setMaxDesiredUploadSpeed(totalMaxDesiredSpeed));
+        }
     }
 
     @Override
-    public void setAccuracy(final double accuracy) {
+    public synchronized void setAccuracy(final double accuracy) {
         logger.info("SET ACCURACY. Accuracy: " + accuracy);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.setAccuracy(accuracy);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.setAccuracy(accuracy));
+        }
     }
 
     @Override
-    public void approveResourceRequest(final ResourceRequest request, final ResourceStoreResponse response) {
+    public synchronized void approveResourceRequest(final ResourceRequest request, final ResourceStoreResponse response) {
         logger.info("APPROVE RESOURCE REQUEST. Request: " + request + ". Response: " + response);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.approveResourceRequest(request, response);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.approveResourceRequest(request, response));
+        }
     }
 
     @Override
-    public void denyUnavailableSubchannelResourceRequest(final ResourceRequest request, final ResourceStoreResponse response) {
+    public synchronized void denyUnavailableSubchannelResourceRequest(final ResourceRequest request, final ResourceStoreResponse response) {
         logger.info("DENY TO UNAVAILABLE SUBCHANNEL RESOURCE REQUEST. Request: " + request + ". Response: " + response);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.denyUnavailableSubchannelResourceRequest(request, response);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.denyUnavailableSubchannelResourceRequest(request, response));
+        }
     }
 
     @Override
-    public void deniedResourceRequest(final ResourceRequest request, final ResourceStoreResponse response) {
+    public synchronized void deniedResourceRequest(final ResourceRequest request, final ResourceStoreResponse response) {
         logger.info("DENIED RESOURCE REQUEST. Request: " + request + ". Response: " + response);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.deniedResourceRequest(request, response);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.deniedResourceRequest(request, response));
+        }
     }
 
     @Override
-    public void periodicDownloadsNotification(final DownloadsManager downloadsManager) {
+    public synchronized void periodicDownloadsNotification(final DownloadsManager downloadsManager) {
         // no log of active downloads
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.periodicDownloadsNotification(downloadsManager);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.periodicDownloadsNotification(downloadsManager));
+        }
     }
 
     @Override
-    public void periodicUploadsNotification(final UploadsManager uploadsManager) {
+    public synchronized void periodicUploadsNotification(final UploadsManager uploadsManager) {
         // no log of active uploads
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                resourceTransferEvents.periodicUploadsNotification(uploadsManager);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> resourceTransferEvents.periodicUploadsNotification(uploadsManager));
+        }
     }
 
-    public void stop() {
+    public synchronized void stop() {
         logger.info("STOP");
         sequentialTaskExecutor.shutdown();
     }
