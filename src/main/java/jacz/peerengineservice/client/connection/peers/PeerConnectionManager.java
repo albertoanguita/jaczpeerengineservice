@@ -911,6 +911,7 @@ public class PeerConnectionManager {
 
     public void updatePeerAffinity(PeerId peerId, int affinity) {
         peerKnowledgeBase.getPeerEntryFacade(peerId).setAffinity(affinity);
+        peersEvents.modifiedAffinity(peerId, buildPeerInfo(peerId));
     }
 
     public void newPeerNick(PeerId peerId, String nick) {
