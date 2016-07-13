@@ -58,6 +58,7 @@ public class FavoritesConnectionManager {
      */
     private void searchFriends() {
         // check if there are disconnected favorite peers of which we do not have address info
+        logger.info("Searching for favorites to connect with...");
         peerConnectionManager.askForSpecificPeersInfo(buildNeedInfoFavoriteList());
     }
 
@@ -69,6 +70,7 @@ public class FavoritesConnectionManager {
                 needInfoFavorites.add(peerEntryFacade.getPeerId());
             }
         }
+        logger.info("Found " + needInfoFavorites.size() + " favorite peers that require further info");
         return needInfoFavorites;
     }
 
