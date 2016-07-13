@@ -24,50 +24,38 @@ public class TempFileManagerEventsBridge implements TempFileManagerEvents {
     }
 
     @Override
-    public void indexFileGenerated(final String indexFilePath) {
+    public synchronized void indexFileGenerated(final String indexFilePath) {
         logger.info("INDEX FILE GENERATED. indexFilePath: " + indexFilePath);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                tempFileManagerEvents.indexFileGenerated(indexFilePath);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> tempFileManagerEvents.indexFileGenerated(indexFilePath));
+        }
     }
 
     @Override
-    public void indexFileRecovered(final String indexFilePath) {
+    public synchronized void indexFileRecovered(final String indexFilePath) {
         logger.info("INDEX FILE RECOVERED. indexFilePath: " + indexFilePath);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                tempFileManagerEvents.indexFileRecovered(indexFilePath);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> tempFileManagerEvents.indexFileRecovered(indexFilePath));
+        }
     }
 
     @Override
-    public void indexFileErrorRestoredWithBackup(final String indexFilePath) {
+    public synchronized void indexFileErrorRestoredWithBackup(final String indexFilePath) {
         logger.info("INDEX FILE ERROR RESTORED WITH BACKUP. indexFilePath: " + indexFilePath);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                tempFileManagerEvents.indexFileErrorRestoredWithBackup(indexFilePath);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> tempFileManagerEvents.indexFileErrorRestoredWithBackup(indexFilePath));
+        }
     }
 
     @Override
-    public void indexFileError(final String indexFilePath, Exception e) {
+    public synchronized void indexFileError(final String indexFilePath, Exception e) {
         logger.info("INDEX FILE ERROR. indexFilePath: " + indexFilePath);
-        sequentialTaskExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                tempFileManagerEvents.indexFileError(indexFilePath, e);
-            }
-        });
+        if (!sequentialTaskExecutor.isShutdown()) {
+            sequentialTaskExecutor.submit(() -> tempFileManagerEvents.indexFileError(indexFilePath, e));
+        }
     }
 
-    public void stop() {
+    public synchronized void stop() {
         sequentialTaskExecutor.shutdown();
     }
 }
