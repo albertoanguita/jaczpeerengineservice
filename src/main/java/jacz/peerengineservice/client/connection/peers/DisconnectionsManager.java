@@ -8,12 +8,12 @@ import jacz.peerengineservice.client.connection.peers.kb.PeerEntryFacade;
 import jacz.peerengineservice.client.connection.peers.kb.PeerKnowledgeBase;
 import org.aanguita.jacuzzi.AI.evolve.EvolvingState;
 import org.aanguita.jacuzzi.AI.evolve.EvolvingStateController;
-import org.aanguita.jacuzzi.AI.evolve.StateCondition;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * This class performs regular checks for peers to which we should not be connected (blocked, or regular and no wish
@@ -32,7 +32,7 @@ public class DisconnectionsManager {
     /**
      * We use this variable so subsequent set timers replace previous ones
      */
-    private static final StateCondition<State> trueStateCondition = state -> true;
+    private static final Predicate<State> trueStateCondition = state -> true;
 
     private static final long MIN_RETRY = 1000L;
 
