@@ -5,13 +5,12 @@ import org.aanguita.jacuzzi.io.SixBitSerializer;
 import org.aanguita.jacuzzi.lists.tuple.Duple;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
 import java.util.Arrays;
 
 /**
  * This class represents an identifier for a peer in our network. The id consist on a 32-byte array (256 bits) obtained randomly through SHA-256
  */
-public final class PeerId implements Comparable<PeerId>, Serializable {
+public final class PeerId implements Comparable<PeerId> {
 
     private static final int KEY_LENGTH = 32;
 
