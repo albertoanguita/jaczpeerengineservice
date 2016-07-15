@@ -50,14 +50,14 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
     static final class ConnectionRequest implements Serializable {
 
         /**
-         * Our peer id
+         * Our peer id, in a serialized form
          */
-        final PeerId clientPeerId;
+        final byte[] clientPeerId;
 
         /**
          * The target server peer id
          */
-        final PeerId serverPeerId;
+        final byte[] serverPeerId;
 
         /**
          * Our public key, for authentication
@@ -114,8 +114,8 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
                 String clientAddress,
                 CountryCode clientMainCountry,
                 PeerEntryFacade peerEntryFacade) {
-            this.clientPeerId = clientPeerId;
-            this.serverPeerId = serverPeerId;
+            this.clientPeerId = clientPeerId.toByteArray();
+            this.serverPeerId = serverPeerId.toByteArray();
             this.clientPublicKey = clientPublicKey;
             this.clientWishRegularConnections = clientWishRegularConnections;
             this.serverWishRegularConnections = peerEntryFacade.isWishForRegularConnections();
@@ -127,11 +127,19 @@ public class ConnectionEstablishmentClientFSM implements TimedChannelFSMAction<C
             this.clientToServerRelationship = peerEntryFacade.getRelationship();
         }
 
+        public PeerId getClientPeerId() {
+            return new PeerId(clientPeerId);
+        }
+
+        public PeerId getServerPeerId() {
+            return new PeerId(serverPeerId);
+        }
+
         @Override
         public String toString() {
             return "ConnectionRequest{" +
-                    "clientPeerId=" + clientPeerId +
-                    ", serverPeerId=" + serverPeerId +
+                    "clientPeerId=" + getClientPeerId() +
+                    ", serverPeerId=" + getServerPeerId() +
                     //", clientPublicKey=" + clientPublicKey +
                     //", centralServerSecret='" + centralServerSecret + '\'' +
                     //", encodedCentralServerSecret='" + encodedCentralServerSecret + '\'' +

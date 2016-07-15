@@ -453,7 +453,7 @@ public class PeerConnectionManager {
         // the server invokes this one. This PeerClient didn't know about this connection, so it must be confirmed
         // if we have higher priority in the connection process, check that we are not already trying to connect to
         // this same peer as clients
-        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(connectionRequest.clientPeerId);
+        PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(connectionRequest.getClientPeerId());
         if (connectionRequest.clientWishRegularConnections) {
             peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.YES);
         } else {
@@ -474,10 +474,10 @@ public class PeerConnectionManager {
         List<PeersLookingForRegularConnectionsRecord.PeerRecord> peerRecords;
         if (connectionRequest.clientWishRegularConnections && peersLookingForRegularConnectionsRecord.getMainCountry().equals(connectionRequest.serverMainCountry)) {
             // the client seeks the country that we have stored -> return peers to him
-            peerRecords = peersLookingForRegularConnectionsRecord.getRecords(connectionRequest.clientPeerId, PEER_RECORDS_SIZE);
+            peerRecords = peersLookingForRegularConnectionsRecord.getRecords(connectionRequest.getClientPeerId(), PEER_RECORDS_SIZE);
             if (peersLookingForRegularConnectionsRecord.getMainCountry().equals(connectionRequest.clientMainCountry)) {
                 // the client's country is our own country -> also store this peer in our records, for future requests from other peers
-                peersLookingForRegularConnectionsRecord.addPeer(connectionRequest.clientPeerId, clientAddress);
+                peersLookingForRegularConnectionsRecord.addPeer(connectionRequest.getClientPeerId(), clientAddress);
             }
         } else {
             peerRecords = new ArrayList<>();
@@ -488,11 +488,11 @@ public class PeerConnectionManager {
             // not connected
             logConnectionRequestAsServer(connectionRequest, ConnectionEstablishmentServerFSM.ConnectionResultType.DENY, "no longer wish to connect");
             return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.DENY, peerRecords);
-        } else if (connectedPeers.isConnectedPeer(connectionRequest.clientPeerId)) {
+        } else if (connectedPeers.isConnectedPeer(connectionRequest.getClientPeerId())) {
             // already connected
             logConnectionRequestAsServer(connectionRequest, ConnectionEstablishmentServerFSM.ConnectionResultType.DENY, "already connected with this peer");
             return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.ALREADY_CONNECTED, peerRecords);
-        } else if ((ownPeerId.hasHigherPriorityThan(connectionRequest.clientPeerId) && ongoingClientConnections.contains(connectionRequest.clientPeerId))) {
+        } else if ((ownPeerId.hasHigherPriorityThan(connectionRequest.getClientPeerId()) && ongoingClientConnections.contains(connectionRequest.getClientPeerId()))) {
             // ongoing connection with higher priority
             logConnectionRequestAsServer(connectionRequest, ConnectionEstablishmentServerFSM.ConnectionResultType.DENY, "ongoing connection of higher priority with this peer");
             return new ConnectionEstablishmentServerFSM.ConnectionResult(ConnectionEstablishmentServerFSM.ConnectionResultType.ALREADY_CONNECTED, peerRecords);
@@ -596,7 +596,7 @@ public class PeerConnectionManager {
 
     private void logConnectionRequestAsServer(ConnectionEstablishmentClientFSM.ConnectionRequest connectionRequest, ConnectionEstablishmentServerFSM.ConnectionResultType resultType, String reason) {
         String message = reason == null ? resultType.name() : resultType.name() + ": " + reason;
-        logger.info("Connection request received from " + connectionRequest.clientPeerId + ". " + message);
+        logger.info("Connection request received from " + connectionRequest.getClientPeerId() + ". " + message);
     }
 
     private boolean incorrectInfoFromClient(ConnectionEstablishmentClientFSM.ConnectionRequest connectionRequest) {
@@ -604,7 +604,7 @@ public class PeerConnectionManager {
         // - wrong server peer id
         // - wrong serverWishRegularConnections
         // - wrong server main country
-        return (!org.aanguita.jacuzzi.objects.Util.equals(connectionRequest.serverPeerId, ownPeerId)
+        return (!org.aanguita.jacuzzi.objects.Util.equals(connectionRequest.getServerPeerId(), ownPeerId)
                 || !org.aanguita.jacuzzi.objects.Util.equals(connectionRequest.serverWishRegularConnections, peerConnectionConfig.isWishRegularConnections())
                 || !org.aanguita.jacuzzi.objects.Util.equals(connectionRequest.serverMainCountry, peerConnectionConfig.getMainCountry())
         );

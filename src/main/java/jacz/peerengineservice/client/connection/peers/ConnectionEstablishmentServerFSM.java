@@ -201,7 +201,7 @@ public class ConnectionEstablishmentServerFSM implements TimedChannelFSMAction<C
                 if (clientConfirmation) {
                     // the client confirms the connection
                     logMessage("Client confirmed connection");
-                    peerConnectionManager.connectionAsServerCompleted(clientConnectionRequest.clientPeerId, ccp, clientConnectionRequest.clientMainCountry);
+                    peerConnectionManager.connectionAsServerCompleted(clientConnectionRequest.getClientPeerId(), ccp, clientConnectionRequest.clientMainCountry);
                     return State.CONNECTION_SUCCESSFUL;
                 } else {
                     // the client dismissed this connection due to failed authentication
