@@ -35,7 +35,7 @@ public class ByteArrayWriter extends SingleSessionResourceWriter {
     private int size;
 
     public ByteArrayWriter(DataAccessor listAccessor, int level) {
-        this(listAccessor, level, new HashMap<String, Serializable>());
+        this(listAccessor, level, new HashMap<>());
     }
 
     public ByteArrayWriter(DataAccessor listAccessor, int level, HashMap<String, Serializable> userDictionary) {
