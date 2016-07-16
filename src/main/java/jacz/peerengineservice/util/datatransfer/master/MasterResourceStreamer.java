@@ -579,7 +579,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
                 resourceDownloadStatistics.downloadComplete(resourceSize);
                 resourceDownloadStatistics.stop();
                 downloadReports.reportCompleted(resourceWriter);
-                setState(DownloadState.COMPLETED, true);
+                setState(DownloadState.COMPLETED, false);
             } catch (IOException e) {
                 reportErrorWriting(e);
             } finally {
