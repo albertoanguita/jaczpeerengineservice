@@ -3,7 +3,6 @@ package jacz.peerengineservice.util.datatransfer.resource_accession;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A resource writer that stores user and system dictionary in-memory, as it has no support for disk storage of
