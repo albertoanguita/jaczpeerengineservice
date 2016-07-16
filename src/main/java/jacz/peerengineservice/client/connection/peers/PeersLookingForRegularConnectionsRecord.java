@@ -21,19 +21,23 @@ public class PeersLookingForRegularConnectionsRecord {
 
     public static class PeerRecord implements Serializable {
 
-        public final PeerId peerId;
+        public final byte[] peerId;
 
         public final PeerAddress peerAddress;
 
         public PeerRecord(PeerId peerId, PeerAddress peerAddress) {
-            this.peerId = peerId;
+            this.peerId = peerId.toByteArray();
             this.peerAddress = peerAddress;
+        }
+
+        public PeerId getPeerId() {
+            return new PeerId(peerId);
         }
 
         @Override
         public String toString() {
             return "PeerRecord{" +
-                    "peerId=" + peerId +
+                    "peerId=" + getPeerId() +
                     ", peerAddress=" + peerAddress +
                     '}';
         }

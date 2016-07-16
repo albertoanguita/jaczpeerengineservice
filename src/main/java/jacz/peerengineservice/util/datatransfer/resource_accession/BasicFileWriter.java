@@ -3,7 +3,6 @@ package jacz.peerengineservice.util.datatransfer.resource_accession;
 import org.aanguita.jacuzzi.files.FileGenerator;
 import org.aanguita.jacuzzi.files.RandomAccess;
 import org.aanguita.jacuzzi.numeric.range.LongRangeList;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;

@@ -713,8 +713,8 @@ public class PeerConnectionManager {
         logger.info("Extra peers info received from server: " + peerRecords + ". Country: " + country);
         for (PeersLookingForRegularConnectionsRecord.PeerRecord peerRecord : peerRecords) {
             // avoid owr own peer to be processed
-            if (!peerRecord.peerId.equals(ownPeerId)) {
-                PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerRecord.peerId);
+            if (!peerRecord.getPeerId().equals(ownPeerId)) {
+                PeerEntryFacade peerEntryFacade = peerKnowledgeBase.getPeerEntryFacade(peerRecord.getPeerId());
                 peerEntryFacade.setPeerAddress(peerRecord.peerAddress);
                 peerEntryFacade.setMainCountry(country);
                 peerEntryFacade.setWishForRegularConnections(Management.ConnectionWish.YES);
