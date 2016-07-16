@@ -375,12 +375,7 @@ public class MasterResourceStreamer extends GenericPriorityManagerStakeholder im
      * @param resourceProviders collection of resource providers offering the desired resource
      */
     public void reportAvailableResourceProviders(final Collection<? extends ResourceProvider> resourceProviders) {
-        ThreadExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                reportAvailableResourceProvidersSynch(resourceProviders);
-            }
-        });
+        ThreadExecutor.submit(() -> reportAvailableResourceProvidersSynch(resourceProviders));
     }
 
     /**
