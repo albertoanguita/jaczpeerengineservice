@@ -9,22 +9,22 @@ import java.io.Serializable;
  */
 public class ResourceRequest implements Serializable {
 
-    private PeerId requestingPeer;
+    private final byte[] requestingPeer;
 
-    private String storeName;
+    private final String storeName;
 
-    private String resourceID;
+    private final String resourceID;
 
-    private short subchannel;
+    private final short subchannel;
 
-    private Float priority;
+    private final Float priority;
 
     public ResourceRequest(PeerId requestingPeer, String storeName, String resourceID, short subchannel) {
         this(requestingPeer, storeName, resourceID, subchannel, null);
     }
 
     public ResourceRequest(PeerId requestingPeer, String storeName, String resourceID, short subchannel, Float priority) {
-        this.requestingPeer = requestingPeer;
+        this.requestingPeer = requestingPeer.toByteArray();
         this.storeName = storeName;
         this.resourceID = resourceID;
         this.subchannel = subchannel;
@@ -32,7 +32,7 @@ public class ResourceRequest implements Serializable {
     }
 
     public PeerId getRequestingPeer() {
-        return requestingPeer;
+        return new PeerId(requestingPeer);
     }
 
     public String getStoreName() {
