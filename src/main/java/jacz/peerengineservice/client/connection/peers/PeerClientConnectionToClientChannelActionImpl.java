@@ -49,6 +49,6 @@ public class PeerClientConnectionToClientChannelActionImpl implements ChannelAct
 
     @Override
     public void error(ChannelConnectionPoint ccp, CommError e) {
-        peerConnectionManager.peerError(ccp, e);
+        peerConnectionManager.peerError(ccp, e, e.getException());
     }
 }

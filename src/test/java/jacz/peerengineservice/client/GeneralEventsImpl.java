@@ -1,8 +1,6 @@
 package jacz.peerengineservice.client;
 
-import jacz.commengine.communication.CommError;
 import jacz.peerengineservice.PeerId;
-import jacz.peerengineservice.util.PeerRelationship;
 
 /**
  * Created by Alberto on 13/04/2016.

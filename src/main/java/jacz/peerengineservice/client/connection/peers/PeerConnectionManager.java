@@ -764,9 +764,9 @@ public class PeerConnectionManager {
         }
     }
 
-    public void peerError(ChannelConnectionPoint ccp, CommError error) {
+    public void peerError(ChannelConnectionPoint ccp, CommError error, Exception e) {
         if (error.getType() == CommError.Type.WRITE_NON_SERIALIZABLE_OBJECT || error.getType() == CommError.Type.CLASS_CANNOT_BE_SERIALIZED) {
-            PeerClient.reportFatalError("Tried to write a non-serializable object through a ccp", error);
+            PeerClient.reportFatalError("Tried to write a non-serializable object through a ccp", error, e);
         }
         PeerId peerId = disconnectPeer(ccp);
         if (peerId != null) {

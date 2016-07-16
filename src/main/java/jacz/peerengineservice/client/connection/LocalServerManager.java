@@ -93,7 +93,7 @@ public class LocalServerManager {
 
         @Override
         public void clientError(String clientID, ChannelConnectionPoint ccp, CommError e) {
-            peerConnectionManager.peerError(ccp, e);
+            peerConnectionManager.peerError(ccp, e, e.getException());
         }
 
         @Override
