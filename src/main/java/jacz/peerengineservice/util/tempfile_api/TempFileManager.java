@@ -149,9 +149,6 @@ public class TempFileManager {
     public synchronized Set<String> getExistingTempFiles() throws IOException {
         // todo use nio
         Set<String> tempFiles = new HashSet<>();
-        String[] extensions = new String[1];
-        extensions[0] = TEMP_FILE_INDEX_NAME_END;
-
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(baseDir, "*." + TEMP_FILE_INDEX_NAME_END)) {
             for (Path file : stream) {
                 // an index file was found -> look for its data file
