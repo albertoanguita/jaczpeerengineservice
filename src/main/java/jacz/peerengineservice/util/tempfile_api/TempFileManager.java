@@ -454,9 +454,7 @@ public class TempFileManager {
             alive.set(false);
             tempFileManagerEventsBridge.stop();
             ThreadExecutor.shutdownClient(threadExecutorClientId);
-            for (ConcurrencyController concurrencyController : concurrencyControllers.values()) {
-                concurrencyController.stopAndWaitForFinalization();
-            }
+            concurrencyControllers.values().forEach(org.aanguita.jacuzzi.concurrency.concurrency_controller.ConcurrencyController::stopAndWaitForFinalization);
         }
     }
 }
