@@ -1,9 +1,9 @@
 package jacz.peerengineservice.client.connection;
 
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.clientserver.server.ServerAction;
-import jacz.commengine.clientserver.server.ServerModule;
-import jacz.commengine.communication.CommError;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.clientserver.server.ServerAction;
+import org.aanguita.jtcpserver.clientserver.server.ServerModule;
+import org.aanguita.jtcpserver.communication.CommError;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.PeerConnectionManager;
 import org.aanguita.jacuzzi.AI.evolve.EvolvingState;

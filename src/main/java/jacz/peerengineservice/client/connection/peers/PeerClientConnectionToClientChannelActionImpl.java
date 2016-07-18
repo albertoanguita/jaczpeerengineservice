@@ -1,9 +1,9 @@
 package jacz.peerengineservice.client.connection.peers;
 
 
-import jacz.commengine.channel.ChannelAction;
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.communication.CommError;
+import org.aanguita.jtcpserver.channel.ChannelAction;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.communication.CommError;
 
 /**
  * This class implements the actions used by the Client module when connecting to another peer. Direct messages are

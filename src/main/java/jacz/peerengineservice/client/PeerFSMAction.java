@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client;
 
-import jacz.commengine.channel.ChannelFSMAction;
+import org.aanguita.jtcpserver.channel.ChannelFSMAction;
 
 /**
  * Actions that need to be implemented in order to use custom FSMs in the peer engine. They are similar to channel

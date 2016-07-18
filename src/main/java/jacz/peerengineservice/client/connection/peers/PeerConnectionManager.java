@@ -1,9 +1,9 @@
 package jacz.peerengineservice.client.connection.peers;
 
 import com.neovisionaries.i18n.CountryCode;
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.clientserver.client.ClientModule;
-import jacz.commengine.communication.CommError;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.clientserver.client.ClientModule;
+import org.aanguita.jtcpserver.communication.CommError;
 import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;

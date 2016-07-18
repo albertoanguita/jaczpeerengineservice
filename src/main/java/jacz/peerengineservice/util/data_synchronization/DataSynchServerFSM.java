@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.data_synchronization;
 
-import jacz.commengine.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;
 import jacz.peerengineservice.client.PeerFSMServerResponse;

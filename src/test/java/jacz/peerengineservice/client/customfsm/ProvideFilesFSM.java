@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client.customfsm;
 
-import jacz.commengine.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.client.PeerFSMServerResponse;
 import jacz.peerengineservice.client.PeerTimedFSMAction;
 

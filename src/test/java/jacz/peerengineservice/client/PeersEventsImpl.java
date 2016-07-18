@@ -1,6 +1,6 @@
 package jacz.peerengineservice.client;
 
-import jacz.commengine.communication.CommError;
+import org.aanguita.jtcpserver.communication.CommError;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.PeerInfo;
 import jacz.peerengineservice.client.connection.peers.PeersEvents;

@@ -1,7 +1,7 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.channel.ChannelFSMAction;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.channel.ChannelFSMAction;
 import jacz.peerengineservice.client.PeerClient;
 
 /**

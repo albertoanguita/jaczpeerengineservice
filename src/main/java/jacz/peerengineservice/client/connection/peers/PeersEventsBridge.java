@@ -1,7 +1,7 @@
 package jacz.peerengineservice.client.connection.peers;
 
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.communication.CommError;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.communication.CommError;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClientPrivateInterface;
 import jacz.peerengineservice.client.connection.peers.kb.Management;

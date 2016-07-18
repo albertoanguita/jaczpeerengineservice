@@ -1,6 +1,6 @@
 package jacz.peerengineservice.util.datatransfer;
 
-import jacz.commengine.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.PeerClient;

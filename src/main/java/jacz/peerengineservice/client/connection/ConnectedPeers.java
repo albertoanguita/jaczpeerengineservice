@@ -1,7 +1,7 @@
 package jacz.peerengineservice.client.connection;
 
 import com.neovisionaries.i18n.CountryCode;
-import jacz.commengine.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
 import jacz.peerengineservice.PeerId;
 import org.aanguita.jacuzzi.event.notification.NotificationEmitter;
 import org.aanguita.jacuzzi.event.notification.NotificationProcessor;

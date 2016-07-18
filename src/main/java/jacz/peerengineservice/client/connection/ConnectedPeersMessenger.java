@@ -1,7 +1,7 @@
 package jacz.peerengineservice.client.connection;
 
 import jacz.peerengineservice.PeerId;
-import jacz.commengine.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
 
 import java.io.Serializable;
 

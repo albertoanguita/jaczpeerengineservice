@@ -2,8 +2,8 @@ package jacz.peerengineservice.client.connection.peers;
 
 
 import com.neovisionaries.i18n.CountryCode;
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.channel.TimedChannelFSMAction;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.channel.TimedChannelFSMAction;
 import jacz.peerengineservice.PeerId;
 import jacz.peerengineservice.client.connection.peers.kb.Management;
 import jacz.peerengineservice.util.ChannelConstants;

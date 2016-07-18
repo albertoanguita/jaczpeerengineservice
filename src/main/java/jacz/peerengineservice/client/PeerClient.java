@@ -1,8 +1,8 @@
 package jacz.peerengineservice.client;
 
 import com.neovisionaries.i18n.CountryCode;
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.communication.CommError;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.communication.CommError;
 import jacz.peerengineservice.NotAliveException;
 import jacz.peerengineservice.PeerEncryption;
 import jacz.peerengineservice.PeerId;

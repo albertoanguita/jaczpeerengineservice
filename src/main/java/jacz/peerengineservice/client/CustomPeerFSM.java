@@ -2,8 +2,8 @@ package jacz.peerengineservice.client;
 
 import jacz.peerengineservice.client.connection.RequestFromPeerToPeer;
 import jacz.peerengineservice.util.ChannelConstants;
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.channel.ChannelFSMAction;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.channel.ChannelFSMAction;
 import org.aanguita.jacuzzi.io.serialization.ObjectListWrapper;
 
 /**

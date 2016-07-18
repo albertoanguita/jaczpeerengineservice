@@ -1,7 +1,7 @@
 package jacz.peerengineservice.client;
 
-import jacz.commengine.channel.ChannelConnectionPoint;
-import jacz.commengine.channel.TimedChannelFSMAction;
+import org.aanguita.jtcpserver.channel.ChannelConnectionPoint;
+import org.aanguita.jtcpserver.channel.TimedChannelFSMAction;
 
 /**
  * A timed version of custom FSMs
