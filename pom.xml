@@ -87,9 +87,9 @@
       <version>0.5.0</version>
     </dependency>
     <dependency>
-      <groupId>jacz.commengine</groupId>
-      <artifactId>commengine</artifactId>
-      <version>1.0a</version>
+      <groupId>org.aanguita</groupId>
+      <artifactId>jtcpserver</artifactId>
+      <version>0.5.0</version>
     </dependency>
     <dependency>
     	<groupId>org.jetbrains</groupId>
