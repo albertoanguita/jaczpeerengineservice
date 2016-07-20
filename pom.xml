@@ -4,11 +4,11 @@
 
   <groupId>jacz.peerengine</groupId>
   <artifactId>peerengineservice</artifactId>
-  <version>1.0a</version>
+  <version>0.1.0</version>
   <packaging>jar</packaging>
 
   <name>peerengineservice</name>
-  <url>http://maven.apache.org</url>
+  <url>https://github.com/albertoanguita/jaczpeerengineservice</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
